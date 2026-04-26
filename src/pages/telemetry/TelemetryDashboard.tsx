@@ -1,0 +1,89 @@
+import { useState, useMemo } from 'react';
+import { Select, Typography } from 'antd';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { useReadsPerHour } from '@/hooks/useTagReads';
+import { useDevices } from '@/hooks/useDevices';
+
+const { Title } = Typography;
+
+const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'];
+
+export function TelemetryDashboard() {
+  const [deviceId, setDeviceId] = useState<string | undefined>();
+  const [start, setStart] = useState<string | undefined>();
+  const [end, setEnd] = useState<string | undefined>();
+
+  const { data: devices } = useDevices();
+  const { data: readsPerHour, isLoading } = useReadsPerHour({ device_id: deviceId, start, end });
+
+  const deviceOptions = useMemo(
+    () => [
+      { label: 'All Devices', value: '' },
+      ...(devices ?? []).map((d) => ({ label: d.name, value: d.id })),
+    ],
+    [devices],
+  );
+
+  const deviceIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of readsPerHour ?? []) ids.add(r.device_id);
+    return Array.from(ids);
+  }, [readsPerHour]);
+
+  const chartData = useMemo(() => {
+    const bucketMap = new Map<string, Record<string, number>>();
+    for (const r of readsPerHour ?? []) {
+      const key = new Date(r.bucket).toLocaleString();
+      const entry = bucketMap.get(key) ?? {};
+      entry[r.device_id] = r.read_count;
+      bucketMap.set(key, entry);
+    }
+    return Array.from(bucketMap.entries()).map(([bucket, counts]) => ({
+      bucket,
+      ...counts,
+    }));
+  }, [readsPerHour]);
+
+  const deviceNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const d of devices ?? []) map.set(d.id, d.name);
+    return map;
+  }, [devices]);
+
+  return (
+    <div>
+      <Title level={2}>Telemetry</Title>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+        <Select
+          options={deviceOptions}
+          value={deviceId ?? ''}
+          onChange={(v) => setDeviceId(v || undefined)}
+          style={{ width: 200 }}
+          placeholder="Select device"
+        />
+        <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+      </div>
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="bucket" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          {deviceIds.map((id, i) => (
+            <Line
+              key={id}
+              type="monotone"
+              dataKey={id}
+              name={deviceNameMap.get(id) ?? id}
+              stroke={COLORS[i % COLORS.length]}
+              dot={false}
+              isAnimationActive={!isLoading}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

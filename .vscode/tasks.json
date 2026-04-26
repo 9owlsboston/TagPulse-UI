@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "group": "test"
+    },
+    {
+      "label": "typecheck",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "group": "test"
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "npm run test",
+      "group": "test"
+    },
+    {
+      "label": "check",
+      "type": "shell",
+      "command": "npm run check",
+      "group": "test"
+    },
+    {
+      "label": "dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "isBackground": true
+    }
+  ]
+}
