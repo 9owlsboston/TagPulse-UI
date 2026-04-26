@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth';
 
-export function useSSE(events: string[], queryKeys: string[][]) {
+export function useSSE(events: string[], queryKeys: string[][], onMessage?: () => void) {
   const { tenantId } = useAuth();
   const queryClient = useQueryClient();
   const sourceRef = useRef<EventSource | null>(null);
@@ -19,6 +19,7 @@ export function useSSE(events: string[], queryKeys: string[][]) {
       for (const key of queryKeys) {
         queryClient.invalidateQueries({ queryKey: key });
       }
+      onMessage?.();
     };
 
     source.onerror = () => {
@@ -29,5 +30,5 @@ export function useSSE(events: string[], queryKeys: string[][]) {
       source.close();
       sourceRef.current = null;
     };
-  }, [tenantId, events, queryKeys, queryClient]);
+  }, [tenantId, events, queryKeys, queryClient, onMessage]);
 }

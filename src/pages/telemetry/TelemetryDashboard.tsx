@@ -4,10 +4,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useReadsPerHour } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
+import { useSSE } from '@/lib/sse';
 
 const { Title } = Typography;
 
 const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'];
+const SSE_EVENTS = ['tag_read.created'];
+const SSE_KEYS = [['tag-reads']];
 
 export function TelemetryDashboard() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
@@ -16,6 +19,8 @@ export function TelemetryDashboard() {
 
   const { data: devices } = useDevices();
   const { data: readsPerHour, isLoading } = useReadsPerHour({ device_id: deviceId, start, end });
+
+  useSSE(SSE_EVENTS, SSE_KEYS);
 
   const deviceOptions = useMemo(
     () => [

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, Typography, message } from 'antd';
+import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, InputNumber, Typography, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,8 @@ export function IntegrationList() {
   const updateIntegration = useUpdateIntegration();
   const deleteIntegration = useDeleteIntegration();
   const [open, setOpen] = useState(false);
-  const [form] = Form.useForm<IntegrationCreate & { eventsStr?: string; configUrl?: string }>();
+  const [integrationType, setIntegrationType] = useState<string>('webhook');
+  const [form] = Form.useForm<IntegrationCreate & { eventsStr?: string; configUrl?: string; configSchedule?: string; configFormat?: string; configMaxConnections?: number }>();
 
   const handleToggle = (id: string, enabled: boolean) => {
     updateIntegration.mutate({ id, data: { enabled } });
@@ -36,13 +37,18 @@ export function IntegrationList() {
     });
   };
 
-  const handleCreate = async (values: IntegrationCreate & { eventsStr?: string; configUrl?: string }) => {
+  const handleCreate = async (values: IntegrationCreate & { eventsStr?: string; configUrl?: string; configSchedule?: string; configFormat?: string; configMaxConnections?: number }) => {
     const events = (values.eventsStr ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     const config: Record<string, unknown> = {};
-    if (values.configUrl) config.url = values.configUrl;
+    if (integrationType === 'webhook' && values.configUrl) config.url = values.configUrl;
+    if (integrationType === 'sse' && values.configMaxConnections) config.max_connections = values.configMaxConnections;
+    if (integrationType === 'export') {
+      if (values.configSchedule) config.schedule = values.configSchedule;
+      if (values.configFormat) config.format = values.configFormat;
+    }
     await createIntegration.mutateAsync({
       name: values.name,
-      type: values.type,
+      type: integrationType as IntegrationCreate['type'],
       events,
       config,
       enabled: true,
@@ -113,14 +119,31 @@ export function IntegrationList() {
             <Input />
           </Form.Item>
           <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={TYPE_OPTIONS} />
+            <Select options={TYPE_OPTIONS} onChange={(v) => setIntegrationType(v)} />
           </Form.Item>
           <Form.Item name="eventsStr" label="Events (comma-separated)" rules={[{ required: true }]}>
             <Input placeholder="tag_read.created, alert.triggered" />
           </Form.Item>
-          <Form.Item name="configUrl" label="URL (for webhooks)">
-            <Input placeholder="https://..." />
-          </Form.Item>
+          {integrationType === 'webhook' && (
+            <Form.Item name="configUrl" label="Webhook URL" rules={[{ required: true }]}>
+              <Input placeholder="https://..." />
+            </Form.Item>
+          )}
+          {integrationType === 'sse' && (
+            <Form.Item name="configMaxConnections" label="Max Connections">
+              <InputNumber min={1} max={1000} placeholder="100" style={{ width: '100%' }} />
+            </Form.Item>
+          )}
+          {integrationType === 'export' && (
+            <>
+              <Form.Item name="configSchedule" label="Schedule (cron)" rules={[{ required: true }]}>
+                <Input placeholder="0 0 * * *" />
+              </Form.Item>
+              <Form.Item name="configFormat" label="Format" rules={[{ required: true }]}>
+                <Select options={[{ label: 'CSV', value: 'csv' }, { label: 'JSON', value: 'json' }]} />
+              </Form.Item>
+            </>
+          )}
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={createIntegration.isPending}>
               Create

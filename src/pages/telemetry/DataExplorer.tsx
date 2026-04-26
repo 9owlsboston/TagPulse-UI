@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Table, Select, Form, InputNumber, Button, Space, Typography } from 'antd';
+import { Table, Select, Form, InputNumber, Button, Space, Typography, Segmented } from 'antd';
+import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
@@ -26,9 +28,21 @@ export function DataExplorer() {
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
   const [limit, setLimit] = useState(100);
+  const [signalMin, setSignalMin] = useState<number | undefined>();
+  const [signalMax, setSignalMax] = useState<number | undefined>();
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   const { data: devices } = useDevices();
-  const { data, isLoading } = useTagReads({ device_id: deviceId, tag_id: tagId, start, end, limit });
+  const { data: rawData, isLoading } = useTagReads({ device_id: deviceId, tag_id: tagId, start, end, limit });
+
+  const data = useMemo(() => {
+    if (!rawData) return rawData;
+    return rawData.filter((r) => {
+      if (signalMin !== undefined && (r.signal_strength === null || r.signal_strength < signalMin)) return false;
+      if (signalMax !== undefined && (r.signal_strength === null || r.signal_strength > signalMax)) return false;
+      return true;
+    });
+  }, [rawData, signalMin, signalMax]);
 
   const deviceOptions = useMemo(
     () => [
@@ -36,6 +50,14 @@ export function DataExplorer() {
       ...(devices ?? []).map((d) => ({ label: d.name, value: d.id })),
     ],
     [devices],
+  );
+
+  const chartData = useMemo(
+    () => (data ?? []).map((r) => ({
+      time: new Date(r.timestamp).toLocaleString(),
+      signal: r.signal_strength ?? 0,
+    })),
+    [data],
   );
 
   const handleExportCsv = () => {
@@ -72,21 +94,47 @@ export function DataExplorer() {
             onChange={(v: string[]) => setTagId(v[0] || undefined)}
           />
         </Form.Item>
+        <Form.Item label="Signal Min">
+          <InputNumber value={signalMin} onChange={(v) => setSignalMin(v ?? undefined)} style={{ width: 100 }} />
+        </Form.Item>
+        <Form.Item label="Signal Max">
+          <InputNumber value={signalMax} onChange={(v) => setSignalMax(v ?? undefined)} style={{ width: 100 }} />
+        </Form.Item>
         <Form.Item label="Limit">
           <InputNumber min={1} max={1000} value={limit} onChange={(v) => setLimit(v ?? 100)} />
         </Form.Item>
       </Form>
       <Space style={{ marginBottom: 16 }}>
         <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+        <Segmented
+          options={[
+            { label: <><TableOutlined /> Table</>, value: 'table' },
+            { label: <><LineChartOutlined /> Chart</>, value: 'chart' },
+          ]}
+          value={viewMode}
+          onChange={(v) => setViewMode(v as 'table' | 'chart')}
+        />
         <Button onClick={handleExportCsv} disabled={!data?.length}>Export CSV</Button>
       </Space>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={isLoading}
-        pagination={{ pageSize: 20 }}
-      />
+      {viewMode === 'table' ? (
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          loading={isLoading}
+          pagination={{ pageSize: 20 }}
+        />
+      ) : (
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="time" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="signal" stroke="#1890ff" dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }

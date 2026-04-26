@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UsageDashboard } from '@/pages/admin/UsageDashboard';
 
-vi.mock('@/hooks/useAnalytics', () => ({
+vi.mock('@/hooks/useUsage', () => ({
   useUsage: () => ({
     data: [
       { tenant_id: 't1', usage_date: '2026-04-25T00:00:00Z', dimension: 'api_read', quantity: 500, unit: 'requests' },

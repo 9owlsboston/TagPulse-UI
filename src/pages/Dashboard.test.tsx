@@ -23,6 +23,25 @@ vi.mock('@/hooks/useAnalytics', () => ({
   useReadFrequency: () => ({ data: [], isLoading: false }),
 }));
 
+vi.mock('@/lib/sse', () => ({
+  useSSE: vi.fn(),
+}));
+
+vi.mock('@/lib/auth', () => ({
+  useAuth: () => ({ tenantId: 'test-tenant', setTenantId: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock('react-grid-layout', () => {
+  const RGL = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
+  return {
+    Responsive: RGL,
+    WidthProvider: () => RGL,
+  };
+});
+
+vi.mock('react-grid-layout/css/styles.css', () => ({}));
+vi.mock('react-resizable/css/styles.css', () => ({}));
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;

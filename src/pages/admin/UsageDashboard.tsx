@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Typography, Table, Progress, Spin } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useUsage, useUsageSummary } from '@/hooks/useAnalytics';
+import { useUsage, useUsageSummary } from '@/hooks/useUsage';
 import type { UsageSummary } from '@/types';
 
 const { Title } = Typography;
