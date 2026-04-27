@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Table, Tag, Button, Select, Space, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
+import { useCanPerform } from '@/components/RoleGuard';
 import type { AlertResponse } from '@/types';
 
 const { Title } = Typography;
@@ -16,6 +17,7 @@ export function AlertHistory() {
   const [status, setStatus] = useState('');
   const { data, isLoading } = useAlerts({ status: status || undefined });
   const acknowledge = useAcknowledgeAlert();
+  const canAcknowledge = useCanPerform('editor');
 
   const columns: ColumnsType<AlertResponse> = [
     {
@@ -48,7 +50,7 @@ export function AlertHistory() {
     {
       title: 'Actions',
       render: (_, record) =>
-        record.status === 'open' ? (
+        record.status === 'open' && canAcknowledge ? (
           <Button
             size="small"
             onClick={() => acknowledge.mutate(record.id)}

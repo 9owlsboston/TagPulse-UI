@@ -1,15 +1,50 @@
 const BASE = '';
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2 || !parts[1]) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.exp ? Date.now() / 1000 > payload.exp : true;
+  } catch {
+    return true;
+  }
+}
+
+function clearExpiredSession(): void {
+  sessionStorage.removeItem('tagpulse_token');
+  sessionStorage.removeItem('tagpulse_user');
+  localStorage.removeItem('tagpulse_tenant_id');
+  delete (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__;
+  delete (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__;
+  window.location.reload();
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ as string | undefined;
   const tenantId = (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__ as string | undefined;
+
+  // Check JWT expiry before making request
+  if (token && isTokenExpired(token)) {
+    clearExpiredSession();
+    throw new Error('Session expired. Please log in again.');
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init?.headers as Record<string, string> | undefined),
   };
-  if (tenantId) {
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else if (tenantId) {
     headers['X-Tenant-ID'] = tenantId;
   }
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  // Handle 401 from server (e.g. token revoked server-side)
+  if (res.status === 401 && token) {
+    clearExpiredSession();
+    throw new Error('Session expired. Please log in again.');
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`API ${res.status}: ${body}`);
@@ -49,6 +84,10 @@ import type {
   TelemetryModelResponse,
   UsageRecord,
   UsageSummary,
+  UserCreate,
+  UserUpdate,
+  UserResponse,
+  ApiKeyResponse,
 } from '@/types';
 
 export const devicesApi = {
@@ -141,4 +180,19 @@ export const usageApi = {
     request<UsageRecord[]>(`/admin/usage${qs(params ?? {})}`),
   summary: (params?: { start?: string; end?: string }) =>
     request<UsageSummary[]>(`/admin/usage/summary${qs(params ?? {})}`),
+};
+
+// ── Users ──
+
+export const usersApi = {
+  list: () => request<UserResponse[]>('/users'),
+  get: (id: string) => request<UserResponse>(`/users/${id}`),
+  create: (data: UserCreate) =>
+    request<UserResponse>('/users', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: UserUpdate) =>
+    request<UserResponse>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  generateApiKey: (id: string) =>
+    request<ApiKeyResponse>(`/users/${id}/api-key`, { method: 'POST' }),
+  revokeApiKey: (id: string) =>
+    request<void>(`/users/${id}/api-key`, { method: 'DELETE' }),
 };

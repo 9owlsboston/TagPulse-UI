@@ -3,11 +3,12 @@ import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { useTelemetryModels, useCreateTelemetryModel, useDeleteTelemetryModel } from '@/hooks/useTelemetryModels';
+import { RoleGuard, useCanPerform } from '@/components/RoleGuard';
 import type { TelemetryModelResponse, TelemetryModelCreate, MetricDefinition } from '@/types';
 
 const { Title } = Typography;
 
-const columns = (onDelete: (id: string) => void): ColumnsType<TelemetryModelResponse> => [
+const columns = (onDelete: (id: string) => void, showDelete: boolean): ColumnsType<TelemetryModelResponse> => [
   { title: 'Device Type', dataIndex: 'device_type' },
   { title: 'Metrics', dataIndex: 'metrics', render: (m: MetricDefinition[]) => m.length },
   {
@@ -15,20 +16,21 @@ const columns = (onDelete: (id: string) => void): ColumnsType<TelemetryModelResp
     dataIndex: 'created_at',
     render: (v: string) => new Date(v).toLocaleDateString(),
   },
-  {
+  ...(showDelete ? [{
     title: 'Actions',
-    render: (_, record) => (
+    render: (_: unknown, record: TelemetryModelResponse) => (
       <Button danger size="small" onClick={() => onDelete(record.id)}>
         Delete
       </Button>
     ),
-  },
+  }] : []),
 ];
 
 export function TelemetryModels() {
   const { data, isLoading } = useTelemetryModels();
   const createModel = useCreateTelemetryModel();
   const deleteModel = useDeleteTelemetryModel();
+  const canDelete = useCanPerform('admin');
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm<TelemetryModelCreate>();
 
@@ -52,13 +54,15 @@ export function TelemetryModels() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Telemetry Models</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-          Create Model
-        </Button>
+        <RoleGuard roles={['admin', 'editor']}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+            Create Model
+          </Button>
+        </RoleGuard>
       </div>
       <Table
         rowKey="id"
-        columns={columns(handleDelete)}
+        columns={columns(handleDelete, canDelete)}
         dataSource={data}
         loading={isLoading}
         expandable={{

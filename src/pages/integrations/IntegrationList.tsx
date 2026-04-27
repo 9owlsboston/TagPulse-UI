@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useIntegrations, useCreateIntegration, useUpdateIntegration, useDeleteIntegration } from '@/hooks/useIntegrations';
+import { RoleGuard, useCanPerform } from '@/components/RoleGuard';
 import type { IntegrationResponse, IntegrationCreate } from '@/types';
 
 const { Title } = Typography;
@@ -20,6 +21,8 @@ export function IntegrationList() {
   const createIntegration = useCreateIntegration();
   const updateIntegration = useUpdateIntegration();
   const deleteIntegration = useDeleteIntegration();
+  const canEdit = useCanPerform('editor');
+  const canDelete = useCanPerform('admin');
   const [open, setOpen] = useState(false);
   const [integrationType, setIntegrationType] = useState<string>('webhook');
   const [form] = Form.useForm<IntegrationCreate & { eventsStr?: string; configUrl?: string; configSchedule?: string; configFormat?: string; configMaxConnections?: number }>();
@@ -81,7 +84,7 @@ export function IntegrationList() {
       title: 'Enabled',
       dataIndex: 'enabled',
       render: (enabled: boolean, record) => (
-        <Switch checked={enabled} onChange={(v) => handleToggle(record.id, v)} />
+        <Switch checked={enabled} onChange={(v) => handleToggle(record.id, v)} disabled={!canEdit} />
       ),
     },
     {
@@ -96,9 +99,11 @@ export function IntegrationList() {
           <Button size="small" onClick={() => navigate(`/integrations/${record.id}/deliveries`)}>
             Deliveries
           </Button>
-          <Button size="small" danger onClick={() => handleDelete(record.id)}>
-            Delete
-          </Button>
+          {canDelete && (
+            <Button size="small" danger onClick={() => handleDelete(record.id)}>
+              Delete
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -108,9 +113,11 @@ export function IntegrationList() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Integrations</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-          Create Integration
-        </Button>
+        <RoleGuard roles={['admin', 'editor']}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+            Create Integration
+          </Button>
+        </RoleGuard>
       </div>
       <Table rowKey="id" columns={columns} dataSource={data} loading={isLoading} pagination={{ pageSize: 20 }} />
       <Modal title="Create Integration" open={open} onCancel={() => setOpen(false)} footer={null}>

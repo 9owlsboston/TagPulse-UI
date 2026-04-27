@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography } from 'antd';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDevice, useDecommissionDevice } from '@/hooks/useDevices';
+import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
 
@@ -97,9 +98,11 @@ export function DeviceDetail() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>{device.name}</Title>
         {device.status === 'active' && (
-          <Button danger onClick={handleDecommission} loading={decommission.isPending}>
-            Decommission
-          </Button>
+          <RoleGuard roles={['admin']}>
+            <Button danger onClick={handleDecommission} loading={decommission.isPending}>
+              Decommission
+            </Button>
+          </RoleGuard>
         )}
       </div>
       <Tabs items={tabItems} />

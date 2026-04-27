@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Table, Tag, Input, Select, Space, Typography } from 'antd';
+import { Table, Tag, Input, Select, Space, Typography, Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useDevices } from '@/hooks/useDevices';
+import { RoleGuard } from '@/components/RoleGuard';
 import type { DeviceResponse } from '@/types';
 
 const { Title } = Typography;
@@ -50,7 +52,14 @@ export function DeviceList() {
 
   return (
     <div>
-      <Title level={2}>Devices</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title level={2} style={{ margin: 0 }}>Devices</Title>
+        <RoleGuard roles={['admin', 'editor']}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/devices/register')}>
+            Register Device
+          </Button>
+        </RoleGuard>
+      </div>
       <Space style={{ marginBottom: 16 }}>
         <Search placeholder="Search devices" onSearch={setSearch} allowClear style={{ width: 250 }} />
         <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} style={{ width: 160 }} />

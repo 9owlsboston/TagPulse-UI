@@ -1,4 +1,4 @@
-import { Layout as AntLayout, Menu } from 'antd';
+import { Layout as AntLayout, Menu, Tag } from 'antd';
 import {
   DashboardOutlined,
   HddOutlined,
@@ -8,6 +8,7 @@ import {
   ApiOutlined,
   BarChartOutlined,
   DatabaseOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
@@ -16,25 +17,34 @@ import { Button, Typography } from 'antd';
 const { Sider, Header, Content } = AntLayout;
 const { Text } = Typography;
 
-const MENU_ITEMS = [
-  { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/devices', icon: <HddOutlined />, label: 'Devices' },
-  { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry' },
-  { key: '/telemetry-models', icon: <DatabaseOutlined />, label: 'Telemetry Models' },
-  { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules' },
-  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts' },
-  { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations' },
-  { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage' },
+const ALL_MENU_ITEMS = [
+  { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', minRole: 'viewer' as const },
+  { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer' as const },
+  { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer' as const },
+  { key: '/telemetry-models', icon: <DatabaseOutlined />, label: 'Telemetry Models', minRole: 'viewer' as const },
+  { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' as const },
+  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' as const },
+  { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' as const },
+  { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage', minRole: 'admin' as const },
+  { key: '/admin/users', icon: <TeamOutlined />, label: 'Users', minRole: 'admin' as const },
 ];
+
+const ROLE_LEVEL: Record<string, number> = { viewer: 0, editor: 1, admin: 2 };
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { tenantId, logout } = useAuth();
+  const { user, role, tenantId, logout } = useAuth();
 
-  const selectedKey = MENU_ITEMS.find((item) =>
+  const menuItems = ALL_MENU_ITEMS.filter(
+    (item) => (ROLE_LEVEL[role] ?? 0) >= (ROLE_LEVEL[item.minRole] ?? 0),
+  );
+
+  const selectedKey = menuItems.filter((item) =>
     item.key === '/' ? location.pathname === '/' : location.pathname.startsWith(item.key),
-  )?.key ?? '/';
+  ).sort((a, b) => b.key.length - a.key.length)[0]?.key ?? '/';
+
+  const roleColor = role === 'admin' ? 'red' : role === 'editor' ? 'blue' : 'default';
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -46,13 +56,24 @@ export function Layout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={MENU_ITEMS}
+          items={menuItems}
           onClick={({ key }) => navigate(key)}
         />
       </Sider>
       <AntLayout>
-        <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16 }}>
-          <Text type="secondary">Tenant: {tenantId}</Text>
+        <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
+          {user ? (
+            <>
+              <Text>{user.name}</Text>
+              <Tag color={roleColor}>{role}</Tag>
+              <Text type="secondary">{user.tenant_name}</Text>
+            </>
+          ) : (
+            <>
+              <Text type="secondary">Tenant: {tenantId}</Text>
+              <Tag>viewer</Tag>
+            </>
+          )}
           <Button size="small" onClick={logout}>Logout</Button>
         </Header>
         <Content style={{ margin: 24 }}>

@@ -232,3 +232,35 @@ export interface UsageSummary {
   total_quantity: number;
   unit: string;
 }
+
+// ── Users ──
+
+export interface UserCreate {
+  email: string;
+  name: string;
+  role?: string;
+}
+
+export interface UserUpdate {
+  name?: string;
+  role?: string;
+  status?: string;
+}
+
+export interface UserResponse {
+  id: string;
+  tenant_id: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+  api_key_prefix: string | null;
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface ApiKeyResponse {
+  api_key: string;
+  prefix: string;
+  message: string;
+}

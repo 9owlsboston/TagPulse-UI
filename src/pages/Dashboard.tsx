@@ -12,7 +12,7 @@ import 'react-resizable/css/styles.css';
 import { KpiTile } from '@/components/KpiTile';
 import { DeviceHealthCard } from '@/components/DeviceHealthCard';
 import { useDevices } from '@/hooks/useDevices';
-import { useTagReads } from '@/hooks/useTagReads';
+import { useReadsPerHour } from '@/hooks/useTagReads';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useDeviceHealthList } from '@/hooks/useDeviceHealth';
 import { useReadFrequency } from '@/hooks/useAnalytics';
@@ -38,7 +38,12 @@ const SSE_QUERY_KEYS = [['tag-reads'], ['alerts'], ['device-health']];
 
 export function Dashboard() {
   const devicesQuery = useDevices();
-  const tagReadsQuery = useTagReads({ limit: 1 });
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+  const readsPerHourQuery = useReadsPerHour({ start: todayStart });
   const alertsQuery = useAlerts({ status: 'open', limit: 5 });
   const healthQuery = useDeviceHealthList('active');
   const anomalyQuery = useReadFrequency({ metric: 'anomaly_count', limit: 1 });
@@ -46,10 +51,13 @@ export function Dashboard() {
 
   useSSE(SSE_EVENTS, SSE_QUERY_KEYS, () => setLiveCount((c) => c + 1));
 
-  const loading = devicesQuery.isLoading || tagReadsQuery.isLoading;
+  const loading = devicesQuery.isLoading || readsPerHourQuery.isLoading;
 
   const deviceCount = devicesQuery.data?.length ?? 0;
-  const readsToday = tagReadsQuery.data?.length ?? 0;
+  const readsToday = useMemo(
+    () => readsPerHourQuery.data?.reduce((sum, r) => sum + r.read_count, 0) ?? 0,
+    [readsPerHourQuery.data],
+  );
   const openAlerts = alertsQuery.data?.length ?? 0;
   const anomalies = useMemo(
     () => anomalyQuery.data?.reduce((sum, r) => sum + r.metric_value, 0) ?? 0,
