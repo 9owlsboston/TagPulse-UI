@@ -5,6 +5,14 @@ All notable changes to TagPulse-UI will be documented in this file.
 ## Unreleased
 
 ### Added
+- **Sprint 15b — Phase F audit mitigation**
+  - New hook `src/hooks/useTenantConfig.ts` — `useTenantConfig` + `useUpdateTenantConfig` wrap `GET/PATCH /tenant/config`.
+  - New page `pages/admin/TenantSettings.tsx` — tabbed admin surface (General toggles `tracking_modes`, Sensor metrics embeds `TelemetryModels`, Tag-data fields embeds `TagDataMappings` and is hidden when inventory mode is off). Routed at `/admin/tenant`.
+  - New page `pages/inventory/LotExpiryQueue.tsx` — cross-product lot list (default 7-day window, expandable to 24h/30d/90d/all) backed by the new `GET /lots` endpoint and `useAllLots` hook. Sorted by soonest expiry, status tags (expired/orange/gold/green), product name links to `ProductDetail`. Routed at `/inventory/lots`.
+  - **Sidebar gating** — `Layout.tsx` now reads `tenant.tracking_modes` and hides inventory entries (Products / Lot Expiry / Stock Levels / Stock Movements) when inventory mode is disabled. Replaced standalone "Tag-data Mappings" item with "Tenant Settings" (admin).
+  - Regenerated typed API client (`TenantService`, `InventoryService.listAllLotsLotsGet`, `TenantConfig*` models).
+  - **34 passing tests retained.**
+
 - **Sprint 15b — Phase F: Inventory UI**
   - Regenerated typed API client from backend `openapi.json` — adds `InventoryService`, `SitesZonesService`, `AssetsService`, plus `Product*`, `Lot*`, `StockItem*`, `StockLevelRow`, `StockMovementResponse`, `TagDataMapping*` models.
   - New hook module `src/hooks/useInventory.ts` — `useProducts`, `useProduct`, `useCreateProduct`, `useUpdateProduct`, `useDeleteProduct`, `useLots`, `useCreateLot`, `useStockLevels`, `useStockMovements`, `useTagDataMappings`, `useCreateTagDataMapping`, `useDeleteTagDataMapping`. All wrap the generated `InventoryService` with consistent react-query cache keys.

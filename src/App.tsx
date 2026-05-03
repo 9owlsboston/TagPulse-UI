@@ -24,6 +24,8 @@ import { ProductDetail } from '@/pages/inventory/ProductDetail';
 import { StockLevels } from '@/pages/inventory/StockLevels';
 import { StockMovements } from '@/pages/inventory/StockMovements';
 import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
+import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
+import { TenantSettings } from '@/pages/admin/TenantSettings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,8 +59,10 @@ export function App() {
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
                 <Route path="/inventory/products" element={<ProductList />} />
                 <Route path="/inventory/products/:id" element={<ProductDetail />} />
+                <Route path="/inventory/lots" element={<LotExpiryQueue />} />
                 <Route path="/inventory/stock-levels" element={<StockLevels />} />
                 <Route path="/inventory/stock-movements" element={<StockMovements />} />
+                <Route path="/admin/tenant" element={<TenantSettings />} />
                 <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
                 <Route path="/admin/users" element={<UserList />} />

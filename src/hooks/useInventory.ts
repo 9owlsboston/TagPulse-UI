@@ -70,6 +70,17 @@ export function useLots(productId: string) {
   });
 }
 
+export function useAllLots(params?: { expiringWithinDays?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ['inventory', 'lots', 'all', params],
+    queryFn: () =>
+      InventoryService.listAllLotsLotsGet(
+        params?.expiringWithinDays ?? undefined,
+        params?.limit ?? 200,
+      ),
+  });
+}
+
 export function useCreateLot() {
   const qc = useQueryClient();
   return useMutation({

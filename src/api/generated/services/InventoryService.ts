@@ -25,6 +25,33 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class InventoryService {
     /**
+     * List All Lots
+     * Cross-product lot list. Used by the UI Lot Expiry Queue page.
+     * @param expiringWithinDays
+     * @param limit
+     * @param offset
+     * @returns LotResponse Successful Response
+     * @throws ApiError
+     */
+    public static listAllLotsLotsGet(
+        expiringWithinDays?: (number | null),
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<LotResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/lots',
+            query: {
+                'expiring_within_days': expiringWithinDays,
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Import Lots
      * @param formData
      * @returns ImportSummary Successful Response
