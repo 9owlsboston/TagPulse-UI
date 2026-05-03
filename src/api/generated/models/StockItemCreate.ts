@@ -7,6 +7,7 @@ export type StockItemCreate = {
     binding_value: string;
     lot_id?: (string | null);
     metadata?: (Record<string, any> | null);
+    parent_stock_item_id?: (string | null);
     product_id: string;
 };
 export namespace StockItemCreate {

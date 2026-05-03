@@ -17,6 +17,7 @@ import {
   EnvironmentOutlined,
   GlobalOutlined,
   SettingOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
@@ -44,6 +45,7 @@ const ALL_MENU_ITEMS = [
   { key: '/admin/tenant', icon: <SettingOutlined />, label: 'Tenant Settings', minRole: 'admin' as const },
   { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage', minRole: 'admin' as const },
   { key: '/admin/users', icon: <TeamOutlined />, label: 'Users', minRole: 'admin' as const },
+  { key: '/admin/audit-logs', icon: <AuditOutlined />, label: 'Audit Log', minRole: 'admin' as const },
 ];
 
 const ROLE_LEVEL: Record<string, number> = { viewer: 0, editor: 1, admin: 2 };

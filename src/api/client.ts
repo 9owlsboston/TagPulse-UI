@@ -201,6 +201,27 @@ export const usageApi = {
     request<UsageSummary[]>(`/admin/usage/summary${qs(params ?? {})}`),
 };
 
+// ── Audit Logs ──
+
+export interface AuditLogEntry {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  changes: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export const auditLogsApi = {
+  list: (params?: {
+    resource_type?: string;
+    actions?: string;
+    limit?: number;
+    offset?: number;
+  }) => request<AuditLogEntry[]>(`/admin/audit-logs${qs(params ?? {})}`),
+};
+
 // ── Users ──
 
 export const usersApi = {

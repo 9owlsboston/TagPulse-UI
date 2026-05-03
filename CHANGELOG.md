@@ -5,6 +5,13 @@ All notable changes to TagPulse-UI will be documented in this file.
 ## Unreleased
 
 ### Added
+- **Sprint 16 mitigation — Admin Audit Log page**:
+  - New `/admin/audit-logs` route (admin-only) — `src/pages/admin/AuditLog.tsx`. AntD `Table` of tenant audit entries (timestamp, action tag, resource, user, JSON-changes peek with hover-to-expand tooltip).
+  - `Segmented` preset selector with **All**, **Device security events** (filters server-side via `actions=device.token_rotated,device.cert_attached,device.approved,device.rejected` per design [identity-device-provisioning.md §7](../TagPulse/docs/design/identity-device-provisioning.md)), **Tenant config**, **User management**.
+  - New `useAuditLogs` hook (`src/hooks/useAuditLogs.ts`) + `auditLogsApi` in `src/api/client.ts` + sidebar `Audit Log` entry under admin tier.
+  - Regenerated typed API client picks up the new `?actions=` query param on `AdminService.listAuditLogsAdminAuditLogsGet`.
+  - Tests: `AuditLog.test.tsx` (3 cases — default preset, preset switch comma-joins actions, action tag renders). **42 tests passing total.**
+
 - **Sprint 17 — Geofencing & Map UI + mTLS cert attach (UI)**
   - Regenerated typed API client — adds `MapConfigResponse`, `TileProviderUpdate`, `DeviceCertAttach`, `DeviceCertResponse` models, plus `TenantService.getMapConfig*` / `updateMapConfig*` and `DeviceRegistryService.attachDeviceCert*` methods. `ZoneResponse` exposes `polygon_geojson` + denormalized bbox columns.
   - **Map page** (`/map`, viewer+, gated by tracking_modes `asset`): provider-agnostic Leaflet map driven by `GET /tenant/map-config` (falls back to OSM). Live asset markers (24h-old positions when the time-slider is dragged), geofence polygons rendered from `polygon_geojson`, layer toggles for assets/zones, and a 24h time-slider that resolves each visible asset's position via `GET /assets/{id}/path`. Markers click through to asset detail; mobile-mobility assets get a colored ring (proxy for the carriers spec). Footer always renders the resolver `attribution`; OSM-default footer renders the dev-only warning per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md).

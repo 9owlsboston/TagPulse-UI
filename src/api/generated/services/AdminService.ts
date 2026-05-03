@@ -13,6 +13,7 @@ export class AdminService {
      * List Audit Logs
      * List audit logs for this tenant.
      * @param resourceType
+     * @param actions Comma-separated list of actions to filter by (e.g. 'device.token_rotated,device.cert_attached').
      * @param limit
      * @param offset
      * @returns any Successful Response
@@ -20,6 +21,7 @@ export class AdminService {
      */
     public static listAuditLogsAdminAuditLogsGet(
         resourceType?: (string | null),
+        actions?: (string | null),
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<Record<string, any>>> {
@@ -28,6 +30,7 @@ export class AdminService {
             url: '/admin/audit-logs',
             query: {
                 'resource_type': resourceType,
+                'actions': actions,
                 'limit': limit,
                 'offset': offset,
             },

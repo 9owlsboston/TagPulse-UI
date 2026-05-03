@@ -19,6 +19,7 @@ import { UsageDashboard } from '@/pages/admin/UsageDashboard';
 import { UserList } from '@/pages/admin/UserList';
 import { UserCreatePage } from '@/pages/admin/UserCreatePage';
 import { UserDetail } from '@/pages/admin/UserDetail';
+import { AuditLog } from '@/pages/admin/AuditLog';
 import { ProductList } from '@/pages/inventory/ProductList';
 import { ProductDetail } from '@/pages/inventory/ProductDetail';
 import { StockLevels } from '@/pages/inventory/StockLevels';
@@ -76,6 +77,7 @@ export function App() {
                 <Route path="/admin/users" element={<UserList />} />
                 <Route path="/admin/users/new" element={<UserCreatePage />} />
                 <Route path="/admin/users/:id" element={<UserDetail />} />
+                <Route path="/admin/audit-logs" element={<AuditLog />} />
               </Route>
             </Routes>
           </TenantGuard>
