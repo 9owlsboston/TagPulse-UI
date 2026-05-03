@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AssetInZoneSummary } from '../models/AssetInZoneSummary';
 import type { SiteCreate } from '../models/SiteCreate';
 import type { SiteResponse } from '../models/SiteResponse';
 import type { SiteUpdate } from '../models/SiteUpdate';
@@ -222,6 +223,35 @@ export class SitesZonesService {
             },
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Assets In Zone
+     * Assets currently in the zone (latest tag-read reader matches the zone).
+     * @param zoneId
+     * @param limit
+     * @param offset
+     * @returns AssetInZoneSummary Successful Response
+     * @throws ApiError
+     */
+    public static listAssetsInZoneZonesZoneIdAssetsGet(
+        zoneId: string,
+        limit: number = 200,
+        offset?: number,
+    ): CancelablePromise<Array<AssetInZoneSummary>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/zones/{zone_id}/assets',
+            path: {
+                'zone_id': zoneId,
+            },
+            query: {
+                'limit': limit,
+                'offset': offset,
+            },
             errors: {
                 422: `Validation Error`,
             },

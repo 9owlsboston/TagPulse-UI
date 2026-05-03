@@ -230,3 +230,52 @@ export function useDeleteZone() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['zones'] }),
   });
 }
+
+// ── Location & path (Sprint 15 — view + path API) ───────────────────────────
+
+export function useAssetCurrentLocation(assetId: string | undefined) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'current-location'],
+    queryFn: () =>
+      AssetsService.getAssetCurrentLocationAssetsAssetIdCurrentLocationGet(
+        assetId!,
+      ),
+    enabled: Boolean(assetId),
+    // 404 when no fix yet — surface as `null` rather than a thrown error so
+    // pages can render an empty state without try/catch noise.
+    retry: false,
+  });
+}
+
+export function useAssetPath(
+  assetId: string | undefined,
+  range: { since: string; until: string; limit?: number },
+) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'path', range],
+    queryFn: () =>
+      AssetsService.getAssetPathAssetsAssetIdPathGet(
+        assetId!,
+        range.since,
+        range.until,
+        range.limit ?? 1000,
+      ),
+    enabled: Boolean(assetId && range.since && range.until),
+  });
+}
+
+export function useAssetsInZone(
+  zoneId: string | undefined,
+  params?: { limit?: number; offset?: number },
+) {
+  return useQuery({
+    queryKey: ['zones', zoneId, 'assets', params],
+    queryFn: () =>
+      SitesZonesService.listAssetsInZoneZonesZoneIdAssetsGet(
+        zoneId!,
+        params?.limit ?? 200,
+        params?.offset ?? 0,
+      ),
+    enabled: Boolean(zoneId),
+  });
+}

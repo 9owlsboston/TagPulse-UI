@@ -6,16 +6,17 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ### Added
 - **Sprint 15 — Phase F: Assets, Sites & Zones UI**
-  - New hook module `src/hooks/useAssets.ts` — `useAssets`, `useAsset`, `useCreateAsset`, `useUpdateAsset`, `useRetireAsset`, `useAssetBindings`, `useBindTag`, `useUnbindTag`, `useAssetExternalPositions`, `useTagReadsForBinding` (path approximation while `/assets/{id}/path` is roadmap-deferred), `useSites`, `useSite`, `useCreateSite`, `useUpdateSite`, `useDeleteSite`, `useZones`, `useCreateZone`, `useUpdateZone`, `useDeleteZone`. All wrap the generated `AssetsService` / `SitesZonesService` with consistent react-query cache keys.
+  - New hook module `src/hooks/useAssets.ts` — `useAssets`, `useAsset`, `useCreateAsset`, `useUpdateAsset`, `useRetireAsset`, `useAssetBindings`, `useBindTag`, `useUnbindTag`, `useAssetExternalPositions`, `useTagReadsForBinding` (legacy fallback), `useAssetCurrentLocation`, `useAssetPath`, `useAssetsInZone`, `useSites`, `useSite`, `useCreateSite`, `useUpdateSite`, `useDeleteSite`, `useZones`, `useCreateZone`, `useUpdateZone`, `useDeleteZone`. All wrap the generated `AssetsService` / `SitesZonesService` with consistent react-query cache keys.
   - **Pages**:
     - `pages/assets/AssetList.tsx` — searchable list (name / external_ref / tag), status filter, "Register Asset" modal (editor+).
-    - `pages/assets/AssetDetail.tsx` — Overview (descriptions + current-location card), Bindings tab (active + history with bind / unbind, editor+), Recent Path tab (merged 24 h timeline of RFID reader hops via the active binding's tag-reads, plus external positions from `/assets/{id}/external-positions`, **badged by source** per [mobile-carriers-and-manifests.md §10 Q5](../TagPulse/docs/design/mobile-carriers-and-manifests.md)).
-    - `pages/assets/SitesZones.tsx` — collapsible site list (admin), per-site zone table with multi-select reader picker from the device registry, create / delete site & zone modals.
+    - `pages/assets/AssetDetail.tsx` — Overview (descriptions + current-location card now driven by `useAssetCurrentLocation`), Bindings tab (active + history with bind / unbind, editor+), Recent Path tab — prefers the server-merged `useAssetPath` (RFID + external in one query) and falls back to the legacy client-side merge. Sources are **badged** (RFID vs `latest_position_source` external) per [mobile-carriers-and-manifests.md §10 Q5](../TagPulse/docs/design/mobile-carriers-and-manifests.md).
+    - `pages/assets/SitesZones.tsx` — collapsible site list (admin), per-site zone table with multi-select reader picker from the device registry, create / delete site & zone modals. New per-zone **Occupants** modal backed by `useAssetsInZone` showing assets currently in the zone.
   - **Device detail** — new "Covers Zones" panel listing zones whose `fixed_reader_ids` include this device.
   - **Dashboard** — new **Active Assets** KPI tile (gated by `tenants.tracking_modes` containing `asset`).
   - **Sidebar** — new **Assets** + **Sites & Zones** entries (gated by `tracking_modes` containing `asset`); Sites & Zones writes are admin-only.
   - **Routes** — `/assets`, `/assets/:id`, `/sites`.
-  - Smoke tests in `src/pages/assets/Assets.test.tsx` for `AssetList` and `SitesZones`. **36 passing total.**
+  - Regenerated typed API client (new `AssetCurrentLocation`, `AssetPathPoint`, `AssetInZoneSummary` models; new `getAssetCurrentLocation*`, `getAssetPath*`, `listAssetsInZone*` methods).
+  - Smoke tests in `src/pages/assets/Assets.test.tsx` for `AssetList` and `SitesZones` — updated mocks for `useAssetsInZone`. **36 passing total.**
 
 
   - New hook `src/hooks/useTenantConfig.ts` — `useTenantConfig` + `useUpdateTenantConfig` wrap `GET/PATCH /tenant/config`.

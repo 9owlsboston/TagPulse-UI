@@ -60,6 +60,7 @@ vi.mock('@/hooks/useAssets', () => ({
   useCreateZone: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteSite: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteZone: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAssetsInZone: () => ({ data: [], isLoading: false }),
 }));
 
 vi.mock('@/hooks/useDevices', () => ({

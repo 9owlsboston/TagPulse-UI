@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
+  useAssetsInZone,
   useCreateSite,
   useCreateZone,
   useDeleteSite,
@@ -44,6 +45,7 @@ export function SitesZones() {
 
   const [siteModalOpen, setSiteModalOpen] = useState(false);
   const [zoneModalSiteId, setZoneModalSiteId] = useState<string | null>(null);
+  const [occupantsZone, setOccupantsZone] = useState<ZoneResponse | null>(null);
   const [siteForm] = Form.useForm<SiteCreate>();
   const [zoneForm] = Form.useForm<ZoneCreate>();
 
@@ -196,16 +198,25 @@ export function SitesZones() {
                       },
                       {
                         title: '',
-                        width: 60,
-                        render: (_, row) =>
-                          isAdmin ? (
+                        width: 160,
+                        render: (_, row) => (
+                          <Space>
                             <Button
                               size="small"
-                              danger
-                              icon={<DeleteOutlined />}
-                              onClick={() => handleDeleteZone(row)}
-                            />
-                          ) : null,
+                              onClick={() => setOccupantsZone(row)}
+                            >
+                              Occupants
+                            </Button>
+                            {isAdmin ? (
+                              <Button
+                                size="small"
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={() => handleDeleteZone(row)}
+                              />
+                            ) : null}
+                          </Space>
+                        ),
                       },
                     ]}
                   />
@@ -276,6 +287,59 @@ export function SitesZones() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <ZoneOccupantsModal
+        zone={occupantsZone}
+        onClose={() => setOccupantsZone(null)}
+      />
     </div>
+  );
+}
+
+function ZoneOccupantsModal({
+  zone,
+  onClose,
+}: {
+  zone: ZoneResponse | null;
+  onClose: () => void;
+}) {
+  const { data, isLoading } = useAssetsInZone(zone?.id);
+  return (
+    <Modal
+      title={zone ? `Assets in "${zone.name}"` : 'Assets in zone'}
+      open={zone !== null}
+      onCancel={onClose}
+      footer={null}
+      width={720}
+    >
+      <Table
+        rowKey="asset_id"
+        loading={isLoading}
+        dataSource={data ?? []}
+        pagination={false}
+        size="small"
+        locale={{ emptyText: 'No assets currently in this zone.' }}
+        columns={[
+          { title: 'Name', dataIndex: 'name' },
+          {
+            title: 'Type',
+            dataIndex: 'asset_type',
+            width: 110,
+            render: (v: string) => <Tag>{v}</Tag>,
+          },
+          {
+            title: 'Tag',
+            dataIndex: 'binding_value',
+            ellipsis: true,
+          },
+          {
+            title: 'Last Seen',
+            dataIndex: 'last_seen_at',
+            width: 190,
+            render: (v: string) => new Date(v).toLocaleString(),
+          },
+        ]}
+      />
+    </Modal>
   );
 }

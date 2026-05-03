@@ -20,7 +20,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import {
   useAsset,
   useAssetBindings,
+  useAssetCurrentLocation,
   useAssetExternalPositions,
+  useAssetPath,
   useBindTag,
   useRetireAsset,
   useTagReadsForBinding,
@@ -69,6 +71,17 @@ export function AssetDetail() {
     limit: 100,
   });
   const { data: externalPositions } = useAssetExternalPositions(id, 50);
+  // Server-side: latest known position (RFID or external — whichever is
+  // newer). 404s render as `undefined` and we fall back to the synthesised
+  // timeline below for backwards compatibility.
+  const { data: currentLocation } = useAssetCurrentLocation(id);
+  // Server-side merged path (preferred over the legacy client-side merge).
+  const untilIso = useMemo(() => new Date().toISOString(), []);
+  const { data: pathPoints } = useAssetPath(id, {
+    since: sinceIso,
+    until: untilIso,
+    limit: 500,
+  });
 
   if (isLoading || !asset) return <Spin size="large" />;
 
@@ -122,7 +135,22 @@ export function AssetDetail() {
     sourceLabel: string;
     location: string;
   };
-  const timeline: TimelineRow[] = [
+  const serverTimeline: TimelineRow[] = (pathPoints ?? []).map((p, i) => ({
+    key: `p-${i}-${p.recorded_at}`,
+    at: p.recorded_at,
+    source: p.source === 'rfid' ? 'rfid' : 'external',
+    sourceLabel:
+      p.source === 'rfid'
+        ? p.device_id
+          ? deviceById.get(p.device_id)?.name ??
+            `device:${p.device_id.slice(0, 8)}`
+          : 'RFID'
+        : p.source,
+    location: `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}${
+      p.device_id ? ` · zone: ${zoneForDevice(p.device_id)}` : ''
+    }`,
+  }));
+  const fallbackTimeline: TimelineRow[] = [
     ...(recentReads ?? []).map((r, i) => ({
       key: `r-${i}-${r.timestamp}`,
       at: r.timestamp,
@@ -141,6 +169,12 @@ export function AssetDetail() {
       location: `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`,
     })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
+  // Prefer the server-side merged path when populated; otherwise fall back to
+  // the local merge (covers the case where pathPoints is still loading).
+  const timeline: TimelineRow[] =
+    serverTimeline.length > 0
+      ? [...serverTimeline].sort((a, b) => (a.at < b.at ? 1 : -1))
+      : fallbackTimeline;
 
   const tabItems = [
     {
@@ -177,7 +211,39 @@ export function AssetDetail() {
 
           <Title level={5} style={{ marginTop: 24 }}>Current Location</Title>
           <Card size="small">
-            {timeline[0] ? (
+            {currentLocation ? (
+              <Space direction="vertical">
+                <Text>
+                  <strong>Source:</strong>{' '}
+                  <Tag
+                    color={
+                      currentLocation.latest_position_source === 'rfid'
+                        ? 'blue'
+                        : 'purple'
+                    }
+                  >
+                    {currentLocation.latest_position_source === 'rfid'
+                      ? 'RFID'
+                      : `External · ${currentLocation.latest_position_source}`}
+                  </Tag>
+                </Text>
+                <Text>
+                  <strong>Where:</strong>{' '}
+                  {currentLocation.latitude.toFixed(5)},{' '}
+                  {currentLocation.longitude.toFixed(5)}
+                  {currentLocation.device_id
+                    ? ` · via ${
+                        deviceById.get(currentLocation.device_id)?.name ??
+                        `device:${currentLocation.device_id.slice(0, 8)}`
+                      }`
+                    : ''}
+                </Text>
+                <Text type="secondary">
+                  Last seen:{' '}
+                  {new Date(currentLocation.recorded_at).toLocaleString()}
+                </Text>
+              </Space>
+            ) : timeline[0] ? (
               <Space direction="vertical">
                 <Text>
                   <strong>Source:</strong>{' '}

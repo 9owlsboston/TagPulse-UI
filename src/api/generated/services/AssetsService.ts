@@ -3,7 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { AssetCreate } from '../models/AssetCreate';
+import type { AssetCurrentLocation } from '../models/AssetCurrentLocation';
 import type { AssetLoadRequest } from '../models/AssetLoadRequest';
+import type { AssetPathPoint } from '../models/AssetPathPoint';
 import type { AssetResponse } from '../models/AssetResponse';
 import type { AssetTagBindingCreate } from '../models/AssetTagBindingCreate';
 import type { AssetTagBindingResponse } from '../models/AssetTagBindingResponse';
@@ -205,6 +207,27 @@ export class AssetsService {
         });
     }
     /**
+     * Get Asset Current Location
+     * Latest known position for the asset, sourced from RFID or external feeds.
+     * @param assetId
+     * @returns AssetCurrentLocation Successful Response
+     * @throws ApiError
+     */
+    public static getAssetCurrentLocationAssetsAssetIdCurrentLocationGet(
+        assetId: string,
+    ): CancelablePromise<AssetCurrentLocation> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/current-location',
+            path: {
+                'asset_id': assetId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Record External Position
      * Record a non-RFID position fix (TMS push, manual check-in, etc.).
      * @param assetId
@@ -297,6 +320,38 @@ export class AssetsService {
             url: '/assets/{asset_id}/manifest',
             path: {
                 'asset_id': assetId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Asset Path
+     * Merged RFID + external-fix timeline for the asset, ascending by time.
+     * @param assetId
+     * @param since
+     * @param until
+     * @param limit
+     * @returns AssetPathPoint Successful Response
+     * @throws ApiError
+     */
+    public static getAssetPathAssetsAssetIdPathGet(
+        assetId: string,
+        since: string,
+        until: string,
+        limit: number = 1000,
+    ): CancelablePromise<Array<AssetPathPoint>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/path',
+            path: {
+                'asset_id': assetId,
+            },
+            query: {
+                'since': since,
+                'until': until,
+                'limit': limit,
             },
             errors: {
                 422: `Validation Error`,
