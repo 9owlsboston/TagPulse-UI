@@ -27,11 +27,20 @@ function GeneralTab() {
     setInventory(data.tracking_modes.includes('inventory'));
   }, [data]);
 
+  // Prevent the user from turning off the last enabled mode — the backend
+  // rejects an empty `tracking_modes` array (see Pydantic validator) and the
+  // UI sidebar would have nothing to show. We disable the lone-on switch so
+  // the invalid state can never be reached, even before Save.
+  const onlyAssetOn = asset && !inventory;
+  const onlyInventoryOn = inventory && !asset;
+
   const onSave = async () => {
     const modes: Mode[] = [];
     if (asset) modes.push('asset');
     if (inventory) modes.push('inventory');
     if (modes.length === 0) {
+      // Defense in depth — the disabled switches above should make this
+      // unreachable, but keep the guard in case state ever desyncs.
       message.error('At least one tracking mode must remain enabled');
       return;
     }
@@ -52,11 +61,17 @@ function GeneralTab() {
         message="Toggling a mode shows or hides the matching sidebar pages and ingestion enrichments. At least one mode must stay on."
       />
       <Form layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 6 }}>
-        <Form.Item label="Asset tracking">
-          <Switch checked={asset} onChange={setAsset} />
+        <Form.Item
+          label="Asset tracking"
+          help={onlyAssetOn ? 'Enable inventory first to disable asset tracking.' : undefined}
+        >
+          <Switch checked={asset} disabled={onlyAssetOn} onChange={setAsset} />
         </Form.Item>
-        <Form.Item label="Inventory tracking">
-          <Switch checked={inventory} onChange={setInventory} />
+        <Form.Item
+          label="Inventory tracking"
+          help={onlyInventoryOn ? 'Enable asset first to disable inventory tracking.' : undefined}
+        >
+          <Switch checked={inventory} disabled={onlyInventoryOn} onChange={setInventory} />
         </Form.Item>
         <Form.Item wrapperCol={{ offset: 6 }}>
           <Button type="primary" onClick={onSave} loading={update.isPending}>
