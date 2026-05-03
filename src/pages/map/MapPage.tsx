@@ -12,20 +12,24 @@ import {
   Card,
   Checkbox,
   Empty,
+  Modal,
   Slider,
   Space,
   Spin,
   Tag,
+  Tree,
   Typography,
 } from 'antd';
 import { Link } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-import { useAssets, useAssetCurrentLocation, useAssetPath, useZones } from '@/hooks/useAssets';
+import { useAssets, useAssetCurrentLocation, useAssetManifest, useAssetPath, useZones } from '@/hooks/useAssets';
+import { useStockLevels } from '@/hooks/useInventory';
 import { useMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
+import type { ManifestEntry } from '@/api/generated/models/ManifestEntry';
 
 const { Title, Text } = Typography;
 
@@ -57,12 +61,15 @@ const PATH_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13
 export function MapPage() {
   const { data: assets, isLoading: assetsLoading } = useAssets({ status: 'active', limit: 500 });
   const { data: zones, isLoading: zonesLoading } = useZones();
+  const { data: stockLevels } = useStockLevels();
   const { data: mapConfigData } = useMapConfig();
   const mapConfig = mapConfigData ?? OSM_FALLBACK;
 
   const [showZones, setShowZones] = useState(true);
   const [showAssets, setShowAssets] = useState(true);
+  const [showStockDensity, setShowStockDensity] = useState(false);
   const [replayMinutesAgo, setReplayMinutesAgo] = useState(0); // 0 = live, max 1440 (24h)
+  const [manifestAsset, setManifestAsset] = useState<AssetResponse | null>(null);
 
   const polygonZones = useMemo(
     () =>
@@ -70,6 +77,21 @@ export function MapPage() {
         (z) => z.kind === 'geofence' && polygonLatLngs(z.polygon_geojson),
       ),
     [zones],
+  );
+
+  // Stock-density: aggregate `quantity` per `zone_id`, then map to polygon
+  // overlay opacity. Density layer only renders for geofence zones (the ones
+  // we can actually paint as polygons).
+  const stockByZone = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const row of stockLevels ?? []) {
+      if (row.zone_id) m.set(row.zone_id, (m.get(row.zone_id) ?? 0) + row.quantity);
+    }
+    return m;
+  }, [stockLevels]);
+  const stockMax = useMemo(
+    () => Math.max(0, ...Array.from(stockByZone.values())),
+    [stockByZone],
   );
 
   // Pick a default center: first zone bbox centroid, else a nominal start.
@@ -88,6 +110,7 @@ export function MapPage() {
         <Space>
           <Checkbox checked={showAssets} onChange={(e) => setShowAssets(e.target.checked)}>Assets</Checkbox>
           <Checkbox checked={showZones} onChange={(e) => setShowZones(e.target.checked)}>Zones</Checkbox>
+          <Checkbox checked={showStockDensity} onChange={(e) => setShowStockDensity(e.target.checked)}>Stock density</Checkbox>
         </Space>
       </div>
 
@@ -106,16 +129,31 @@ export function MapPage() {
                 />
                 {showZones && polygonZones.map((z) => {
                   const latlngs = polygonLatLngs(z.polygon_geojson)!;
+                  const qty = stockByZone.get(z.id) ?? 0;
+                  const densityFill = showStockDensity && stockMax > 0
+                    ? Math.min(0.65, 0.1 + 0.55 * (qty / stockMax))
+                    : 0.15;
+                  const densityColor = showStockDensity && qty > 0 ? '#fa541c' : '#1677ff';
                   return (
                     <Polygon
                       key={z.id}
                       positions={latlngs}
-                      pathOptions={{ color: '#1677ff', fillOpacity: 0.15 }}
+                      pathOptions={{ color: densityColor, fillOpacity: densityFill }}
                     >
                       <Popup>
                         <strong>{z.name}</strong><br />
                         <Tag>{z.kind}</Tag>
+                        {showStockDensity && (
+                          <div style={{ marginTop: 4 }}>
+                            <Text>Stock units: <strong>{qty.toLocaleString()}</strong></Text>
+                          </div>
+                        )}
                       </Popup>
+                      {showStockDensity && qty > 0 && (
+                        <Tooltip permanent direction="center" className="stock-density-label">
+                          {qty.toLocaleString()}
+                        </Tooltip>
+                      )}
                     </Polygon>
                   );
                 })}
@@ -125,6 +163,7 @@ export function MapPage() {
                     asset={a}
                     replayMinutesAgo={replayMinutesAgo}
                     pathColor={PATH_COLORS[idx % PATH_COLORS.length] ?? '#1677ff'}
+                    onOpenManifest={() => setManifestAsset(a)}
                   />
                 ))}
               </MapContainer>
@@ -158,6 +197,8 @@ export function MapPage() {
           </>
         )}
       </Card>
+
+      <ManifestPopout asset={manifestAsset} onClose={() => setManifestAsset(null)} />
     </div>
   );
 }
@@ -166,9 +207,10 @@ interface AssetMarkerProps {
   asset: AssetResponse;
   replayMinutesAgo: number;
   pathColor: string;
+  onOpenManifest: () => void;
 }
 
-function AssetMarker({ asset, replayMinutesAgo, pathColor }: AssetMarkerProps) {
+function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: AssetMarkerProps) {
   const { data: location } = useAssetCurrentLocation(asset.id);
 
   // For replay mode, fetch the last 24h path and pick the point closest to
@@ -206,6 +248,17 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor }: AssetMarkerProps) {
           <div style={{ marginTop: 4 }}>
             <Link to={`/assets/${asset.id}`}>Open detail →</Link>
           </div>
+          <div style={{ marginTop: 4 }}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onOpenManifest();
+              }}
+            >
+              View manifest →
+            </a>
+          </div>
           {replayMinutesAgo > 0 && (
             <div style={{ marginTop: 4, fontSize: 11, color: '#888' }}>
               Position at ~{replayMinutesAgo} min ago
@@ -226,3 +279,77 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor }: AssetMarkerProps) {
   );
 }
 
+
+interface ManifestPopoutProps {
+  asset: AssetResponse | null;
+  onClose: () => void;
+}
+
+function manifestToTreeData(entry: ManifestEntry): { title: React.ReactNode; key: string; children?: ReturnType<typeof manifestToTreeData>[] } {
+  return {
+    key: entry.asset_id,
+    title: (
+      <Space size="small">
+        <Link to={`/assets/${entry.asset_id}`}>{entry.name}</Link>
+        <Tag>{entry.asset_type}</Tag>
+      </Space>
+    ),
+    children: (entry.children ?? []).map(manifestToTreeData),
+  };
+}
+
+function ManifestPopout({ asset, onClose }: ManifestPopoutProps) {
+  const { data, isLoading, error } = useAssetManifest(asset?.id);
+
+  const tree = useMemo(() => {
+    if (!data) return [];
+    return [
+      {
+        key: data.asset_id,
+        title: (
+          <Space>
+            <strong><Link to={`/assets/${data.asset_id}`}>{data.name}</Link></strong>
+            <Tag color="blue">{data.asset_type}</Tag>
+          </Space>
+        ),
+        children: (data.children ?? []).map(manifestToTreeData),
+      },
+    ];
+  }, [data]);
+
+  const childCount = useMemo(() => {
+    if (!data?.children) return 0;
+    let n = 0;
+    const walk = (entries: ManifestEntry[]) => {
+      for (const e of entries) {
+        n += 1;
+        if (e.children) walk(e.children);
+      }
+    };
+    walk(data.children);
+    return n;
+  }, [data]);
+
+  return (
+    <Modal
+      open={asset !== null}
+      onCancel={onClose}
+      footer={null}
+      width={520}
+      title={asset ? `Manifest — ${asset.name}` : 'Manifest'}
+    >
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+      ) : error ? (
+        <Empty description="No manifest available for this asset" />
+      ) : !data || (data.children ?? []).length === 0 ? (
+        <Empty description="This asset is not carrying any child assets" />
+      ) : (
+        <>
+          <Text type="secondary">{childCount} child asset{childCount === 1 ? '' : 's'}</Text>
+          <Tree treeData={tree} defaultExpandAll showLine style={{ marginTop: 12 }} />
+        </>
+      )}
+    </Modal>
+  );
+}

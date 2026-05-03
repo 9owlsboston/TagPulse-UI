@@ -9,6 +9,11 @@ vi.mock('@/hooks/useAssets', () => ({
   useZones: () => ({ data: [], isLoading: false }),
   useAssetCurrentLocation: () => ({ data: null }),
   useAssetPath: () => ({ data: [] }),
+  useAssetManifest: () => ({ data: null, isLoading: false, error: null }),
+}));
+
+vi.mock('@/hooks/useInventory', () => ({
+  useStockLevels: () => ({ data: [] }),
 }));
 
 vi.mock('@/hooks/useMapConfig', () => ({
@@ -30,6 +35,7 @@ vi.mock('react-leaflet', () => ({
   Polygon: () => null,
   Popup: () => null,
   CircleMarker: () => null,
+  Tooltip: () => null,
   useMapEvents: () => null,
 }));
 

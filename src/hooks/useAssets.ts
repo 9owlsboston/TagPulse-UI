@@ -279,3 +279,13 @@ export function useAssetsInZone(
     enabled: Boolean(zoneId),
   });
 }
+
+/** Sprint 17a — recursive carrier manifest for the Map pop-out. */
+export function useAssetManifest(assetId: string | undefined) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'manifest'],
+    queryFn: () => AssetsService.getManifestAssetsAssetIdManifestGet(assetId!),
+    enabled: Boolean(assetId),
+    retry: false,
+  });
+}
