@@ -14,6 +14,7 @@ export type DeviceResponse = {
     id: string;
     last_seen: (string | null);
     metadata: (Record<string, any> | null);
+    mobility?: string;
     name: string;
     status: string;
     updated_at: string;

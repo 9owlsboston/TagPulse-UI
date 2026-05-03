@@ -5,6 +5,21 @@ All notable changes to TagPulse-UI will be documented in this file.
 ## Unreleased
 
 ### Added
+- **Sprint 15b — Phase F: Inventory UI**
+  - Regenerated typed API client from backend `openapi.json` — adds `InventoryService`, `SitesZonesService`, `AssetsService`, plus `Product*`, `Lot*`, `StockItem*`, `StockLevelRow`, `StockMovementResponse`, `TagDataMapping*` models.
+  - New hook module `src/hooks/useInventory.ts` — `useProducts`, `useProduct`, `useCreateProduct`, `useUpdateProduct`, `useDeleteProduct`, `useLots`, `useCreateLot`, `useStockLevels`, `useStockMovements`, `useTagDataMappings`, `useCreateTagDataMapping`, `useDeleteTagDataMapping`. All wrap the generated `InventoryService` with consistent react-query cache keys.
+  - **Pages**:
+    - `pages/inventory/ProductList.tsx` — searchable catalog table, click-through to detail, "New Product" modal (editor+).
+    - `pages/inventory/ProductDetail.tsx` — header descriptions, **stock-by-zone bar chart** (Recharts), Lots sub-section with expiry colour-coding (red < today, orange < 7 d) and "New Lot" modal.
+    - `pages/inventory/StockLevels.tsx` — pivot grid (product × zone × total) with `unassigned` bucket for nulls, **CSV export** (`stock-levels.csv`).
+    - `pages/inventory/StockMovements.tsx` — chronological ledger filtered by product/zone/time range, movement-type colour tags (enter/exit/transfer/consume).
+    - `pages/inventory/TagDataMappings.tsx` (admin) — list, scope-aware create modal (tenant vs product), delete with confirm.
+  - **Rule wizard extension** (`pages/rules/RuleEditor.tsx`) — new condition steps for `stock.below_threshold`, `stock.expiring_within`, `stock.unexpected_in_zone` with product/zone selectors backed by inventory + zones APIs.
+  - **Sidebar** — Products, Stock Levels, Stock Movements (viewer+) and Tag-data Mappings (admin) menu entries.
+  - **Routes** — `/inventory/products`, `/inventory/products/:id`, `/inventory/stock-levels`, `/inventory/stock-movements`, `/admin/tag-data-mappings`.
+  - `ConditionType` union extended with the three `stock.*` literals.
+  - Smoke tests in `src/pages/inventory/Inventory.test.tsx` for `ProductList` rendering and `StockLevels` pivot aggregation. **34 passing total.**
+
 - **Sprint 14 (1/2) — Device detail: Telemetry & Location tabs**
   - Type extensions for migration 016: `TagReadResponse` gains optional `latitude`, `longitude`, `location_accuracy_m`, `location_source`, `epc`, `epc_hex`, `epc_scheme`, `epc_decoded`, `tid`, `user_memory_hex`, `tag_data`, `reader_antenna`. New `Location`, `Identity`, `LocationSource`, `DeviceTelemetryReading`, `TelemetryReadingCreate`, `TelemetryBatch` types.
   - New API surface: `telemetryApi.list()` → `GET /telemetry` (filterable by device + metric + time range) and `useDeviceTelemetry()` hook.

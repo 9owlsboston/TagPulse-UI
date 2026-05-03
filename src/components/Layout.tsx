@@ -9,6 +9,10 @@ import {
   BarChartOutlined,
   DatabaseOutlined,
   TeamOutlined,
+  ShoppingOutlined,
+  AppstoreOutlined,
+  SwapOutlined,
+  TagsOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +29,10 @@ const ALL_MENU_ITEMS = [
   { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' as const },
   { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' as const },
   { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' as const },
+  { key: '/inventory/products', icon: <ShoppingOutlined />, label: 'Products', minRole: 'viewer' as const },
+  { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer' as const },
+  { key: '/inventory/stock-movements', icon: <SwapOutlined />, label: 'Stock Movements', minRole: 'viewer' as const },
+  { key: '/admin/tag-data-mappings', icon: <TagsOutlined />, label: 'Tag-data Mappings', minRole: 'admin' as const },
   { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage', minRole: 'admin' as const },
   { key: '/admin/users', icon: <TeamOutlined />, label: 'Users', minRole: 'admin' as const },
 ];

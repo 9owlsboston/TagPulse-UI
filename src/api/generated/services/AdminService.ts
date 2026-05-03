@@ -103,6 +103,31 @@ export class AdminService {
         });
     }
     /**
+     * Get Tag Collisions
+     * Return cross-tenant collision count for a binding_value.
+     *
+     * Per docs/design/assets-and-zones.md §11 Q3: returns only the count of
+     * *other* tenants with an active binding for this value, never their
+     * identities. Increments ``tagpulse_tag_collisions_global_total``.
+     * @param bindingValue
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getTagCollisionsAdminTagCollisionsGet(
+        bindingValue: string,
+    ): CancelablePromise<Record<string, any>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/admin/tag-collisions',
+            query: {
+                'binding_value': bindingValue,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Usage
      * Get daily usage records for the authenticated tenant.
      * @param start

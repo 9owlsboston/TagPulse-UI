@@ -19,6 +19,11 @@ import { UsageDashboard } from '@/pages/admin/UsageDashboard';
 import { UserList } from '@/pages/admin/UserList';
 import { UserCreatePage } from '@/pages/admin/UserCreatePage';
 import { UserDetail } from '@/pages/admin/UserDetail';
+import { ProductList } from '@/pages/inventory/ProductList';
+import { ProductDetail } from '@/pages/inventory/ProductDetail';
+import { StockLevels } from '@/pages/inventory/StockLevels';
+import { StockMovements } from '@/pages/inventory/StockMovements';
+import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +55,11 @@ export function App() {
                 <Route path="/alerts" element={<AlertHistory />} />
                 <Route path="/integrations" element={<IntegrationList />} />
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
+                <Route path="/inventory/products" element={<ProductList />} />
+                <Route path="/inventory/products/:id" element={<ProductDetail />} />
+                <Route path="/inventory/stock-levels" element={<StockLevels />} />
+                <Route path="/inventory/stock-movements" element={<StockMovements />} />
+                <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
                 <Route path="/admin/users" element={<UserList />} />
                 <Route path="/admin/users/new" element={<UserCreatePage />} />

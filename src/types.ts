@@ -114,7 +114,13 @@ export interface DeviceHealthSummary {
 
 // ── Rules ──
 
-export type ConditionType = 'threshold' | 'absence' | 'rate_change';
+export type ConditionType =
+  | 'threshold'
+  | 'absence'
+  | 'rate_change'
+  | 'stock.below_threshold'
+  | 'stock.expiring_within'
+  | 'stock.unexpected_in_zone';
 export type ActionType = 'webhook' | 'email' | 'notification';
 
 export interface RuleCreate {
