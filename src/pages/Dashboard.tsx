@@ -6,6 +6,7 @@ import {
   AlertOutlined,
   WarningOutlined,
   EnvironmentOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -17,6 +18,8 @@ import { useReadsPerHour, useTagReads } from '@/hooks/useTagReads';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useDeviceHealthList } from '@/hooks/useDeviceHealth';
 import { useReadFrequency } from '@/hooks/useAnalytics';
+import { useAssets } from '@/hooks/useAssets';
+import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useSSE } from '@/lib/sse';
 
 const { Title } = Typography;
@@ -29,6 +32,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'kpi-alerts', x: 6, y: 0, w: 3, h: 2 },
     { i: 'kpi-anomalies', x: 9, y: 0, w: 3, h: 2 },
     { i: 'kpi-location', x: 0, y: 2, w: 3, h: 2 },
+    { i: 'kpi-assets', x: 3, y: 2, w: 3, h: 2 },
     { i: 'recent-alerts', x: 0, y: 4, w: 6, h: 5 },
     { i: 'device-health', x: 6, y: 4, w: 6, h: 5 },
     { i: 'live-counter', x: 0, y: 9, w: 12, h: 2 },
@@ -57,6 +61,9 @@ export function Dashboard() {
   // Client-side aggregation against the existing tag-reads endpoint; can be
   // promoted to a dedicated server endpoint if cardinality grows.
   const locationReadsQuery = useTagReads({ start: last24hStart, limit: 1000 });
+  const { data: tenantConfig } = useTenantConfig();
+  const assetModeEnabled = (tenantConfig?.tracking_modes ?? ['asset']).includes('asset');
+  const activeAssetsQuery = useAssets({ status: 'active', limit: 1000 });
   const [liveCount, setLiveCount] = useState(0);
 
   useSSE(SSE_EVENTS, SSE_QUERY_KEYS, () => setLiveCount((c) => c + 1));
@@ -113,6 +120,16 @@ export function Dashboard() {
             loading={locationReadsQuery.isLoading}
           />
         </div>
+        {assetModeEnabled && (
+          <div key="kpi-assets">
+            <KpiTile
+              title="Active Assets"
+              value={activeAssetsQuery.data?.length ?? 0}
+              prefix={<TagOutlined />}
+              loading={activeAssetsQuery.isLoading}
+            />
+          </div>
+        )}
         <div key="recent-alerts" style={{ overflow: 'auto' }}>
           <Title level={4}>Recent Alerts</Title>
           {alertsQuery.isLoading ? (

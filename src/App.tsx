@@ -25,6 +25,9 @@ import { StockLevels } from '@/pages/inventory/StockLevels';
 import { StockMovements } from '@/pages/inventory/StockMovements';
 import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
 import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
+import { AssetList } from '@/pages/assets/AssetList';
+import { AssetDetail } from '@/pages/assets/AssetDetail';
+import { SitesZones } from '@/pages/assets/SitesZones';
 import { TenantSettings } from '@/pages/admin/TenantSettings';
 
 const queryClient = new QueryClient({
@@ -57,6 +60,9 @@ export function App() {
                 <Route path="/alerts" element={<AlertHistory />} />
                 <Route path="/integrations" element={<IntegrationList />} />
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
+                <Route path="/assets" element={<AssetList />} />
+                <Route path="/assets/:id" element={<AssetDetail />} />
+                <Route path="/sites" element={<SitesZones />} />
                 <Route path="/inventory/products" element={<ProductList />} />
                 <Route path="/inventory/products/:id" element={<ProductDetail />} />
                 <Route path="/inventory/lots" element={<LotExpiryQueue />} />

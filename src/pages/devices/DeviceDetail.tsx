@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography } from 'antd';
+import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space } from 'antd';
 import { useDevice, useDecommissionDevice } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
+import { useZones } from '@/hooks/useAssets';
 import { DeviceTelemetryTab } from '@/pages/devices/DeviceTelemetryTab';
 import { DeviceLocationTab } from '@/pages/devices/DeviceLocationTab';
 
@@ -15,6 +16,7 @@ export function DeviceDetail() {
   const { data: device, isLoading } = useDevice(id!);
   const { data: recentReads } = useRecentReads(id!, 100);
   const { data: health } = useDeviceHealth(id!);
+  const { data: zones } = useZones();
   const decommission = useDecommissionDevice();
 
   if (isLoading || !device) return <Spin size="large" />;
@@ -32,6 +34,10 @@ export function DeviceDetail() {
   };
 
   const lastRead = recentReads?.[0];
+
+  const coveredZones = (zones ?? []).filter((z) =>
+    (z.fixed_reader_ids ?? []).includes(device.id),
+  );
 
   const tabItems = [
     {
@@ -86,6 +92,18 @@ export function DeviceDetail() {
             </Descriptions>
           ) : (
             <Typography.Text type="secondary">No reads yet</Typography.Text>
+          )}
+          <Title level={5} style={{ marginTop: 24 }}>Covers Zones</Title>
+          {coveredZones.length > 0 ? (
+            <Space size={[4, 4]} wrap>
+              {coveredZones.map((z) => (
+                <Tag color="blue" key={z.id}>{z.name}</Tag>
+              ))}
+            </Space>
+          ) : (
+            <Typography.Text type="secondary">
+              This device is not assigned to any zone.
+            </Typography.Text>
           )}
         </>
       ),
