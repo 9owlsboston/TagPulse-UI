@@ -279,6 +279,20 @@ export interface TelemetryBatch {
   readings: TelemetryReadingCreate[];
 }
 
+// ── Telemetry Quarantine (Sprint 14) ──
+
+export type QuarantineReason = 'unknown_metric' | 'out_of_range' | 'unit_mismatch' | 'stale_timestamp';
+
+export interface TelemetryQuarantineEntry {
+  id: string;
+  device_id: string;
+  received_at: string;
+  metric_name: string;
+  metric_value: number | null;
+  raw_payload: Record<string, unknown>;
+  reason: QuarantineReason;
+}
+
 // ── Usage ──
 
 export interface UsageRecord {

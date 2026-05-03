@@ -12,6 +12,19 @@ All notable changes to TagPulse-UI will be documented in this file.
   - Device detail **Telemetry tab — rebuilt**: per-`metric_name` selector populated from the device's telemetry model; time-range picker; unit-aware Y-axis label; model min/max applied to Y domain; "source: tag" badge with count when readings carry `metadata.source='tag'` (per [rfid-tag-data-model.md §7](../TagPulse/docs/design/rfid-tag-data-model.md)). Empty-state when no model is defined for the device type.
   - Device detail **new Location tab**: last-known lat/lon descriptions panel; Leaflet mini-map with OSM tiles (provider-agnostic resolver lands in Sprint 17a per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md)); marker popup + accuracy radius `Circle` when `location_accuracy_m` is present; default Leaflet marker icon paths rewired to imported assets (Vite-safe).
   - New deps: `leaflet`, `react-leaflet`, `@types/leaflet` (~40 KB gzip per ADR-007).
+- **Sprint 14 (2/2) — Data Explorer / Dashboard / Quarantine / Rule wizard**
+  - New types: `TelemetryQuarantineEntry` and `QuarantineReason` (`unknown_metric` | `out_of_range` | `unit_mismatch` | `stale_timestamp`).
+  - API: `telemetryApi.quarantine()` → `GET /telemetry/quarantine` (filterable by reason); `useTelemetryQuarantine()` hook.
+  - **Data Explorer** surfaces the new tag fields:
+    - New columns: `EPC`, `Scheme`, `TID`, `Latitude`, `Longitude` (lat/lon to 5 decimals).
+    - New filters: **"Has location"** checkbox (client-side), **EPC Scheme** selector (sgtin-96/198, sscc-96, giai-96/202, grai-96/170, raw).
+    - CSV export now includes `epc`, `epc_scheme`, `tid`, `latitude`, `longitude`, `location_accuracy_m`, `location_source` and quotes fields containing commas/quotes/newlines.
+  - **Overview dashboard KPI tile** — "Devices reporting location (24h)": distinct device IDs with at least one geotagged read in the last 24 h, computed client-side from `/tag-reads?start=…` (limit 1000). Ready for server-side promotion when cardinality grows.
+  - **Telemetry Models — quarantine panel** (admin-only per design Decision #3):
+    - Tag chips show counts per reason.
+    - Reason filter selector.
+    - Expandable rows reveal the raw payload JSON.
+  - **Rule wizard — threshold field hints**: "Field" input is now an `AutoComplete` populated with `signal_strength`, every `metric_name` from every telemetry model (with unit + device_type), and a `tag_data.<key>` placeholder (per [rfid-tag-data-model.md §7](../TagPulse/docs/design/rfid-tag-data-model.md)).
 
 ### Fixed
 - **CI quality gates green again.** `npm run check` (lint + typecheck + test) was red on `main` after the Sprint 13 merge.

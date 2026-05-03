@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Switch, Button, Card, InputNumber, Typography, Steps, Space, Descriptions, message } from 'antd';
+import { Form, Input, Select, Switch, Button, Card, InputNumber, Typography, Steps, Space, Descriptions, message, AutoComplete } from 'antd';
 import { useCreateRule, useUpdateRule, useRule } from '@/hooks/useRules';
 import { useDevices } from '@/hooks/useDevices';
+import { useTelemetryModels } from '@/hooks/useTelemetryModels';
 import type { RuleCreate } from '@/types';
 
 const { Title } = Typography;
@@ -51,6 +52,7 @@ export function RuleEditor() {
   const isEdit = !!id;
   const { data: existing } = useRule(id ?? '');
   const { data: devices } = useDevices();
+  const { data: models } = useTelemetryModels();
   const createRule = useCreateRule();
   const updateRule = useUpdateRule();
   const [form] = Form.useForm<FormValues>();
@@ -61,6 +63,19 @@ export function RuleEditor() {
   const deviceOptions = [
     { label: 'All Devices (global)', value: '' },
     ...(devices ?? []).map((d) => ({ label: d.name, value: d.id })),
+  ];
+
+  // Threshold "field" suggestions: tag-read built-ins + every metric_name from
+  // every telemetry model + a tag_data.* hint (per rfid-tag-data-model.md §7).
+  const fieldSuggestions: { value: string; label: string }[] = [
+    { value: 'signal_strength', label: 'signal_strength (tag read)' },
+    ...(models ?? []).flatMap((m) =>
+      m.metrics.map((metric) => ({
+        value: metric.name,
+        label: `${metric.name}${metric.unit ? ` (${metric.unit})` : ''} — ${m.device_type}`,
+      })),
+    ),
+    { value: 'tag_data.', label: 'tag_data.<key> — RFID sensor-tag value' },
   ];
 
   const handleFinish = async (values: FormValues) => {
@@ -146,7 +161,13 @@ export function RuleEditor() {
             {conditionType === 'threshold' && (
               <>
                 <Form.Item name="field" label="Field" rules={[{ required: true }]}>
-                  <Input placeholder="e.g. signal_strength" />
+                  <AutoComplete
+                    options={fieldSuggestions}
+                    placeholder="signal_strength, temperature_c, tag_data.<key>, …"
+                    filterOption={(input, option) =>
+                      (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
                 </Form.Item>
                 <Form.Item name="operator" label="Operator" rules={[{ required: true }]}>
                   <Select options={[

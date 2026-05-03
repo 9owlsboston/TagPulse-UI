@@ -60,4 +60,10 @@ describe('DataExplorer', () => {
     expect(screen.getByText('Table')).toBeInTheDocument();
     expect(screen.getByText('Chart')).toBeInTheDocument();
   });
+
+  it('renders the has-location filter and EPC scheme selector', () => {
+    render(<DataExplorer />, { wrapper });
+    expect(screen.getByText('Has location')).toBeInTheDocument();
+    expect(screen.getByText('EPC Scheme')).toBeInTheDocument();
+  });
 });
