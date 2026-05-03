@@ -5,6 +5,16 @@ All notable changes to TagPulse-UI will be documented in this file.
 ## Unreleased
 
 ### Added
+- **Sprint 17 — Geofencing & Map UI + mTLS cert attach (UI)**
+  - Regenerated typed API client — adds `MapConfigResponse`, `TileProviderUpdate`, `DeviceCertAttach`, `DeviceCertResponse` models, plus `TenantService.getMapConfig*` / `updateMapConfig*` and `DeviceRegistryService.attachDeviceCert*` methods. `ZoneResponse` exposes `polygon_geojson` + denormalized bbox columns.
+  - **Map page** (`/map`, viewer+, gated by tracking_modes `asset`): provider-agnostic Leaflet map driven by `GET /tenant/map-config` (falls back to OSM). Live asset markers (24h-old positions when the time-slider is dragged), geofence polygons rendered from `polygon_geojson`, layer toggles for assets/zones, and a 24h time-slider that resolves each visible asset's position via `GET /assets/{id}/path`. Markers click through to asset detail; mobile-mobility assets get a colored ring (proxy for the carriers spec). Footer always renders the resolver `attribution`; OSM-default footer renders the dev-only warning per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md).
+  - **Zone editor — polygon draw**: `src/components/PolygonDraw.tsx` — click-to-add vertex, undo, clear; emits valid GeoJSON `Polygon` (auto-closes the ring; server validates the rest). Wired into the **Sites & Zones** zone-create modal so picking `kind=geofence` swaps the readers picker for a draw map. (No `leaflet-draw` dependency — pure react-leaflet event handlers.)
+  - **Rule wizard — geofence step**: adds three new condition types (`zone.entered`, `zone.exited`, `zone.dwell_exceeded`) with zone picker, `subject_kinds` multi-select (asset / stock_item / device), optional `cooldown_s`, and (for dwell) a required `dwell_minutes` input. `src/types.ts` `ConditionType` union extended.
+  - **Device detail — Security tab (Sprint 17b)**: shows `cert_thumbprint` (copy-on-click) and `cert_subject` alongside the existing token info. Admin-only **Attach cert** / **Replace cert** modal accepts a PEM-encoded X.509 certificate, validates the `BEGIN CERTIFICATE` marker client-side, and posts to `/device-registry/{id}/cert`. UI surfaces the ADR-012 promise that the backend stores only the SHA-256 thumbprint + RFC 4514 subject and discards the PEM. `useAttachDeviceCert` hook added.
+  - **Sidebar**: new **Map** entry (viewer+, requires tracking_mode `asset`).
+  - `src/hooks/useMapConfig.ts` with an `OSM_FALLBACK` constant for offline-dev rendering.
+  - Tests: `MapPage.test.tsx` mocks `react-leaflet` + `leaflet` and asserts the title, the OSM dev-only attribution footer, and the time-replay slider's `Live` marker. `DeviceDetail.test.tsx` mock extended with `useAttachDeviceCert`. **39 passing total.**
+
 - **Sprint 16 — Edge Contract & Identity Hardening (UI)**
   - Regenerated typed API client from backend `openapi.json` — adds `DeviceTokenResponse` model and `DeviceRegistryService.rotateDeviceToken*` method.
   - Hand-written `devicesApi.rotateToken` (POST `/device-registry/{id}/rotate-token`) and `useRotateDeviceToken` mutation hook (invalidates the device + device-list caches on success).

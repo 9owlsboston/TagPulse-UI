@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DeviceCertAttach } from '../models/DeviceCertAttach';
+import type { DeviceCertResponse } from '../models/DeviceCertResponse';
 import type { DeviceCreate } from '../models/DeviceCreate';
 import type { DeviceResponse } from '../models/DeviceResponse';
 import type { DeviceTokenResponse } from '../models/DeviceTokenResponse';
@@ -96,6 +98,34 @@ export class DeviceRegistryService {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/device-registry/{device_id}',
+            path: {
+                'device_id': deviceId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Attach Device Cert
+     * Attach a client certificate to a device (admin only).
+     *
+     * Stores SHA-256 thumbprint + subject. The actual PEM lives in the MQTT
+     * broker's CA store, never in the application database.
+     * @param deviceId
+     * @param requestBody
+     * @returns DeviceCertResponse Successful Response
+     * @throws ApiError
+     */
+    public static attachDeviceCertDeviceRegistryDeviceIdCertPost(
+        deviceId: string,
+        requestBody: DeviceCertAttach,
+    ): CancelablePromise<DeviceCertResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/device-registry/{device_id}/cert',
             path: {
                 'device_id': deviceId,
             },

@@ -30,6 +30,7 @@ import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
 import type { SiteCreate } from '@/api/generated/models/SiteCreate';
+import { PolygonDraw } from '@/components/PolygonDraw';
 
 const { Title, Text } = Typography;
 
@@ -48,6 +49,7 @@ export function SitesZones() {
   const [occupantsZone, setOccupantsZone] = useState<ZoneResponse | null>(null);
   const [siteForm] = Form.useForm<SiteCreate>();
   const [zoneForm] = Form.useForm<ZoneCreate>();
+  const zoneKind = Form.useWatch('kind', zoneForm);
 
   const zonesBySite = useMemo(() => {
     const map = new Map<string, ZoneResponse[]>();
@@ -283,8 +285,18 @@ export function SitesZones() {
               options={deviceOptions}
               optionFilterProp="label"
               showSearch
+              disabled={zoneKind === ZoneCreate.kind.GEOFENCE}
             />
           </Form.Item>
+          {zoneKind === ZoneCreate.kind.GEOFENCE && (
+            <Form.Item
+              label="Polygon"
+              name="polygon_geojson"
+              rules={[{ required: true, message: 'Draw a polygon (at least 3 vertices)' }]}
+            >
+              <PolygonDraw />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
 

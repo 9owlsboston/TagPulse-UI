@@ -15,6 +15,7 @@ import {
   ClockCircleOutlined,
   TagOutlined,
   EnvironmentOutlined,
+  GlobalOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -35,6 +36,7 @@ const ALL_MENU_ITEMS = [
   { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' as const },
   { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer' as const, requires: 'asset' as const },
   { key: '/sites', icon: <EnvironmentOutlined />, label: 'Sites & Zones', minRole: 'viewer' as const, requires: 'asset' as const },
+  { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer' as const, requires: 'asset' as const },
   { key: '/inventory/products', icon: <ShoppingOutlined />, label: 'Products', minRole: 'viewer' as const, requires: 'inventory' as const },
   { key: '/inventory/lots', icon: <ClockCircleOutlined />, label: 'Lot Expiry', minRole: 'viewer' as const, requires: 'inventory' as const },
   { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer' as const, requires: 'inventory' as const },

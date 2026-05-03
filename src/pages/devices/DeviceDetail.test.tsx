@@ -23,6 +23,7 @@ vi.mock('@/hooks/useDevices', () => ({
   }),
   useDecommissionDevice: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useRotateDeviceToken: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAttachDeviceCert: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/hooks/useTagReads', () => ({

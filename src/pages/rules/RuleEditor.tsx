@@ -19,6 +19,9 @@ const CONDITION_TYPES = [
   { label: 'Stock — below threshold', value: 'stock.below_threshold' },
   { label: 'Stock — expiring within', value: 'stock.expiring_within' },
   { label: 'Stock — unexpected zone', value: 'stock.unexpected_in_zone' },
+  { label: 'Geofence — entered', value: 'zone.entered' },
+  { label: 'Geofence — exited', value: 'zone.exited' },
+  { label: 'Geofence — dwell exceeded', value: 'zone.dwell_exceeded' },
 ];
 
 const ACTION_TYPES = [
@@ -33,7 +36,10 @@ type ConditionType =
   | 'rate_change'
   | 'stock.below_threshold'
   | 'stock.expiring_within'
-  | 'stock.unexpected_in_zone';
+  | 'stock.unexpected_in_zone'
+  | 'zone.entered'
+  | 'zone.exited'
+  | 'zone.dwell_exceeded';
 
 interface FormValues {
   name: string;
@@ -56,6 +62,11 @@ interface FormValues {
   stock_threshold?: number;
   stock_expiring_days?: number;
   stock_allowed_zone_ids?: string[];
+  // Geofence conditions (Sprint 17a)
+  zone_id?: string;
+  subject_kinds?: ('asset' | 'stock_item' | 'device')[];
+  cooldown_s?: number;
+  dwell_minutes?: number;
 }
 
 const STEP_ITEMS = [
@@ -114,10 +125,23 @@ export function RuleEditor() {
       condition_config = { product_id: values.stock_product_id, threshold: values.stock_threshold };
     } else if (values.condition_type === 'stock.expiring_within') {
       condition_config = { product_id: values.stock_product_id || undefined, days: values.stock_expiring_days };
-    } else {
+    } else if (values.condition_type === 'stock.unexpected_in_zone') {
       condition_config = {
         product_id: values.stock_product_id || undefined,
         allowed_zone_ids: values.stock_allowed_zone_ids ?? [],
+      };
+    } else if (
+      values.condition_type === 'zone.entered' ||
+      values.condition_type === 'zone.exited' ||
+      values.condition_type === 'zone.dwell_exceeded'
+    ) {
+      condition_config = {
+        zone_id: values.zone_id,
+        subject_kinds: values.subject_kinds ?? ['asset'],
+        cooldown_s: values.cooldown_s,
+        ...(values.condition_type === 'zone.dwell_exceeded'
+          ? { dwell_minutes: values.dwell_minutes }
+          : {}),
       };
     }
 
@@ -156,6 +180,9 @@ export function RuleEditor() {
           'stock.below_threshold': ['stock_product_id', 'stock_threshold'],
           'stock.expiring_within': ['stock_expiring_days'],
           'stock.unexpected_in_zone': ['stock_allowed_zone_ids'],
+          'zone.entered': ['zone_id'],
+          'zone.exited': ['zone_id'],
+          'zone.dwell_exceeded': ['zone_id', 'dwell_minutes'],
         };
         await form.validateFields(['name', 'condition_type', ...(fieldsByType[conditionType as ConditionType] ?? [])]);
       } else if (step === 1) {
@@ -302,6 +329,50 @@ export function RuleEditor() {
                     placeholder="Stock seen outside these zones triggers an alert"
                   />
                 </Form.Item>
+              </>
+            )}
+
+            {(conditionType === 'zone.entered' ||
+              conditionType === 'zone.exited' ||
+              conditionType === 'zone.dwell_exceeded') && (
+              <>
+                <Form.Item name="zone_id" label="Zone" rules={[{ required: true }]}>
+                  <Select
+                    showSearch
+                    options={(zones ?? []).map((z) => ({
+                      value: z.id,
+                      label: `${z.name} (${z.kind})`,
+                    }))}
+                    filterOption={(input, opt) => (opt?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                    placeholder="Pick a zone"
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="subject_kinds"
+                  label="Subjects"
+                  initialValue={['asset']}
+                >
+                  <Select
+                    mode="multiple"
+                    options={[
+                      { value: 'asset', label: 'Asset' },
+                      { value: 'stock_item', label: 'Stock item' },
+                      { value: 'device', label: 'Device' },
+                    ]}
+                  />
+                </Form.Item>
+                <Form.Item name="cooldown_s" label="Cooldown (seconds, optional)">
+                  <InputNumber min={0} style={{ width: '100%' }} />
+                </Form.Item>
+                {conditionType === 'zone.dwell_exceeded' && (
+                  <Form.Item
+                    name="dwell_minutes"
+                    label="Dwell threshold (minutes)"
+                    rules={[{ required: true }]}
+                  >
+                    <InputNumber min={1} style={{ width: '100%' }} />
+                  </Form.Item>
+                )}
               </>
             )}
           </div>

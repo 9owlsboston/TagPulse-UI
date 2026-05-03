@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, message } from 'antd';
-import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useDevice, useDecommissionDevice, useRotateDeviceToken } from '@/hooks/useDevices';
+import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, Input, Form, message } from 'antd';
+import { CopyOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
@@ -21,7 +21,10 @@ export function DeviceDetail() {
   const { data: zones } = useZones();
   const decommission = useDecommissionDevice();
   const rotateToken = useRotateDeviceToken();
+  const attachCert = useAttachDeviceCert();
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [certForm] = Form.useForm<{ cert_pem: string }>();
 
   if (isLoading || !device) return <Spin size="large" />;
 
@@ -211,21 +214,42 @@ export function DeviceDetail() {
                 ? new Date(device.token_rotated_at).toLocaleString()
                 : <Text type="secondary">never</Text>}
             </Descriptions.Item>
+            <Descriptions.Item label="Cert Thumbprint" span={2}>
+              {device.cert_thumbprint
+                ? <Text code copyable>{device.cert_thumbprint}</Text>
+                : <Text type="secondary">no certificate attached</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label="Cert Subject" span={2}>
+              {device.cert_subject
+                ? <Text code>{device.cert_subject}</Text>
+                : <Text type="secondary">—</Text>}
+            </Descriptions.Item>
           </Descriptions>
           <RoleGuard roles={['admin']}>
             <div style={{ marginTop: 16 }}>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRotateToken}
-                loading={rotateToken.isPending}
-              >
-                Rotate token
-              </Button>
-              <Text type="secondary" style={{ marginLeft: 12 }}>
-                Per ADR-011 Phase 1 — token is invalidated immediately; device
-                must reconnect with the new value.
-              </Text>
+              <Space wrap>
+                <Button
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={handleRotateToken}
+                  loading={rotateToken.isPending}
+                >
+                  Rotate token
+                </Button>
+                <Button
+                  icon={<SafetyCertificateOutlined />}
+                  onClick={() => setCertModalOpen(true)}
+                >
+                  {device.cert_thumbprint ? 'Replace cert' : 'Attach cert'}
+                </Button>
+              </Space>
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary">
+                  Per ADR-011 Phase 1 — token is invalidated immediately; device
+                  must reconnect with the new value. Per ADR-012 (Sprint 17b) —
+                  attaching a cert stores only the SHA-256 thumbprint + subject; PEM is not persisted.
+                </Text>
+              </div>
             </div>
           </RoleGuard>
         </>
@@ -272,6 +296,52 @@ export function DeviceDetail() {
         >
           Copy to clipboard
         </Button>
+      </Modal>
+      <Modal
+        open={certModalOpen}
+        title="Attach client certificate"
+        onCancel={() => setCertModalOpen(false)}
+        onOk={() => certForm.submit()}
+        okText="Attach"
+        confirmLoading={attachCert.isPending}
+        width={640}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Per ADR-012 — the backend parses the cert, stores the SHA-256 thumbprint and RFC 4514 subject, and discards the PEM. PEM is never persisted."
+        />
+        <Form
+          form={certForm}
+          layout="vertical"
+          onFinish={async ({ cert_pem }) => {
+            try {
+              await attachCert.mutateAsync({ id: device.id, cert_pem });
+              message.success('Certificate attached');
+              setCertModalOpen(false);
+              certForm.resetFields();
+            } catch (err) {
+              message.error(err instanceof Error ? err.message : 'Failed to attach cert');
+            }
+          }}
+        >
+          <Form.Item
+            name="cert_pem"
+            label="PEM-encoded X.509 certificate"
+            rules={[
+              { required: true, message: 'Paste a PEM-encoded certificate' },
+              {
+                validator: (_, value: string) =>
+                  value && value.includes('BEGIN CERTIFICATE')
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('Must contain a BEGIN CERTIFICATE marker')),
+              },
+            ]}
+          >
+            <Input.TextArea rows={10} placeholder={'-----BEGIN CERTIFICATE-----\nMIIB…\n-----END CERTIFICATE-----'} />
+          </Form.Item>
+        </Form>
       </Modal>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>{device.name}</Title>

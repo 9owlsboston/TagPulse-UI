@@ -30,6 +30,8 @@ export interface DeviceResponse {
   mobility?: string;
   token_prefix: string | null;
   token_rotated_at: string | null;
+  cert_thumbprint?: string | null;
+  cert_subject?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -130,7 +132,10 @@ export type ConditionType =
   | 'rate_change'
   | 'stock.below_threshold'
   | 'stock.expiring_within'
-  | 'stock.unexpected_in_zone';
+  | 'stock.unexpected_in_zone'
+  | 'zone.entered'
+  | 'zone.exited'
+  | 'zone.dwell_exceeded';
 export type ActionType = 'webhook' | 'email' | 'notification';
 
 export interface RuleCreate {

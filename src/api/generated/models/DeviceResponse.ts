@@ -6,6 +6,8 @@
  * Device returned from the API.
  */
 export type DeviceResponse = {
+    cert_subject?: (string | null);
+    cert_thumbprint?: (string | null);
     configuration: (Record<string, any> | null);
     connection_state: string;
     created_at: string;

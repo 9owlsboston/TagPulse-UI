@@ -28,6 +28,7 @@ import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
 import { AssetList } from '@/pages/assets/AssetList';
 import { AssetDetail } from '@/pages/assets/AssetDetail';
 import { SitesZones } from '@/pages/assets/SitesZones';
+import { MapPage } from '@/pages/map/MapPage';
 import { TenantSettings } from '@/pages/admin/TenantSettings';
 
 const queryClient = new QueryClient({
@@ -63,6 +64,7 @@ export function App() {
                 <Route path="/assets" element={<AssetList />} />
                 <Route path="/assets/:id" element={<AssetDetail />} />
                 <Route path="/sites" element={<SitesZones />} />
+                <Route path="/map" element={<MapPage />} />
                 <Route path="/inventory/products" element={<ProductList />} />
                 <Route path="/inventory/products/:id" element={<ProductDetail />} />
                 <Route path="/inventory/lots" element={<LotExpiryQueue />} />

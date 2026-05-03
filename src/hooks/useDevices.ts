@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { devicesApi } from '@/api/client';
+import { DeviceRegistryService } from '@/api/generated/services/DeviceRegistryService';
 import type { DeviceCreate, DeviceUpdate } from '@/types';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 
@@ -49,6 +50,19 @@ export function useRotateDeviceToken() {
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['devices'] });
       qc.invalidateQueries({ queryKey: ['devices', id] });
+    },
+  });
+}
+
+/** Sprint 17b — attach a client cert (admin only) to a device. */
+export function useAttachDeviceCert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, cert_pem }: { id: string; cert_pem: string }) =>
+      DeviceRegistryService.attachDeviceCertDeviceRegistryDeviceIdCertPost(id, { cert_pem }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['devices'] });
+      qc.invalidateQueries({ queryKey: ['devices', vars.id] });
     },
   });
 }
