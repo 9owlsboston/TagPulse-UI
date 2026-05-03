@@ -10,6 +10,7 @@ All notable changes to TagPulse-UI will be documented in this file.
   - Hand-written `devicesApi.rotateToken` (POST `/device-registry/{id}/rotate-token`) and `useRotateDeviceToken` mutation hook (invalidates the device + device-list caches on success).
   - **Device detail — Security tab**: shows `token_prefix` and `token_rotated_at` (per ADR-011 Phase 1). Admin-gated **Rotate token** button opens a confirm dialog warning that the current token is invalidated immediately, then displays the new plaintext token in a copy-once modal with a clipboard-copy button. Modal cannot be reopened — the warning makes clear the value cannot be retrieved again (backend stores SHA-256 only).
   - **Device detail — Heartbeat tab**: connection state, firmware version, last-seen, mobility, and the device's MQTT-published configuration JSON.
+  - **Device list — admin "Last Rotated" column**: visible only when the current user has the `admin` role; renders `token_rotated_at` or `never` per [edge-device-contract.md §7](../TagPulse/docs/design/edge-device-contract.md).
   - `DeviceResponse` extended in `src/types.ts` with `token_prefix`, `token_rotated_at`, `mobility`.
   - Tests updated — `DeviceDetail.test.tsx` mocks `useRotateDeviceToken`, asserts the new tab labels (Heartbeat, Security), and verifies the **Rotate token** button renders for admins. **37 passing total.**
 

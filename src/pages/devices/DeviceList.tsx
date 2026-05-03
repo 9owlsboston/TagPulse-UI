@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useDevices } from '@/hooks/useDevices';
+import { useAuth } from '@/lib/auth';
 import { RoleGuard } from '@/components/RoleGuard';
 import type { DeviceResponse } from '@/types';
 
@@ -16,7 +17,7 @@ const STATUS_OPTIONS = [
   { label: 'Decommissioned', value: 'decommissioned' },
 ];
 
-const columns: ColumnsType<DeviceResponse> = [
+const baseColumns: ColumnsType<DeviceResponse> = [
   { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
   { title: 'Type', dataIndex: 'device_type' },
   {
@@ -40,11 +41,22 @@ const columns: ColumnsType<DeviceResponse> = [
   },
 ];
 
+const adminTokenColumn: ColumnsType<DeviceResponse>[number] = {
+  title: 'Last Rotated',
+  dataIndex: 'token_rotated_at',
+  render: (v: string | null) =>
+    v ? new Date(v).toLocaleString() : <span style={{ color: '#999' }}>never</span>,
+};
+
 export function DeviceList() {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const { data, isLoading } = useDevices({ status: status || undefined });
+
+  const columns: ColumnsType<DeviceResponse> =
+    role === 'admin' ? [...baseColumns, adminTokenColumn] : baseColumns;
 
   const filtered = data?.filter((d) =>
     d.name.toLowerCase().includes(search.toLowerCase()),
