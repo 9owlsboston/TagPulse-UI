@@ -9,6 +9,7 @@ vi.mock('@/hooks/useDevices', () => ({
 
 vi.mock('@/hooks/useTagReads', () => ({
   useTagReads: () => ({ data: [], isLoading: false }),
+  useReadsPerHour: () => ({ data: [], isLoading: false }),
 }));
 
 vi.mock('@/hooks/useAlerts', () => ({

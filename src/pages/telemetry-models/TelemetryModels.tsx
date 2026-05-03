@@ -3,7 +3,8 @@ import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { useTelemetryModels, useCreateTelemetryModel, useDeleteTelemetryModel } from '@/hooks/useTelemetryModels';
-import { RoleGuard, useCanPerform } from '@/components/RoleGuard';
+import { RoleGuard } from '@/components/RoleGuard';
+import { useCanPerform } from '@/components/useCanPerform';
 import type { TelemetryModelResponse, TelemetryModelCreate, MetricDefinition } from '@/types';
 
 const { Title } = Typography;

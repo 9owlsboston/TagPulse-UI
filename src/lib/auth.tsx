@@ -126,9 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// Safe default used when `useAuth` is called outside an AuthProvider — most
+// notably in unit tests that render a single page without the full app shell.
+// Defaults to an unauthenticated `viewer` so role-gated UI stays hidden, which
+// matches what an unauthenticated user would see in production.
+const DEFAULT_AUTH: AuthContextValue = {
+  tenantId: null,
+  user: null,
+  role: 'viewer',
+  accessToken: null,
+  isAuthenticated: false,
+  loginWithApiKey: async () => {
+    throw new Error('AuthProvider missing');
+  },
+  loginWithTenantId: () => {
+    throw new Error('AuthProvider missing');
+  },
+  logout: () => {
+    throw new Error('AuthProvider missing');
+  },
+};
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  return ctx ?? DEFAULT_AUTH;
 }

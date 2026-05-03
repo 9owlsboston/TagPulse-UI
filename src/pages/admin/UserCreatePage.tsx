@@ -11,7 +11,7 @@ const ROLE_OPTIONS = [
   { label: 'Admin', value: 'admin' },
 ];
 
-export function UserCreate() {
+export function UserCreatePage() {
   const navigate = useNavigate();
   const createUser = useCreateUser();
 

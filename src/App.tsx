@@ -17,7 +17,7 @@ import { IntegrationList } from '@/pages/integrations/IntegrationList';
 import { DeliveryLog } from '@/pages/integrations/DeliveryLog';
 import { UsageDashboard } from '@/pages/admin/UsageDashboard';
 import { UserList } from '@/pages/admin/UserList';
-import { UserCreate } from '@/pages/admin/UserCreatePage';
+import { UserCreatePage } from '@/pages/admin/UserCreatePage';
 import { UserDetail } from '@/pages/admin/UserDetail';
 
 const queryClient = new QueryClient({
@@ -52,7 +52,7 @@ export function App() {
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
                 <Route path="/admin/users" element={<UserList />} />
-                <Route path="/admin/users/new" element={<UserCreate />} />
+                <Route path="/admin/users/new" element={<UserCreatePage />} />
                 <Route path="/admin/users/:id" element={<UserDetail />} />
               </Route>
             </Routes>

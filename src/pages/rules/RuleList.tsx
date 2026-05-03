@@ -3,7 +3,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useRules, useUpdateRule, useDeleteRule } from '@/hooks/useRules';
-import { RoleGuard, useCanPerform } from '@/components/RoleGuard';
+import { RoleGuard } from '@/components/RoleGuard';
+import { useCanPerform } from '@/components/useCanPerform';
 import type { RuleResponse } from '@/types';
 
 const { Title } = Typography;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Table, Tag, Button, Select, Space, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
-import { useCanPerform } from '@/components/RoleGuard';
+import { useCanPerform } from '@/components/useCanPerform';
 import type { AlertResponse } from '@/types';
 
 const { Title } = Typography;

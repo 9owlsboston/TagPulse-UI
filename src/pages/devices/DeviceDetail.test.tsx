@@ -45,6 +45,22 @@ vi.mock('recharts', () => ({
   Tooltip: () => <div />,
 }));
 
+// Sprint 13 added a RoleGuard around the Decommission button. Provide an admin
+// auth context so the button renders in tests.
+vi.mock('@/lib/auth', () => ({
+  useAuth: () => ({
+    role: 'admin',
+    user: { id: 'u1', email: 'a@example.com', name: 'A', role: 'admin', tenant_id: 't1', tenant_name: 't' },
+    tenantId: 't1',
+    accessToken: 'tok',
+    isAuthenticated: true,
+    loginWithApiKey: vi.fn(),
+    loginWithTenantId: vi.fn(),
+    logout: vi.fn(),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
