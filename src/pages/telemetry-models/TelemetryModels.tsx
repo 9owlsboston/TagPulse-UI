@@ -11,8 +11,8 @@ import type {
   TelemetryModelCreate,
   MetricDefinition,
   QuarantineReason,
-  TelemetryQuarantineEntry,
 } from '@/types';
+import type { TelemetryQuarantineResponse } from '@/api/generated/models/TelemetryQuarantineResponse';
 
 const { Title } = Typography;
 
@@ -168,7 +168,7 @@ function QuarantinePanel() {
     return byReason;
   }, [data]);
 
-  const columns: ColumnsType<TelemetryQuarantineEntry> = [
+  const columns: ColumnsType<TelemetryQuarantineResponse> = [
     {
       title: 'Received',
       dataIndex: 'received_at',
@@ -186,8 +186,8 @@ function QuarantinePanel() {
     {
       title: 'Reason',
       dataIndex: 'reason',
-      render: (v: QuarantineReason) => (
-        <Tag color={REASON_COLOR[v] ?? 'default'}>{v}</Tag>
+      render: (v: string) => (
+        <Tag color={REASON_COLOR[v as QuarantineReason] ?? 'default'}>{v}</Tag>
       ),
     },
   ];

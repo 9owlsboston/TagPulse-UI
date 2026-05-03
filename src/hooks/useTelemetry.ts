@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { telemetryApi } from '@/api/client';
+import { TelemetryService } from '@/api/generated/services/TelemetryService';
 import type { QuarantineReason } from '@/types';
 
 export function useDeviceTelemetry(params?: {
@@ -24,6 +25,13 @@ export function useTelemetryQuarantine(params?: {
 }) {
   return useQuery({
     queryKey: ['telemetry', 'quarantine', params],
-    queryFn: () => telemetryApi.quarantine(params),
+    queryFn: () =>
+      TelemetryService.listTelemetryQuarantineTelemetryQuarantineGet(
+        params?.device_id,
+        params?.reason,
+        params?.limit ?? 100,
+        params?.offset,
+      ),
   });
 }
+

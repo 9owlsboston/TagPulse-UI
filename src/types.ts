@@ -280,18 +280,12 @@ export interface TelemetryBatch {
 }
 
 // ── Telemetry Quarantine (Sprint 14) ──
+//
+// `QuarantineReason` is the app-level literal union used by the filter UI.
+// The wire shape lives in the generated client as `TelemetryQuarantineResponse`
+// (where `reason: string`), produced by `npm run generate-api`.
 
 export type QuarantineReason = 'unknown_metric' | 'out_of_range' | 'unit_mismatch' | 'stale_timestamp';
-
-export interface TelemetryQuarantineEntry {
-  id: string;
-  device_id: string;
-  received_at: string;
-  metric_name: string;
-  metric_value: number | null;
-  raw_payload: Record<string, unknown>;
-  reason: QuarantineReason;
-}
 
 // ── Usage ──
 

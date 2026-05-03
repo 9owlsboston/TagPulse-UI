@@ -13,8 +13,10 @@ All notable changes to TagPulse-UI will be documented in this file.
   - Device detail **new Location tab**: last-known lat/lon descriptions panel; Leaflet mini-map with OSM tiles (provider-agnostic resolver lands in Sprint 17a per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md)); marker popup + accuracy radius `Circle` when `location_accuracy_m` is present; default Leaflet marker icon paths rewired to imported assets (Vite-safe).
   - New deps: `leaflet`, `react-leaflet`, `@types/leaflet` (~40 KB gzip per ADR-007).
 - **Sprint 14 (2/2) — Data Explorer / Dashboard / Quarantine / Rule wizard**
-  - New types: `TelemetryQuarantineEntry` and `QuarantineReason` (`unknown_metric` | `out_of_range` | `unit_mismatch` | `stale_timestamp`).
-  - API: `telemetryApi.quarantine()` → `GET /telemetry/quarantine` (filterable by reason); `useTelemetryQuarantine()` hook.
+  - New `QuarantineReason` literal type (`unknown_metric` | `out_of_range` | `unit_mismatch` | `stale_timestamp`) for the filter UI; the wire shape now comes from the **generated** client (`TelemetryQuarantineResponse`) — first consumer of the regenerated typed client.
+  - Bootstrap: `src/api/configureGenerated.ts` wires `OpenAPI.TOKEN`/`OpenAPI.HEADERS` resolvers to the same `__TAGPULSE_TOKEN__`/`__TAGPULSE_TENANT_ID__` window globals the hand-written client uses, imported once from `main.tsx`.
+  - `useTelemetryQuarantine()` calls `TelemetryService.listTelemetryQuarantineTelemetryQuarantineGet()` (replaces the hand-written `telemetryApi.quarantine`, which is removed).
+  - `src/api/generated/` is now committed (un-ignored) because app code imports from it; CI does not run `generate-api`. Regeneration remains reproducible from `../TagPulse/openapi.json`.
   - **Data Explorer** surfaces the new tag fields:
     - New columns: `EPC`, `Scheme`, `TID`, `Latitude`, `Longitude` (lat/lon to 5 decimals).
     - New filters: **"Has location"** checkbox (client-side), **EPC Scheme** selector (sgtin-96/198, sscc-96, giai-96/202, grai-96/170, raw).

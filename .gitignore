@@ -5,4 +5,6 @@ dist/
 *.log
 .DS_Store
 coverage/
-src/api/generated/
+# Generated API client — regenerated via `npm run generate-api` from
+# ../TagPulse/openapi.json. Committed to the repo because app code now
+# imports types/services from it (CI does not run generate-api).

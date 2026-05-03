@@ -83,8 +83,6 @@ import type {
   TelemetryModelCreate,
   TelemetryModelResponse,
   DeviceTelemetryReading,
-  TelemetryQuarantineEntry,
-  QuarantineReason,
   UsageRecord,
   UsageSummary,
   UserCreate,
@@ -186,13 +184,10 @@ export const telemetryApi = {
     end?: string;
     limit?: number;
   }) => request<DeviceTelemetryReading[]>(`/telemetry${qs(params ?? {})}`),
-  quarantine: (params?: {
-    device_id?: string;
-    reason?: QuarantineReason;
-    limit?: number;
-    offset?: number;
-  }) => request<TelemetryQuarantineEntry[]>(`/telemetry/quarantine${qs(params ?? {})}`),
 };
+// Telemetry quarantine moved to the generated client; see
+// `TelemetryService.listTelemetryQuarantineTelemetryQuarantineGet` consumed
+// from `useTelemetry.useTelemetryQuarantine`.
 
 // ── Usage ──
 
