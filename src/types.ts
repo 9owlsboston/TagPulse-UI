@@ -33,12 +33,35 @@ export interface DeviceResponse {
 
 // ── Tag Reads ──
 
+export type LocationSource = 'gps' | 'fixed' | 'inferred';
+
+export interface Location {
+  latitude: number;
+  longitude: number;
+  accuracy_m?: number | null;
+  source?: LocationSource;
+}
+
+export interface Identity {
+  epc?: string | null;
+  epc_hex?: string | null;
+  epc_scheme?: string | null;
+  epc_decoded?: Record<string, unknown> | null;
+  tid?: string | null;
+  user_memory_hex?: string | null;
+}
+
 export interface TagReadCreate {
   device_id: string;
-  tag_id: string;
+  tag_id?: string;
   timestamp: string;
   signal_strength?: number;
   sensor_data?: Record<string, unknown>;
+  // Sprint 14
+  location?: Location;
+  identity?: Identity;
+  tag_data?: Record<string, unknown>;
+  reader_antenna?: number;
 }
 
 export interface TagReadResponse {
@@ -48,6 +71,20 @@ export interface TagReadResponse {
   timestamp: string;
   signal_strength: number | null;
   sensor_data: Record<string, unknown> | null;
+  // Sprint 14 — location columns (migration 016)
+  latitude?: number | null;
+  longitude?: number | null;
+  location_accuracy_m?: number | null;
+  location_source?: LocationSource | null;
+  // Sprint 14 — RFID identity columns (migration 016)
+  epc?: string | null;
+  epc_hex?: string | null;
+  epc_scheme?: string | null;
+  epc_decoded?: Record<string, unknown> | null;
+  tid?: string | null;
+  user_memory_hex?: string | null;
+  tag_data?: Record<string, unknown> | null;
+  reader_antenna?: number | null;
   created_at: string;
 }
 
@@ -214,6 +251,32 @@ export interface TelemetryModelResponse {
   metrics: MetricDefinition[];
   created_at: string;
   updated_at: string;
+}
+
+// ── Device Telemetry (Sprint 14, device_telemetry hypertable) ──
+
+export interface DeviceTelemetryReading {
+  id: string;
+  device_id: string;
+  timestamp: string;
+  metric_name: string;
+  metric_value: number;
+  unit: string | null;
+  /** metadata.source='tag' indicates a tag-borne reading mirrored from tag_reads.tag_data. */
+  metadata: Record<string, unknown> | null;
+}
+
+export interface TelemetryReadingCreate {
+  timestamp: string;
+  metric_name: string;
+  metric_value: number;
+  unit?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TelemetryBatch {
+  device_id: string;
+  readings: TelemetryReadingCreate[];
 }
 
 // ── Usage ──

@@ -4,6 +4,15 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+- **Sprint 14 (1/2) — Device detail: Telemetry & Location tabs**
+  - Type extensions for migration 016: `TagReadResponse` gains optional `latitude`, `longitude`, `location_accuracy_m`, `location_source`, `epc`, `epc_hex`, `epc_scheme`, `epc_decoded`, `tid`, `user_memory_hex`, `tag_data`, `reader_antenna`. New `Location`, `Identity`, `LocationSource`, `DeviceTelemetryReading`, `TelemetryReadingCreate`, `TelemetryBatch` types.
+  - New API surface: `telemetryApi.list()` → `GET /telemetry` (filterable by device + metric + time range) and `useDeviceTelemetry()` hook.
+  - Device detail **Overview tab — "Last Read" panel**: surfaces `tag_id`, `timestamp`, `epc`, `epc_scheme` (badge), `tid`, `reader_antenna`, `signal_strength`, `latitude/longitude (source)`. Conditionally renders `epc_decoded` and `tag_data` JSON blocks.
+  - Device detail **Telemetry tab — rebuilt**: per-`metric_name` selector populated from the device's telemetry model; time-range picker; unit-aware Y-axis label; model min/max applied to Y domain; "source: tag" badge with count when readings carry `metadata.source='tag'` (per [rfid-tag-data-model.md §7](../TagPulse/docs/design/rfid-tag-data-model.md)). Empty-state when no model is defined for the device type.
+  - Device detail **new Location tab**: last-known lat/lon descriptions panel; Leaflet mini-map with OSM tiles (provider-agnostic resolver lands in Sprint 17a per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md)); marker popup + accuracy radius `Circle` when `location_accuracy_m` is present; default Leaflet marker icon paths rewired to imported assets (Vite-safe).
+  - New deps: `leaflet`, `react-leaflet`, `@types/leaflet` (~40 KB gzip per ADR-007).
+
 ### Fixed
 - **CI quality gates green again.** `npm run check` (lint + typecheck + test) was red on `main` after the Sprint 13 merge.
   - `eslint.config.js`: added missing browser globals (`localStorage`, `sessionStorage`, `atob`, `setInterval`, etc.) so the auth code in `lib/auth.tsx` and the polling code in `components/KpiTile.tsx` lint cleanly.

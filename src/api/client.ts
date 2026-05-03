@@ -82,6 +82,7 @@ import type {
   AnalyticsResultResponse,
   TelemetryModelCreate,
   TelemetryModelResponse,
+  DeviceTelemetryReading,
   UsageRecord,
   UsageSummary,
   UserCreate,
@@ -171,6 +172,18 @@ export const telemetryModelsApi = {
   create: (data: TelemetryModelCreate) =>
     request<TelemetryModelResponse>('/telemetry-models', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/telemetry-models/${id}`, { method: 'DELETE' }),
+};
+
+// ── Device Telemetry (Sprint 14, /telemetry hypertable query) ──
+
+export const telemetryApi = {
+  list: (params?: {
+    device_id?: string;
+    metric_name?: string;
+    start?: string;
+    end?: string;
+    limit?: number;
+  }) => request<DeviceTelemetryReading[]>(`/telemetry${qs(params ?? {})}`),
 };
 
 // ── Usage ──
