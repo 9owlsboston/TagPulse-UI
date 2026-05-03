@@ -30,6 +30,7 @@ export type { DeliveryResponse } from './models/DeliveryResponse';
 export type { DeviceCreate } from './models/DeviceCreate';
 export type { DeviceHealthSummary } from './models/DeviceHealthSummary';
 export type { DeviceResponse } from './models/DeviceResponse';
+export type { DeviceTokenResponse } from './models/DeviceTokenResponse';
 export type { DeviceUpdate } from './models/DeviceUpdate';
 export type { ExternalLocationCreate } from './models/ExternalLocationCreate';
 export type { ExternalLocationResponse } from './models/ExternalLocationResponse';

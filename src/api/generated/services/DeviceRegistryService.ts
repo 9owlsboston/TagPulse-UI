@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { DeviceCreate } from '../models/DeviceCreate';
 import type { DeviceResponse } from '../models/DeviceResponse';
+import type { DeviceTokenResponse } from '../models/DeviceTokenResponse';
 import type { DeviceUpdate } from '../models/DeviceUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -118,6 +119,31 @@ export class DeviceRegistryService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/device-registry/{device_id}/decommission',
+            path: {
+                'device_id': deviceId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Rotate Device Token
+     * Rotate a device's Bearer token (admin only).
+     *
+     * Plaintext token is returned **once** — backend stores only its SHA-256
+     * hash, immediately invalidating any prior token. Audit-logged and metered
+     * per ADR-011 Phase 1 / docs/design/edge-device-contract.md §5.
+     * @param deviceId
+     * @returns DeviceTokenResponse Successful Response
+     * @throws ApiError
+     */
+    public static rotateDeviceTokenDeviceRegistryDeviceIdRotateTokenPost(
+        deviceId: string,
+    ): CancelablePromise<DeviceTokenResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/device-registry/{device_id}/rotate-token',
             path: {
                 'device_id': deviceId,
             },

@@ -17,6 +17,8 @@ export type DeviceResponse = {
     mobility?: string;
     name: string;
     status: string;
+    token_prefix?: (string | null);
+    token_rotated_at?: (string | null);
     updated_at: string;
 };
 

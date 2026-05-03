@@ -31,6 +31,9 @@ export class IngestionService {
     /**
      * Create Tag Reads Batch
      * Ingest a batch of tag read events via HTTP push.
+     *
+     * Returns the count of accepted and clock-rejected events; rejected events
+     * are dead-lettered per docs/design/edge-device-contract.md §3.5.
      * @param requestBody
      * @returns number Successful Response
      * @throws ApiError

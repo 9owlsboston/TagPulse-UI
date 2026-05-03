@@ -67,6 +67,7 @@ import type {
   DeviceCreate,
   DeviceUpdate,
   DeviceResponse,
+  DeviceTokenResponse,
   TagReadResponse,
   ReadsPerHour,
   UniqueTagsPerWindow,
@@ -101,6 +102,8 @@ export const devicesApi = {
     request<DeviceResponse>(`/device-registry/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   decommission: (id: string) =>
     request<DeviceResponse>(`/device-registry/${id}/decommission`, { method: 'POST' }),
+  rotateToken: (id: string) =>
+    request<DeviceTokenResponse>(`/device-registry/${id}/rotate-token`, { method: 'POST' }),
 };
 
 // ── Tag Reads ──

@@ -41,3 +41,14 @@ export function useDecommissionDevice() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['devices'] }),
   });
 }
+
+export function useRotateDeviceToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => devicesApi.rotateToken(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['devices'] });
+      qc.invalidateQueries({ queryKey: ['devices', id] });
+    },
+  });
+}

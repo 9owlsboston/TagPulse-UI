@@ -27,8 +27,18 @@ export interface DeviceResponse {
   firmware_version: string | null;
   connection_state: string;
   last_seen: string | null;
+  mobility?: string;
+  token_prefix: string | null;
+  token_rotated_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface DeviceTokenResponse {
+  device_id: string;
+  token: string;
+  prefix: string;
+  rotated_at: string;
 }
 
 // ── Tag Reads ──
