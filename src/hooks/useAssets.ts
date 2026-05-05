@@ -244,6 +244,12 @@ export function useAssetCurrentLocation(assetId: string | undefined) {
     // 404 when no fix yet — surface as `null` rather than a thrown error so
     // pages can render an empty state without try/catch noise.
     retry: false,
+    // Live polling so Map markers track moving assets. The Sprint 17a Map
+    // page assumes ~5s freshness; staleTime keeps re-renders quiet between
+    // background refetches.
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
+    staleTime: 4_000,
   });
 }
 

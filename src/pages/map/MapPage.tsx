@@ -237,14 +237,39 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: Ass
     return [closest.latitude, closest.longitude];
   }, [location, path, replayMinutesAgo]);
 
+  // Color-coded teardrop icon so multiple assets in the same area stay
+  // visually distinct (default Leaflet markers are all blue → indistinguishable
+  // when positions overlap during a smoke test). NOTE: this hook MUST run on
+  // every render — placing it after the `lat == null` early-return below
+  // changes the hook count between renders and crashes React (blank page).
+  const icon = useMemo(
+    () =>
+      L.divIcon({
+        className: 'tagpulse-asset-marker',
+        html: `
+          <div style="
+            width: 18px; height: 18px; border-radius: 50% 50% 50% 0;
+            background: ${pathColor};
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+            transform: rotate(-45deg);
+            transform-origin: center;
+          "></div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+        popupAnchor: [0, -10],
+      }),
+    [pathColor],
+  );
+
   if (lat == null || lng == null) return null;
 
   return (
     <>
-      <Marker position={[lat, lng]}>
+      <Marker position={[lat, lng]} icon={icon}>
         <Popup>
           <strong>{asset.name}</strong>
-          <div><Tag>{asset.asset_type}</Tag></div>
+          <div><Tag color={pathColor}>{asset.asset_type}</Tag></div>
           <div style={{ marginTop: 4 }}>
             <Link to={`/assets/${asset.id}`}>Open detail →</Link>
           </div>
