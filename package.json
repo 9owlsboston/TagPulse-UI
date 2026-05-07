@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "check": "npm run lint && npm run typecheck && npm run test",
     "generate-api": "openapi --input ../TagPulse/openapi.json --output src/api/generated --client fetch",
-    "generate-api:live": "openapi --input http://localhost:8000/openapi.json --output src/api/generated --client fetch"
+    "generate-api:live": "openapi --input http://localhost:8000/openapi.json --output src/api/generated --client fetch",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {
     "@ant-design/icons": "^5.5",
