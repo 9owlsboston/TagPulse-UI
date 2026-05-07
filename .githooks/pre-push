@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Block pushes to protected branches unless explicitly overridden.
+# Override (rare): ALLOW_PUSH_TO_MAIN=1 git push
+#
+# Enable for this clone:  git config core.hooksPath .githooks
+
+set -euo pipefail
+
+PROTECTED_BRANCHES=("main")
+remote="${1:-}"
+url="${2:-}"
+
+zero_commit="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [[ "$local_sha" == "$zero_commit" ]] && continue  # branch deletion
+
+    short_remote="${remote_ref#refs/heads/}"
+    for protected in "${PROTECTED_BRANCHES[@]}"; do
+        if [[ "$short_remote" == "$protected" ]]; then
+            if [[ "${ALLOW_PUSH_TO_MAIN:-0}" == "1" ]]; then
+                echo "pre-push: ALLOW_PUSH_TO_MAIN=1 set; allowing direct push to '$protected'." >&2
+                continue
+            fi
+            echo "" >&2
+            echo "  pre-push: refusing direct push to protected branch '$protected'." >&2
+            echo "  Open a PR instead:" >&2
+            echo "    git checkout -b sprint-NN/<topic>" >&2
+            echo "    git push -u origin sprint-NN/<topic>" >&2
+            echo "    gh pr create --base main --draft" >&2
+            echo "" >&2
+            echo "  Override (NOT recommended):  ALLOW_PUSH_TO_MAIN=1 git push" >&2
+            echo "" >&2
+            exit 1
+        fi
+    done
+done
+
+exit 0
