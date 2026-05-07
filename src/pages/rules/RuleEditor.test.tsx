@@ -8,6 +8,12 @@ vi.mock('@/hooks/useRules', () => ({
   useRule: () => ({ data: null, isLoading: false }),
   useCreateRule: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateRule: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRuleTemplates: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('@/hooks/useTenantConfig', () => ({
+  useTenantConfig: () => ({ data: { tracking_modes: ['asset'], telemetry_subject_kinds: ['device'] } }),
+  useUpdateTenantConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/hooks/useDevices', () => ({

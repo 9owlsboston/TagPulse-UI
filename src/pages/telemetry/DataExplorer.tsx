@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Table, Select, Form, InputNumber, Button, Space, Typography, Segmented } from 'antd';
+import { Table, Select, Form, InputNumber, Button, Space, Typography, Segmented, Checkbox } from 'antd';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -10,8 +10,17 @@ import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
 
+const EPC_SCHEMES = ['sgtin-96', 'sgtin-198', 'sscc-96', 'giai-96', 'giai-202', 'grai-96', 'grai-170', 'raw'];
+
 const columns: ColumnsType<TagReadResponse> = [
   { title: 'Tag ID', dataIndex: 'tag_id' },
+  { title: 'EPC', dataIndex: 'epc', render: (v: string | null | undefined) => v ?? '—' },
+  {
+    title: 'Scheme',
+    dataIndex: 'epc_scheme',
+    render: (v: string | null | undefined) => v ?? '—',
+  },
+  { title: 'TID', dataIndex: 'tid', render: (v: string | null | undefined) => v ?? '—' },
   { title: 'Device', dataIndex: 'device_id' },
   {
     title: 'Timestamp',
@@ -20,6 +29,16 @@ const columns: ColumnsType<TagReadResponse> = [
     sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   },
   { title: 'Signal', dataIndex: 'signal_strength', render: (v: number | null) => v ?? '—' },
+  {
+    title: 'Latitude',
+    dataIndex: 'latitude',
+    render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+  },
+  {
+    title: 'Longitude',
+    dataIndex: 'longitude',
+    render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+  },
 ];
 
 export function DataExplorer() {
@@ -30,6 +49,8 @@ export function DataExplorer() {
   const [limit, setLimit] = useState(100);
   const [signalMin, setSignalMin] = useState<number | undefined>();
   const [signalMax, setSignalMax] = useState<number | undefined>();
+  const [hasLocation, setHasLocation] = useState(false);
+  const [epcScheme, setEpcScheme] = useState<string | undefined>();
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   const { data: devices } = useDevices();
@@ -40,9 +61,11 @@ export function DataExplorer() {
     return rawData.filter((r) => {
       if (signalMin !== undefined && (r.signal_strength === null || r.signal_strength < signalMin)) return false;
       if (signalMax !== undefined && (r.signal_strength === null || r.signal_strength > signalMax)) return false;
+      if (hasLocation && (r.latitude == null || r.longitude == null)) return false;
+      if (epcScheme && r.epc_scheme !== epcScheme) return false;
       return true;
     });
-  }, [rawData, signalMin, signalMax]);
+  }, [rawData, signalMin, signalMax, hasLocation, epcScheme]);
 
   const deviceOptions = useMemo(
     () => [
@@ -50,6 +73,14 @@ export function DataExplorer() {
       ...(devices ?? []).map((d) => ({ label: d.name, value: d.id })),
     ],
     [devices],
+  );
+
+  const epcSchemeOptions = useMemo(
+    () => [
+      { label: 'Any scheme', value: '' },
+      ...EPC_SCHEMES.map((s) => ({ label: s, value: s })),
+    ],
+    [],
   );
 
   const chartData = useMemo(
@@ -62,8 +93,41 @@ export function DataExplorer() {
 
   const handleExportCsv = () => {
     if (!data?.length) return;
-    const headers = ['tag_id', 'device_id', 'timestamp', 'signal_strength'];
-    const rows = data.map((r) => [r.tag_id, r.device_id, r.timestamp, r.signal_strength ?? ''].join(','));
+    const headers = [
+      'tag_id',
+      'epc',
+      'epc_scheme',
+      'tid',
+      'device_id',
+      'timestamp',
+      'signal_strength',
+      'latitude',
+      'longitude',
+      'location_accuracy_m',
+      'location_source',
+    ];
+    const escape = (v: unknown): string => {
+      if (v == null) return '';
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = data.map((r) =>
+      [
+        r.tag_id,
+        r.epc ?? '',
+        r.epc_scheme ?? '',
+        r.tid ?? '',
+        r.device_id,
+        r.timestamp,
+        r.signal_strength ?? '',
+        r.latitude ?? '',
+        r.longitude ?? '',
+        r.location_accuracy_m ?? '',
+        r.location_source ?? '',
+      ]
+        .map(escape)
+        .join(','),
+    );
     const csv = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -94,6 +158,14 @@ export function DataExplorer() {
             onChange={(v: string[]) => setTagId(v[0] || undefined)}
           />
         </Form.Item>
+        <Form.Item label="EPC Scheme">
+          <Select
+            options={epcSchemeOptions}
+            value={epcScheme ?? ''}
+            onChange={(v) => setEpcScheme(v || undefined)}
+            style={{ width: 140 }}
+          />
+        </Form.Item>
         <Form.Item label="Signal Min">
           <InputNumber value={signalMin} onChange={(v) => setSignalMin(v ?? undefined)} style={{ width: 100 }} />
         </Form.Item>
@@ -102,6 +174,11 @@ export function DataExplorer() {
         </Form.Item>
         <Form.Item label="Limit">
           <InputNumber min={1} max={1000} value={limit} onChange={(v) => setLimit(v ?? 100)} />
+        </Form.Item>
+        <Form.Item>
+          <Checkbox checked={hasLocation} onChange={(e) => setHasLocation(e.target.checked)}>
+            Has location
+          </Checkbox>
         </Form.Item>
       </Form>
       <Space style={{ marginBottom: 16 }}>

@@ -19,6 +19,19 @@ import { UsageDashboard } from '@/pages/admin/UsageDashboard';
 import { UserList } from '@/pages/admin/UserList';
 import { UserCreatePage } from '@/pages/admin/UserCreatePage';
 import { UserDetail } from '@/pages/admin/UserDetail';
+import { AuditLog } from '@/pages/admin/AuditLog';
+import { ProductList } from '@/pages/inventory/ProductList';
+import { ProductDetail } from '@/pages/inventory/ProductDetail';
+import { StockLevels } from '@/pages/inventory/StockLevels';
+import { StockMovements } from '@/pages/inventory/StockMovements';
+import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
+import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
+import LotDetail from '@/pages/inventory/LotDetail';
+import { AssetList } from '@/pages/assets/AssetList';
+import { AssetDetail } from '@/pages/assets/AssetDetail';
+import { SitesZones } from '@/pages/assets/SitesZones';
+import { MapPage } from '@/pages/map/MapPage';
+import { TenantSettings } from '@/pages/admin/TenantSettings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,10 +63,23 @@ export function App() {
                 <Route path="/alerts" element={<AlertHistory />} />
                 <Route path="/integrations" element={<IntegrationList />} />
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
+                <Route path="/assets" element={<AssetList />} />
+                <Route path="/assets/:id" element={<AssetDetail />} />
+                <Route path="/sites" element={<SitesZones />} />
+                <Route path="/map" element={<MapPage />} />
+                <Route path="/inventory/products" element={<ProductList />} />
+                <Route path="/inventory/products/:id" element={<ProductDetail />} />
+                <Route path="/inventory/lots" element={<LotExpiryQueue />} />
+                <Route path="/inventory/lots/:id" element={<LotDetail />} />
+                <Route path="/inventory/stock-levels" element={<StockLevels />} />
+                <Route path="/inventory/stock-movements" element={<StockMovements />} />
+                <Route path="/admin/tenant" element={<TenantSettings />} />
+                <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
                 <Route path="/admin/users" element={<UserList />} />
                 <Route path="/admin/users/new" element={<UserCreatePage />} />
                 <Route path="/admin/users/:id" element={<UserDetail />} />
+                <Route path="/admin/audit-logs" element={<AuditLog />} />
               </Route>
             </Routes>
           </TenantGuard>

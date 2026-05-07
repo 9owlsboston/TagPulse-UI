@@ -1,13 +1,34 @@
-import { Table, Button, Modal, Form, Input, Typography, Space, message, InputNumber } from 'antd';
+import { Table, Button, Modal, Form, Input, Typography, Space, message, InputNumber, Card, Select, Tag } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTelemetryModels, useCreateTelemetryModel, useDeleteTelemetryModel } from '@/hooks/useTelemetryModels';
+import { useTelemetryQuarantine } from '@/hooks/useTelemetry';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
-import type { TelemetryModelResponse, TelemetryModelCreate, MetricDefinition } from '@/types';
+import type {
+  TelemetryModelResponse,
+  TelemetryModelCreate,
+  MetricDefinition,
+  QuarantineReason,
+} from '@/types';
+import type { TelemetryQuarantineResponse } from '@/api/generated/models/TelemetryQuarantineResponse';
 
 const { Title } = Typography;
+
+const QUARANTINE_REASONS: { label: string; value: QuarantineReason }[] = [
+  { label: 'Unknown metric', value: 'unknown_metric' },
+  { label: 'Out of range', value: 'out_of_range' },
+  { label: 'Unit mismatch', value: 'unit_mismatch' },
+  { label: 'Stale timestamp', value: 'stale_timestamp' },
+];
+
+const REASON_COLOR: Record<QuarantineReason, string> = {
+  unknown_metric: 'orange',
+  out_of_range: 'red',
+  unit_mismatch: 'gold',
+  stale_timestamp: 'volcano',
+};
 
 const columns = (onDelete: (id: string) => void, showDelete: boolean): ColumnsType<TelemetryModelResponse> => [
   { title: 'Device Type', dataIndex: 'device_type' },
@@ -128,6 +149,80 @@ export function TelemetryModels() {
           </Form.Item>
         </Form>
       </Modal>
+      <RoleGuard roles={['admin']}>
+        <QuarantinePanel />
+      </RoleGuard>
     </div>
+  );
+}
+
+function QuarantinePanel() {
+  const [reason, setReason] = useState<QuarantineReason | undefined>();
+  const { data, isLoading } = useTelemetryQuarantine({ reason, limit: 200 });
+
+  const counts = useMemo(() => {
+    const byReason: Record<string, number> = {};
+    for (const entry of data ?? []) {
+      byReason[entry.reason] = (byReason[entry.reason] ?? 0) + 1;
+    }
+    return byReason;
+  }, [data]);
+
+  const columns: ColumnsType<TelemetryQuarantineResponse> = [
+    {
+      title: 'Received',
+      dataIndex: 'received_at',
+      render: (v: string) => new Date(v).toLocaleString(),
+      sorter: (a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime(),
+      defaultSortOrder: 'descend',
+    },
+    { title: 'Device', dataIndex: 'device_id', ellipsis: true },
+    { title: 'Metric', dataIndex: 'metric_name' },
+    {
+      title: 'Value',
+      dataIndex: 'metric_value',
+      render: (v: number | null) => (v == null ? '—' : v),
+    },
+    {
+      title: 'Reason',
+      dataIndex: 'reason',
+      render: (v: string) => (
+        <Tag color={REASON_COLOR[v as QuarantineReason] ?? 'default'}>{v}</Tag>
+      ),
+    },
+  ];
+
+  return (
+    <Card style={{ marginTop: 24 }} title="Quarantined readings">
+      <Space wrap style={{ marginBottom: 16 }}>
+        {QUARANTINE_REASONS.map((r) => (
+          <Tag key={r.value} color={REASON_COLOR[r.value]}>
+            {r.label}: {counts[r.value] ?? 0}
+          </Tag>
+        ))}
+        <Select
+          allowClear
+          placeholder="Filter by reason"
+          options={QUARANTINE_REASONS}
+          value={reason}
+          onChange={(v) => setReason(v)}
+          style={{ width: 200 }}
+        />
+      </Space>
+      <Table
+        rowKey="id"
+        size="small"
+        columns={columns}
+        dataSource={data ?? []}
+        loading={isLoading}
+        expandable={{
+          expandedRowRender: (record) => (
+            <pre style={{ margin: 0 }}>{JSON.stringify(record.raw_payload, null, 2)}</pre>
+          ),
+        }}
+        pagination={{ pageSize: 10 }}
+        locale={{ emptyText: 'No quarantined readings' }}
+      />
+    </Card>
   );
 }

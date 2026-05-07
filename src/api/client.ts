@@ -67,6 +67,7 @@ import type {
   DeviceCreate,
   DeviceUpdate,
   DeviceResponse,
+  DeviceTokenResponse,
   TagReadResponse,
   ReadsPerHour,
   UniqueTagsPerWindow,
@@ -82,6 +83,7 @@ import type {
   AnalyticsResultResponse,
   TelemetryModelCreate,
   TelemetryModelResponse,
+  DeviceTelemetryReading,
   UsageRecord,
   UsageSummary,
   UserCreate,
@@ -100,6 +102,8 @@ export const devicesApi = {
     request<DeviceResponse>(`/device-registry/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   decommission: (id: string) =>
     request<DeviceResponse>(`/device-registry/${id}/decommission`, { method: 'POST' }),
+  rotateToken: (id: string) =>
+    request<DeviceTokenResponse>(`/device-registry/${id}/rotate-token`, { method: 'POST' }),
 };
 
 // ── Tag Reads ──
@@ -173,6 +177,21 @@ export const telemetryModelsApi = {
   delete: (id: string) => request<void>(`/telemetry-models/${id}`, { method: 'DELETE' }),
 };
 
+// ── Device Telemetry (Sprint 14, /telemetry hypertable query) ──
+
+export const telemetryApi = {
+  list: (params?: {
+    device_id?: string;
+    metric_name?: string;
+    start?: string;
+    end?: string;
+    limit?: number;
+  }) => request<DeviceTelemetryReading[]>(`/telemetry${qs(params ?? {})}`),
+};
+// Telemetry quarantine moved to the generated client; see
+// `TelemetryService.listTelemetryQuarantineTelemetryQuarantineGet` consumed
+// from `useTelemetry.useTelemetryQuarantine`.
+
 // ── Usage ──
 
 export const usageApi = {
@@ -180,6 +199,27 @@ export const usageApi = {
     request<UsageRecord[]>(`/admin/usage${qs(params ?? {})}`),
   summary: (params?: { start?: string; end?: string }) =>
     request<UsageSummary[]>(`/admin/usage/summary${qs(params ?? {})}`),
+};
+
+// ── Audit Logs ──
+
+export interface AuditLogEntry {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  changes: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export const auditLogsApi = {
+  list: (params?: {
+    resource_type?: string;
+    actions?: string;
+    limit?: number;
+    offset?: number;
+  }) => request<AuditLogEntry[]>(`/admin/audit-logs${qs(params ?? {})}`),
 };
 
 // ── Users ──

@@ -4,6 +4,107 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+- **Sprint 21 — Subject-Scoped Telemetry: UI** (closes the seven UI items deferred from Sprint 20 per [TagPulse roadmap.md L377](../TagPulse/docs/roadmap.md#L377)).
+  - Regenerated typed API client from the live backend `openapi.json` (Sprint 19/20/21 surface). New models: `LatestTelemetryEntry`, `TenantConfig.telemetry_subject_kinds`, `TenantConfigUpdate.telemetry_subject_kinds`, `AssetResponse.latest_telemetry`, `LotResponse.latest_telemetry`, `TelemetryReadingResponse` (subject-scoped). New service methods: `TelemetryService.listTelemetryReadingsTelemetryReadingsGet`, `…Aggregates…`, `…IngestPost`; `RulesService.listRuleTemplatesRuleTemplatesGet`, `…getRuleTemplate…`.
+  - **Tenant Settings — subject-scoped telemetry opt-in card** ([src/pages/admin/TenantSettings.tsx](src/pages/admin/TenantSettings.tsx)). New "Subject-scoped telemetry" card with switches for `asset` / `lot` / `stock_item` / `zone` (`device` is implicit and always saved). Drives the gating for every other Sprint 21 surface.
+  - **Asset detail — Telemetry tab** ([src/pages/assets/AssetDetail.tsx](src/pages/assets/AssetDetail.tsx)). New tab consuming the shared `<SubjectTelemetryTab subjectKind="asset" />`. Shows the metric picker (driven by the embedded `latest_telemetry`), a time-range picker, and a Recharts line chart of `GET /telemetry/readings?subject_kind=asset&subject_id=…`. Renders an opt-in warning when the tenant hasn't enabled `asset` in subject-scoped telemetry.
+  - **Assets list — opt-in Temperature column** ([src/pages/assets/AssetList.tsx](src/pages/assets/AssetList.tsx)). Column appears only when `asset` is in `tenant.telemetry_subject_kinds`; pulls `temperature_c` from the embedded `latest_telemetry` on each row (forward-compatible — renders `—` if the row doesn't carry it).
+  - **Lot detail page** ([src/pages/inventory/LotDetail.tsx](src/pages/inventory/LotDetail.tsx)) — new route `/inventory/lots/:id`. Overview tab with descriptions + **Cold-chain card** (`Statistic` showing latest `temperature_c` against an 8 °C threshold, BREACH/OK badge, error alert + nudge to the rule-template gallery on breach). Telemetry tab reuses `<SubjectTelemetryTab subjectKind="lot" />`. Lot Expiry Queue rows now link to the new detail page via `lot_code`.
+  - **Devices → Telemetry — `subject_kind` filter** ([src/pages/devices/DeviceTelemetryTab.tsx](src/pages/devices/DeviceTelemetryTab.tsx)). New `Select` narrows the device-scoped telemetry view by `metadata.subject_kind`: `all` / `device (self)` / `asset` / `lot` / `stock_item` (treats missing `metadata.subject_kind` as `device` for legacy rows).
+  - **Rules editor — subject-scoped telemetry condition + template gallery** ([src/pages/rules/RuleEditor.tsx](src/pages/rules/RuleEditor.tsx)). New condition type `telemetry.threshold` with a `subject_kind` selector (filtered against the tenant's `telemetry_subject_kinds` opt-ins), metric / operator / value / cooldown fields. New "Start from template" button opens a modal driven by `GET /rule-templates`; templates whose `requires_subject_kind` isn't enabled are disabled with an orange tag. Selecting a template pre-fills the form. New `useRuleTemplates` hook in [src/hooks/useRules.ts](src/hooks/useRules.ts).
+  - **Alert history — subject context** ([src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx)). New **Subject** column reads `context.subject_kind` + `context.subject_id` and links to the matching detail page (`/assets/:id`, `/inventory/lots/:id`, or `/devices/:id`). Every alert row is now expandable and renders the full `context` JSON, satisfying the Sprint 21 "alert detail subject context" deliverable.
+  - Shared `<SubjectTelemetryTab>` component ([src/components/SubjectTelemetryTab.tsx](src/components/SubjectTelemetryTab.tsx)) and `useSubjectTelemetry` hook ([src/hooks/useTelemetry.ts](src/hooks/useTelemetry.ts)) to avoid duplicating the chart wiring across asset and lot details.
+  - `useLot(lotId)` hook added to [src/hooks/useInventory.ts](src/hooks/useInventory.ts).
+  - Tests: new [src/pages/inventory/LotDetail.test.tsx](src/pages/inventory/LotDetail.test.tsx) (2 cases — lot/product render, cold-chain breach badge); existing `RuleEditor.test.tsx` extended with mocks for `useRuleTemplates` and `useTenantConfig`. **44 tests passing total** (was 42).
+
+- **Sprint 16 mitigation — Admin Audit Log page**:
+  - New `/admin/audit-logs` route (admin-only) — `src/pages/admin/AuditLog.tsx`. AntD `Table` of tenant audit entries (timestamp, action tag, resource, user, JSON-changes peek with hover-to-expand tooltip).
+  - `Segmented` preset selector with **All**, **Device security events** (filters server-side via `actions=device.token_rotated,device.cert_attached,device.approved,device.rejected` per design [identity-device-provisioning.md §7](../TagPulse/docs/design/identity-device-provisioning.md)), **Tenant config**, **User management**.
+  - New `useAuditLogs` hook (`src/hooks/useAuditLogs.ts`) + `auditLogsApi` in `src/api/client.ts` + sidebar `Audit Log` entry under admin tier.
+  - Regenerated typed API client picks up the new `?actions=` query param on `AdminService.listAuditLogsAdminAuditLogsGet`.
+  - Tests: `AuditLog.test.tsx` (3 cases — default preset, preset switch comma-joins actions, action tag renders). **42 tests passing total.**
+
+- **Sprint 17 — Geofencing & Map UI + mTLS cert attach (UI)**
+  - Regenerated typed API client — adds `MapConfigResponse`, `TileProviderUpdate`, `DeviceCertAttach`, `DeviceCertResponse` models, plus `TenantService.getMapConfig*` / `updateMapConfig*` and `DeviceRegistryService.attachDeviceCert*` methods. `ZoneResponse` exposes `polygon_geojson` + denormalized bbox columns.
+  - **Map page** (`/map`, viewer+, gated by tracking_modes `asset`): provider-agnostic Leaflet map driven by `GET /tenant/map-config` (falls back to OSM). Live asset markers (24h-old positions when the time-slider is dragged), geofence polygons rendered from `polygon_geojson`, layer toggles for assets/zones, and a 24h time-slider that resolves each visible asset's position via `GET /assets/{id}/path`. Markers click through to asset detail; mobile-mobility assets get a colored ring (proxy for the carriers spec). Footer always renders the resolver `attribution`; OSM-default footer renders the dev-only warning per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md).
+  - **Zone editor — polygon draw**: `src/components/PolygonDraw.tsx` — click-to-add vertex, undo, clear; emits valid GeoJSON `Polygon` (auto-closes the ring; server validates the rest). Wired into the **Sites & Zones** zone-create modal so picking `kind=geofence` swaps the readers picker for a draw map. (No `leaflet-draw` dependency — pure react-leaflet event handlers.)
+  - **Rule wizard — geofence step**: adds three new condition types (`zone.entered`, `zone.exited`, `zone.dwell_exceeded`) with zone picker, `subject_kinds` multi-select (asset / stock_item / device), optional `cooldown_s`, and (for dwell) a required `dwell_minutes` input. `src/types.ts` `ConditionType` union extended.
+  - **Device detail — Security tab (Sprint 17b)**: shows `cert_thumbprint` (copy-on-click) and `cert_subject` alongside the existing token info. Admin-only **Attach cert** / **Replace cert** modal accepts a PEM-encoded X.509 certificate, validates the `BEGIN CERTIFICATE` marker client-side, and posts to `/device-registry/{id}/cert`. UI surfaces the ADR-012 promise that the backend stores only the SHA-256 thumbprint + RFC 4514 subject and discards the PEM. `useAttachDeviceCert` hook added.
+  - **Sidebar**: new **Map** entry (viewer+, requires tracking_mode `asset`).
+  - `src/hooks/useMapConfig.ts` with an `OSM_FALLBACK` constant for offline-dev rendering.
+  - **Map page — stock-density layer**: third layer toggle ("Stock density") aggregates `GET /inventory/stock-levels` quantities per `zone_id` and overlays geofence polygons with fill opacity scaled to total quantity (red shading + qty label tooltip). Per design [geofencing-and-map.md §6](../TagPulse/docs/design/geofencing-and-map.md).
+  - **Map page — carrier manifest pop-out**: every asset popup gets a "View manifest →" link that opens an AntD `Tree` modal of the recursive `GET /assets/{id}/manifest` response, satisfying [mobile-carriers-and-manifests.md](../TagPulse/docs/design/mobile-carriers-and-manifests.md) §4. Empty children render a graceful "not carrying any child assets" state. New `useAssetManifest` hook in `src/hooks/useAssets.ts`.
+  - Tests: `MapPage.test.tsx` mocks `react-leaflet` + `leaflet` (incl. `Tooltip`) plus the new `useAssetManifest` and `useStockLevels` hooks; `DeviceDetail.test.tsx` mock extended with `useAttachDeviceCert`. **39 passing total.**
+
+- **Sprint 16 — Edge Contract & Identity Hardening (UI)**
+  - Regenerated typed API client from backend `openapi.json` — adds `DeviceTokenResponse` model and `DeviceRegistryService.rotateDeviceToken*` method.
+  - Hand-written `devicesApi.rotateToken` (POST `/device-registry/{id}/rotate-token`) and `useRotateDeviceToken` mutation hook (invalidates the device + device-list caches on success).
+  - **Device detail — Security tab**: shows `token_prefix` and `token_rotated_at` (per ADR-011 Phase 1). Admin-gated **Rotate token** button opens a confirm dialog warning that the current token is invalidated immediately, then displays the new plaintext token in a copy-once modal with a clipboard-copy button. Modal cannot be reopened — the warning makes clear the value cannot be retrieved again (backend stores SHA-256 only).
+  - **Device detail — Heartbeat tab**: connection state, firmware version, last-seen, mobility, and the device's MQTT-published configuration JSON.
+  - **Device list — admin "Last Rotated" column**: visible only when the current user has the `admin` role; renders `token_rotated_at` or `never` per [edge-device-contract.md §7](../TagPulse/docs/design/edge-device-contract.md).
+  - `DeviceResponse` extended in `src/types.ts` with `token_prefix`, `token_rotated_at`, `mobility`.
+  - Tests updated — `DeviceDetail.test.tsx` mocks `useRotateDeviceToken`, asserts the new tab labels (Heartbeat, Security), and verifies the **Rotate token** button renders for admins. **37 passing total.**
+
+- **Sprint 15 — Phase F: Assets, Sites & Zones UI**
+  - New hook module `src/hooks/useAssets.ts` — `useAssets`, `useAsset`, `useCreateAsset`, `useUpdateAsset`, `useRetireAsset`, `useAssetBindings`, `useBindTag`, `useUnbindTag`, `useAssetExternalPositions`, `useTagReadsForBinding` (legacy fallback), `useAssetCurrentLocation`, `useAssetPath`, `useAssetsInZone`, `useSites`, `useSite`, `useCreateSite`, `useUpdateSite`, `useDeleteSite`, `useZones`, `useCreateZone`, `useUpdateZone`, `useDeleteZone`. All wrap the generated `AssetsService` / `SitesZonesService` with consistent react-query cache keys.
+  - **Pages**:
+    - `pages/assets/AssetList.tsx` — searchable list (name / external_ref / tag), status filter, "Register Asset" modal (editor+).
+    - `pages/assets/AssetDetail.tsx` — Overview (descriptions + current-location card now driven by `useAssetCurrentLocation`), Bindings tab (active + history with bind / unbind, editor+), Recent Path tab — prefers the server-merged `useAssetPath` (RFID + external in one query) and falls back to the legacy client-side merge. Sources are **badged** (RFID vs `latest_position_source` external) per [mobile-carriers-and-manifests.md §10 Q5](../TagPulse/docs/design/mobile-carriers-and-manifests.md).
+    - `pages/assets/SitesZones.tsx` — collapsible site list (admin), per-site zone table with multi-select reader picker from the device registry, create / delete site & zone modals. New per-zone **Occupants** modal backed by `useAssetsInZone` showing assets currently in the zone.
+  - **Device detail** — new "Covers Zones" panel listing zones whose `fixed_reader_ids` include this device.
+  - **Dashboard** — new **Active Assets** KPI tile (gated by `tenants.tracking_modes` containing `asset`).
+  - **Sidebar** — new **Assets** + **Sites & Zones** entries (gated by `tracking_modes` containing `asset`); Sites & Zones writes are admin-only.
+  - **Routes** — `/assets`, `/assets/:id`, `/sites`.
+  - Regenerated typed API client (new `AssetCurrentLocation`, `AssetPathPoint`, `AssetInZoneSummary` models; new `getAssetCurrentLocation*`, `getAssetPath*`, `listAssetsInZone*` methods).
+  - Smoke tests in `src/pages/assets/Assets.test.tsx` for `AssetList` and `SitesZones` — updated mocks for `useAssetsInZone`. **36 passing total.**
+
+
+  - New hook `src/hooks/useTenantConfig.ts` — `useTenantConfig` + `useUpdateTenantConfig` wrap `GET/PATCH /tenant/config`.
+  - New page `pages/admin/TenantSettings.tsx` — tabbed admin surface (General toggles `tracking_modes`, Sensor metrics embeds `TelemetryModels`, Tag-data fields embeds `TagDataMappings` and is hidden when inventory mode is off). Routed at `/admin/tenant`.
+  - New page `pages/inventory/LotExpiryQueue.tsx` — cross-product lot list (default 7-day window, expandable to 24h/30d/90d/all) backed by the new `GET /lots` endpoint and `useAllLots` hook. Sorted by soonest expiry, status tags (expired/orange/gold/green), product name links to `ProductDetail`. Routed at `/inventory/lots`.
+  - **Sidebar gating** — `Layout.tsx` now reads `tenant.tracking_modes` and hides inventory entries (Products / Lot Expiry / Stock Levels / Stock Movements) when inventory mode is disabled. Replaced standalone "Tag-data Mappings" item with "Tenant Settings" (admin).
+  - Regenerated typed API client (`TenantService`, `InventoryService.listAllLotsLotsGet`, `TenantConfig*` models).
+  - **34 passing tests retained.**
+
+- **Sprint 15b — Phase F: Inventory UI**
+  - Regenerated typed API client from backend `openapi.json` — adds `InventoryService`, `SitesZonesService`, `AssetsService`, plus `Product*`, `Lot*`, `StockItem*`, `StockLevelRow`, `StockMovementResponse`, `TagDataMapping*` models.
+  - New hook module `src/hooks/useInventory.ts` — `useProducts`, `useProduct`, `useCreateProduct`, `useUpdateProduct`, `useDeleteProduct`, `useLots`, `useCreateLot`, `useStockLevels`, `useStockMovements`, `useTagDataMappings`, `useCreateTagDataMapping`, `useDeleteTagDataMapping`. All wrap the generated `InventoryService` with consistent react-query cache keys.
+  - **Pages**:
+    - `pages/inventory/ProductList.tsx` — searchable catalog table, click-through to detail, "New Product" modal (editor+).
+    - `pages/inventory/ProductDetail.tsx` — header descriptions, **stock-by-zone bar chart** (Recharts), Lots sub-section with expiry colour-coding (red < today, orange < 7 d) and "New Lot" modal.
+    - `pages/inventory/StockLevels.tsx` — pivot grid (product × zone × total) with `unassigned` bucket for nulls, **CSV export** (`stock-levels.csv`).
+    - `pages/inventory/StockMovements.tsx` — chronological ledger filtered by product/zone/time range, movement-type colour tags (enter/exit/transfer/consume).
+    - `pages/inventory/TagDataMappings.tsx` (admin) — list, scope-aware create modal (tenant vs product), delete with confirm.
+  - **Rule wizard extension** (`pages/rules/RuleEditor.tsx`) — new condition steps for `stock.below_threshold`, `stock.expiring_within`, `stock.unexpected_in_zone` with product/zone selectors backed by inventory + zones APIs.
+  - **Sidebar** — Products, Stock Levels, Stock Movements (viewer+) and Tag-data Mappings (admin) menu entries.
+  - **Routes** — `/inventory/products`, `/inventory/products/:id`, `/inventory/stock-levels`, `/inventory/stock-movements`, `/admin/tag-data-mappings`.
+  - `ConditionType` union extended with the three `stock.*` literals.
+  - Smoke tests in `src/pages/inventory/Inventory.test.tsx` for `ProductList` rendering and `StockLevels` pivot aggregation. **34 passing total.**
+
+- **Sprint 14 (1/2) — Device detail: Telemetry & Location tabs**
+  - Type extensions for migration 016: `TagReadResponse` gains optional `latitude`, `longitude`, `location_accuracy_m`, `location_source`, `epc`, `epc_hex`, `epc_scheme`, `epc_decoded`, `tid`, `user_memory_hex`, `tag_data`, `reader_antenna`. New `Location`, `Identity`, `LocationSource`, `DeviceTelemetryReading`, `TelemetryReadingCreate`, `TelemetryBatch` types.
+  - New API surface: `telemetryApi.list()` → `GET /telemetry` (filterable by device + metric + time range) and `useDeviceTelemetry()` hook.
+  - Device detail **Overview tab — "Last Read" panel**: surfaces `tag_id`, `timestamp`, `epc`, `epc_scheme` (badge), `tid`, `reader_antenna`, `signal_strength`, `latitude/longitude (source)`. Conditionally renders `epc_decoded` and `tag_data` JSON blocks.
+  - Device detail **Telemetry tab — rebuilt**: per-`metric_name` selector populated from the device's telemetry model; time-range picker; unit-aware Y-axis label; model min/max applied to Y domain; "source: tag" badge with count when readings carry `metadata.source='tag'` (per [rfid-tag-data-model.md §7](../TagPulse/docs/design/rfid-tag-data-model.md)). Empty-state when no model is defined for the device type.
+  - Device detail **new Location tab**: last-known lat/lon descriptions panel; Leaflet mini-map with OSM tiles (provider-agnostic resolver lands in Sprint 17a per [geofencing-and-map.md §11 Q4](../TagPulse/docs/design/geofencing-and-map.md)); marker popup + accuracy radius `Circle` when `location_accuracy_m` is present; default Leaflet marker icon paths rewired to imported assets (Vite-safe).
+  - New deps: `leaflet`, `react-leaflet`, `@types/leaflet` (~40 KB gzip per ADR-007).
+- **Sprint 14 (2/2) — Data Explorer / Dashboard / Quarantine / Rule wizard**
+  - New `QuarantineReason` literal type (`unknown_metric` | `out_of_range` | `unit_mismatch` | `stale_timestamp`) for the filter UI; the wire shape now comes from the **generated** client (`TelemetryQuarantineResponse`) — first consumer of the regenerated typed client.
+  - Bootstrap: `src/api/configureGenerated.ts` wires `OpenAPI.TOKEN`/`OpenAPI.HEADERS` resolvers to the same `__TAGPULSE_TOKEN__`/`__TAGPULSE_TENANT_ID__` window globals the hand-written client uses, imported once from `main.tsx`.
+  - `useTelemetryQuarantine()` calls `TelemetryService.listTelemetryQuarantineTelemetryQuarantineGet()` (replaces the hand-written `telemetryApi.quarantine`, which is removed).
+  - `src/api/generated/` is now committed (un-ignored) because app code imports from it; CI does not run `generate-api`. Regeneration remains reproducible from `../TagPulse/openapi.json`.
+  - **Data Explorer** surfaces the new tag fields:
+    - New columns: `EPC`, `Scheme`, `TID`, `Latitude`, `Longitude` (lat/lon to 5 decimals).
+    - New filters: **"Has location"** checkbox (client-side), **EPC Scheme** selector (sgtin-96/198, sscc-96, giai-96/202, grai-96/170, raw).
+    - CSV export now includes `epc`, `epc_scheme`, `tid`, `latitude`, `longitude`, `location_accuracy_m`, `location_source` and quotes fields containing commas/quotes/newlines.
+  - **Overview dashboard KPI tile** — "Devices reporting location (24h)": distinct device IDs with at least one geotagged read in the last 24 h, computed client-side from `/tag-reads?start=…` (limit 1000). Ready for server-side promotion when cardinality grows.
+  - **Telemetry Models — quarantine panel** (admin-only per design Decision #3):
+    - Tag chips show counts per reason.
+    - Reason filter selector.
+    - Expandable rows reveal the raw payload JSON.
+  - **Rule wizard — threshold field hints**: "Field" input is now an `AutoComplete` populated with `signal_strength`, every `metric_name` from every telemetry model (with unit + device_type), and a `tag_data.<key>` placeholder (per [rfid-tag-data-model.md §7](../TagPulse/docs/design/rfid-tag-data-model.md)).
+
 ### Fixed
 - **CI quality gates green again.** `npm run check` (lint + typecheck + test) was red on `main` after the Sprint 13 merge.
   - `eslint.config.js`: added missing browser globals (`localStorage`, `sessionStorage`, `atob`, `setInterval`, etc.) so the auth code in `lib/auth.tsx` and the polling code in `components/KpiTile.tsx` lint cleanly.

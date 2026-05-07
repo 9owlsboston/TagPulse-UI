@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -22,6 +22,8 @@ vi.mock('@/hooks/useDevices', () => ({
     isLoading: false,
   }),
   useDecommissionDevice: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRotateDeviceToken: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAttachDeviceCert: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/hooks/useTagReads', () => ({
@@ -85,10 +87,18 @@ describe('DeviceDetail', () => {
     expect(screen.getByText('Overview')).toBeInTheDocument();
     expect(screen.getByText('Telemetry')).toBeInTheDocument();
     expect(screen.getByText('Health')).toBeInTheDocument();
+    expect(screen.getByText('Heartbeat')).toBeInTheDocument();
+    expect(screen.getByText('Security')).toBeInTheDocument();
   });
 
   it('renders decommission button for active device', () => {
     render(<DeviceDetail />, { wrapper });
     expect(screen.getByText('Decommission')).toBeInTheDocument();
+  });
+
+  it('renders rotate token button on Security tab', () => {
+    render(<DeviceDetail />, { wrapper });
+    fireEvent.click(screen.getByText('Security'));
+    expect(screen.getByText('Rotate token')).toBeInTheDocument();
   });
 });

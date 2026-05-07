@@ -9,9 +9,19 @@ import {
   BarChartOutlined,
   DatabaseOutlined,
   TeamOutlined,
+  ShoppingOutlined,
+  AppstoreOutlined,
+  SwapOutlined,
+  ClockCircleOutlined,
+  TagOutlined,
+  EnvironmentOutlined,
+  GlobalOutlined,
+  SettingOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
+import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { Button, Typography } from 'antd';
 
 const { Sider, Header, Content } = AntLayout;
@@ -25,8 +35,17 @@ const ALL_MENU_ITEMS = [
   { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' as const },
   { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' as const },
   { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' as const },
+  { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer' as const, requires: 'asset' as const },
+  { key: '/sites', icon: <EnvironmentOutlined />, label: 'Sites & Zones', minRole: 'viewer' as const, requires: 'asset' as const },
+  { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer' as const, requires: 'asset' as const },
+  { key: '/inventory/products', icon: <ShoppingOutlined />, label: 'Products', minRole: 'viewer' as const, requires: 'inventory' as const },
+  { key: '/inventory/lots', icon: <ClockCircleOutlined />, label: 'Lot Expiry', minRole: 'viewer' as const, requires: 'inventory' as const },
+  { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer' as const, requires: 'inventory' as const },
+  { key: '/inventory/stock-movements', icon: <SwapOutlined />, label: 'Stock Movements', minRole: 'viewer' as const, requires: 'inventory' as const },
+  { key: '/admin/tenant', icon: <SettingOutlined />, label: 'Tenant Settings', minRole: 'admin' as const },
   { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage', minRole: 'admin' as const },
   { key: '/admin/users', icon: <TeamOutlined />, label: 'Users', minRole: 'admin' as const },
+  { key: '/admin/audit-logs', icon: <AuditOutlined />, label: 'Audit Log', minRole: 'admin' as const },
 ];
 
 const ROLE_LEVEL: Record<string, number> = { viewer: 0, editor: 1, admin: 2 };
@@ -35,9 +54,13 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, role, tenantId, logout } = useAuth();
+  const { data: tenantConfig } = useTenantConfig();
+  const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
   const menuItems = ALL_MENU_ITEMS.filter(
-    (item) => (ROLE_LEVEL[role] ?? 0) >= (ROLE_LEVEL[item.minRole] ?? 0),
+    (item) =>
+      (ROLE_LEVEL[role] ?? 0) >= (ROLE_LEVEL[item.minRole] ?? 0) &&
+      (item.requires === undefined || enabledModes.has(item.requires)),
   );
 
   const selectedKey = menuItems.filter((item) =>
@@ -70,7 +93,11 @@ export function Layout() {
             </>
           ) : (
             <>
-              <Text type="secondary">Tenant: {tenantId}</Text>
+              <Text type="secondary">
+                {tenantConfig?.name
+                  ? `Tenant: ${tenantConfig.name}`
+                  : `Tenant: ${tenantId}`}
+              </Text>
               <Tag>viewer</Tag>
             </>
           )}

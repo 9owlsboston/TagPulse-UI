@@ -5,6 +5,8 @@ import {
   ReadOutlined,
   AlertOutlined,
   WarningOutlined,
+  EnvironmentOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -12,10 +14,12 @@ import 'react-resizable/css/styles.css';
 import { KpiTile } from '@/components/KpiTile';
 import { DeviceHealthCard } from '@/components/DeviceHealthCard';
 import { useDevices } from '@/hooks/useDevices';
-import { useReadsPerHour } from '@/hooks/useTagReads';
+import { useReadsPerHour, useTagReads } from '@/hooks/useTagReads';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useDeviceHealthList } from '@/hooks/useDeviceHealth';
 import { useReadFrequency } from '@/hooks/useAnalytics';
+import { useAssets } from '@/hooks/useAssets';
+import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useSSE } from '@/lib/sse';
 
 const { Title } = Typography;
@@ -27,9 +31,11 @@ const DEFAULT_LAYOUTS = {
     { i: 'kpi-reads', x: 3, y: 0, w: 3, h: 2 },
     { i: 'kpi-alerts', x: 6, y: 0, w: 3, h: 2 },
     { i: 'kpi-anomalies', x: 9, y: 0, w: 3, h: 2 },
-    { i: 'recent-alerts', x: 0, y: 2, w: 6, h: 5 },
-    { i: 'device-health', x: 6, y: 2, w: 6, h: 5 },
-    { i: 'live-counter', x: 0, y: 7, w: 12, h: 2 },
+    { i: 'kpi-location', x: 0, y: 2, w: 3, h: 2 },
+    { i: 'kpi-assets', x: 3, y: 2, w: 3, h: 2 },
+    { i: 'recent-alerts', x: 0, y: 4, w: 6, h: 5 },
+    { i: 'device-health', x: 6, y: 4, w: 6, h: 5 },
+    { i: 'live-counter', x: 0, y: 9, w: 12, h: 2 },
   ],
 };
 
@@ -43,10 +49,21 @@ export function Dashboard() {
     d.setHours(0, 0, 0, 0);
     return d.toISOString();
   }, []);
+  const last24hStart = useMemo(
+    () => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    [],
+  );
   const readsPerHourQuery = useReadsPerHour({ start: todayStart });
   const alertsQuery = useAlerts({ status: 'open', limit: 5 });
   const healthQuery = useDeviceHealthList('active');
   const anomalyQuery = useReadFrequency({ metric: 'anomaly_count', limit: 1 });
+  // KPI: distinct devices that produced a read with location in the last 24h.
+  // Client-side aggregation against the existing tag-reads endpoint; can be
+  // promoted to a dedicated server endpoint if cardinality grows.
+  const locationReadsQuery = useTagReads({ start: last24hStart, limit: 1000 });
+  const { data: tenantConfig } = useTenantConfig();
+  const assetModeEnabled = (tenantConfig?.tracking_modes ?? ['asset']).includes('asset');
+  const activeAssetsQuery = useAssets({ status: 'active', limit: 1000 });
   const [liveCount, setLiveCount] = useState(0);
 
   useSSE(SSE_EVENTS, SSE_QUERY_KEYS, () => setLiveCount((c) => c + 1));
@@ -63,6 +80,13 @@ export function Dashboard() {
     () => anomalyQuery.data?.reduce((sum, r) => sum + r.metric_value, 0) ?? 0,
     [anomalyQuery.data],
   );
+  const devicesReportingLocation = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of locationReadsQuery.data ?? []) {
+      if (r.latitude != null && r.longitude != null) ids.add(r.device_id);
+    }
+    return ids.size;
+  }, [locationReadsQuery.data]);
 
   return (
     <div>
@@ -88,6 +112,24 @@ export function Dashboard() {
         <div key="kpi-anomalies">
           <KpiTile title="Anomalies" value={anomalies} prefix={<WarningOutlined />} loading={loading} />
         </div>
+        <div key="kpi-location">
+          <KpiTile
+            title="Devices reporting location (24h)"
+            value={devicesReportingLocation}
+            prefix={<EnvironmentOutlined />}
+            loading={locationReadsQuery.isLoading}
+          />
+        </div>
+        {assetModeEnabled && (
+          <div key="kpi-assets">
+            <KpiTile
+              title="Active Assets"
+              value={activeAssetsQuery.data?.length ?? 0}
+              prefix={<TagOutlined />}
+              loading={activeAssetsQuery.isLoading}
+            />
+          </div>
+        )}
         <div key="recent-alerts" style={{ overflow: 'auto' }}>
           <Title level={4}>Recent Alerts</Title>
           {alertsQuery.isLoading ? (
