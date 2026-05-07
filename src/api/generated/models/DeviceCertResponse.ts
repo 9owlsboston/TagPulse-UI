@@ -3,9 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type DeviceCertResponse = {
-    attached_at: string;
     device_id: string;
-    subject: (string | null);
     thumbprint: string;
+    subject: (string | null);
+    attached_at: string;
 };
 

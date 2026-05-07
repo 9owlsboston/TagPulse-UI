@@ -6,11 +6,11 @@
  * Partial update for an integration.
  */
 export type IntegrationUpdate = {
-    config?: (Record<string, any> | null);
-    enabled?: (boolean | null);
-    enrichments?: (Record<string, string> | null);
-    events?: (Array<string> | null);
-    filters?: null;
     name?: (string | null);
+    events?: (Array<string> | null);
+    config?: (Record<string, any> | null);
+    filters?: null;
+    enrichments?: (Record<string, string> | null);
+    enabled?: (boolean | null);
 };
 

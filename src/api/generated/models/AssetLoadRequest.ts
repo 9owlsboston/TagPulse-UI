@@ -6,7 +6,7 @@
  * POST /assets/{id}/load — attach a child asset to a carrier.
  */
 export type AssetLoadRequest = {
-    at?: (string | null);
     parent_asset_id: string;
+    at?: (string | null);
 };
 

@@ -21,15 +21,33 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
   const [metricName, setMetricName] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
+  // Sprint 21: filter readings whose `metadata.subject_kind` matches the
+  // selection. When `all` (default), no filtering applied. The backend
+  // device-scoped endpoint returns rows that may carry a resolved subject in
+  // `metadata` (set by the tag-borne fan-out path); this lets operators
+  // narrow to just the device-self rows or just the tag-borne ones.
+  const [subjectKindFilter, setSubjectKindFilter] = useState<string>('all');
 
   const effectiveMetric = metricName ?? metrics[0]?.name;
-  const { data: readings, isLoading } = useDeviceTelemetry({
+  const { data: rawReadings, isLoading } = useDeviceTelemetry({
     device_id: deviceId,
     metric_name: effectiveMetric,
     start,
     end,
     limit: 500,
   });
+
+  const readings = useMemo(() => {
+    if (subjectKindFilter === 'all') return rawReadings ?? [];
+    return (rawReadings ?? []).filter((r) => {
+      const sk = r.metadata?.subject_kind;
+      if (subjectKindFilter === 'device') {
+        // Treat missing subject_kind as 'device' (legacy device-only rows).
+        return !sk || sk === 'device';
+      }
+      return sk === subjectKindFilter;
+    });
+  }, [rawReadings, subjectKindFilter]);
 
   const metricDef = metrics.find((m) => m.name === effectiveMetric);
   const unit = metricDef?.unit ?? readings?.[0]?.unit ?? '';
@@ -83,6 +101,18 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
             setStart(s);
             setEnd(e);
           }}
+        />
+        <Select
+          value={subjectKindFilter}
+          onChange={setSubjectKindFilter}
+          style={{ width: 200 }}
+          options={[
+            { label: 'All subject kinds', value: 'all' },
+            { label: 'Device (self)', value: 'device' },
+            { label: 'Asset (tag-borne)', value: 'asset' },
+            { label: 'Lot (tag-borne)', value: 'lot' },
+            { label: 'Stock item (tag-borne)', value: 'stock_item' },
+          ]}
         />
         {tagSourceCount > 0 && (
           <AntTooltip title="Some readings were mirrored from tag_data on a tag_read row (RFID sensor tag).">

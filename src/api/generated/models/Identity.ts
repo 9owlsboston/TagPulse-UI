@@ -7,9 +7,9 @@
  */
 export type Identity = {
     epc?: (string | null);
-    epc_decoded?: (Record<string, any> | null);
     epc_hex?: (string | null);
     epc_scheme?: (string | null);
+    epc_decoded?: (Record<string, any> | null);
     tid?: (string | null);
     user_memory_hex?: (string | null);
 };

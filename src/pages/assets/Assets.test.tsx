@@ -24,6 +24,20 @@ vi.mock('@/hooks/useAssets', () => ({
     isLoading: false,
   }),
   useCreateAsset: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAssetsCurrentLocations: () => ({
+    data: [
+      {
+        asset_id: 'a1',
+        recorded_at: new Date(Date.now() - 30_000).toISOString(),
+        latitude: 37.7749,
+        longitude: -122.4194,
+        accuracy_meters: 5,
+        device_id: 'd1',
+        latest_position_source: 'rfid',
+      },
+    ],
+    isLoading: false,
+  }),
   useSites: () => ({
     data: [
       {

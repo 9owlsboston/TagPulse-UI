@@ -32,6 +32,7 @@ import {
 import { useDevices } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
+import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import type { AssetTagBindingResponse } from '@/api/generated/models/AssetTagBindingResponse';
 import { AssetTagBindingCreate } from '@/api/generated/models/AssetTagBindingCreate';
 import type { ExternalLocationResponse } from '@/api/generated/models/ExternalLocationResponse';
@@ -356,6 +357,17 @@ export function AssetDetail() {
           />
         </>
       ),
+    },
+    {
+      key: 'telemetry',
+      label: 'Telemetry',
+      children: id ? (
+        <SubjectTelemetryTab
+          subjectKind="asset"
+          subjectId={id}
+          latest={asset.latest_telemetry}
+        />
+      ) : null,
     },
   ];
 

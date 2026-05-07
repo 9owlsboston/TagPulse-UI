@@ -6,7 +6,7 @@
  * Device self-registration request.
  */
 export type ProvisionRequest = {
-    device_type?: string;
     name: string;
+    device_type?: string;
 };
 

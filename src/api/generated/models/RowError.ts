@@ -6,8 +6,8 @@
  * Per-row error description.
  */
 export type RowError = {
-    error: string;
     row: number;
     sku?: (string | null);
+    error: string;
 };
 

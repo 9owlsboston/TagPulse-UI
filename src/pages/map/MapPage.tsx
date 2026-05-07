@@ -7,7 +7,7 @@
  * Tile config comes from `GET /tenant/map-config` (falls back to OSM); the
  * footer always renders the resolver's `attribution` string.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Card,
   Checkbox,
@@ -21,13 +21,14 @@ import {
   Typography,
 } from 'antd';
 import { Link } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { useAssets, useAssetCurrentLocation, useAssetManifest, useAssetPath, useZones } from '@/hooks/useAssets';
 import { useStockLevels } from '@/hooks/useInventory';
 import { useMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
+import { useAuth } from '@/lib/auth';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { ManifestEntry } from '@/api/generated/models/ManifestEntry';
 
@@ -58,16 +59,151 @@ function polygonLatLngs(polygon: PolygonGeoJSON | null | undefined): [number, nu
 
 const PATH_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2'];
 
+// ── View persistence ─────────────────────────────────────────────────────
+// Remember the user's last pan/zoom + layer toggles per tenant so navigating
+// away and back (or refreshing) restores the same viewport. Keyed by tenant
+// id so switching accounts doesn't leak the previous tenant's view.
+
+interface PersistedView {
+  lat: number;
+  lng: number;
+  zoom: number;
+  showAssets: boolean;
+  showZones: boolean;
+  showStockDensity: boolean;
+}
+
+const VIEW_KEY_PREFIX = 'tagpulse_map_view_';
+
+function loadPersistedView(tenantId: string | null): PersistedView | null {
+  if (!tenantId) return null;
+  try {
+    const raw = localStorage.getItem(`${VIEW_KEY_PREFIX}${tenantId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedView>;
+    if (
+      typeof parsed.lat !== 'number' ||
+      typeof parsed.lng !== 'number' ||
+      typeof parsed.zoom !== 'number' ||
+      Number.isNaN(parsed.lat) ||
+      Number.isNaN(parsed.lng)
+    ) {
+      return null;
+    }
+    return {
+      lat: parsed.lat,
+      lng: parsed.lng,
+      zoom: parsed.zoom,
+      showAssets: parsed.showAssets ?? true,
+      showZones: parsed.showZones ?? true,
+      showStockDensity: parsed.showStockDensity ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedView(tenantId: string | null, view: PersistedView): void {
+  if (!tenantId) return;
+  try {
+    localStorage.setItem(`${VIEW_KEY_PREFIX}${tenantId}`, JSON.stringify(view));
+  } catch {
+    // localStorage full / disabled — silently ignore; view persistence is
+    // a convenience, not a correctness requirement.
+  }
+}
+
+/**
+ * Inner helper rendered as a child of `<MapContainer>` so it can use
+ * `useMapEvents`. Writes the current center/zoom to localStorage on
+ * `moveend`/`zoomend`, debounced 300 ms so a single drag doesn't spam writes.
+ */
+function ViewPersister({
+  tenantId,
+  showAssets,
+  showZones,
+  showStockDensity,
+}: {
+  tenantId: string | null;
+  showAssets: boolean;
+  showZones: boolean;
+  showStockDensity: boolean;
+}) {
+  const debounceRef = useRef<number | null>(null);
+  const skipFirstToggleRef = useRef(true);
+  const map = useMapEvents({
+    moveend: () => schedule(),
+    zoomend: () => schedule(),
+  });
+
+  function schedule() {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      try {
+        const c = map.getCenter();
+        savePersistedView(tenantId, {
+          lat: c.lat,
+          lng: c.lng,
+          zoom: map.getZoom(),
+          showAssets,
+          showZones,
+          showStockDensity,
+        });
+      } catch {
+        // Map not ready yet (e.g. first paint in test env) — ignore.
+      }
+      debounceRef.current = null;
+    }, 300);
+  }
+
+  // Persist immediately when the user toggles layers (no map event fires).
+  // Skip the initial mount so we don't overwrite a freshly-loaded view with
+  // the same values + a possibly-uninitialized map center.
+  useEffect(() => {
+    if (skipFirstToggleRef.current) {
+      skipFirstToggleRef.current = false;
+      return;
+    }
+    try {
+      const c = map.getCenter();
+      savePersistedView(tenantId, {
+        lat: c.lat,
+        lng: c.lng,
+        zoom: map.getZoom(),
+        showAssets,
+        showZones,
+        showStockDensity,
+      });
+    } catch {
+      // ignore
+    }
+  }, [tenantId, showAssets, showZones, showStockDensity, map]);
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  return null;
+}
+
 export function MapPage() {
+  const { tenantId } = useAuth();
+  const persisted = useMemo(() => loadPersistedView(tenantId), [tenantId]);
+
   const { data: assets, isLoading: assetsLoading } = useAssets({ status: 'active', limit: 500 });
   const { data: zones, isLoading: zonesLoading } = useZones();
   const { data: stockLevels } = useStockLevels();
   const { data: mapConfigData } = useMapConfig();
   const mapConfig = mapConfigData ?? OSM_FALLBACK;
 
-  const [showZones, setShowZones] = useState(true);
-  const [showAssets, setShowAssets] = useState(true);
-  const [showStockDensity, setShowStockDensity] = useState(false);
+  const [showZones, setShowZones] = useState(persisted?.showZones ?? true);
+  const [showAssets, setShowAssets] = useState(persisted?.showAssets ?? true);
+  const [showStockDensity, setShowStockDensity] = useState(
+    persisted?.showStockDensity ?? false,
+  );
   const [replayMinutesAgo, setReplayMinutesAgo] = useState(0); // 0 = live, max 1440 (24h)
   const [manifestAsset, setManifestAsset] = useState<AssetResponse | null>(null);
 
@@ -94,14 +230,18 @@ export function MapPage() {
     [stockByZone],
   );
 
-  // Pick a default center: first zone bbox centroid, else a nominal start.
+  // Pick a default center: persisted view → first zone bbox centroid →
+  // nominal start. `persisted` is read once per tenant change so we don't
+  // fight the user's live pan/zoom.
   const defaultCenter: [number, number] = useMemo(() => {
+    if (persisted) return [persisted.lat, persisted.lng];
     const z = polygonZones[0];
     if (z && z.bbox_min_lat != null && z.bbox_max_lat != null && z.bbox_min_lon != null && z.bbox_max_lon != null) {
       return [(z.bbox_min_lat + z.bbox_max_lat) / 2, (z.bbox_min_lon + z.bbox_max_lon) / 2];
     }
     return [37.7749, -122.4194];
-  }, [polygonZones]);
+  }, [persisted, polygonZones]);
+  const defaultZoom = persisted?.zoom ?? 13;
 
   return (
     <div>
@@ -120,7 +260,13 @@ export function MapPage() {
         ) : (
           <>
             <div style={{ height: 560, width: '100%' }}>
-              <MapContainer center={defaultCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ height: '100%', width: '100%' }}>
+                <ViewPersister
+                  tenantId={tenantId}
+                  showAssets={showAssets}
+                  showZones={showZones}
+                  showStockDensity={showStockDensity}
+                />
                 <TileLayer
                   url={mapConfig.tile_url_template}
                   attribution={mapConfig.attribution}

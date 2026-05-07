@@ -69,6 +69,9 @@ export default function LotExpiryQueue() {
             title: 'Lot code',
             dataIndex: 'lot_code',
             sorter: (a, b) => a.lot_code.localeCompare(b.lot_code),
+            render: (v: string, row: LotResponse) => (
+              <Link to={`/inventory/lots/${row.id}`}>{v}</Link>
+            ),
           },
           {
             title: 'Product',

@@ -41,15 +41,50 @@ export class TelemetryModelsService {
         });
     }
     /**
-     * Get Telemetry Model
-     * Get telemetry model definition for a device type.
-     * @param deviceType
+     * Get Telemetry Model By Subject
+     * Sprint 19 subject-scoped telemetry-model lookup.
+     *
+     * For ``subject_kind='device'`` ``key`` is the device_type;
+     * for non-device kinds the only model permitted per tenant is
+     * addressed with any non-empty ``key`` (typically the same string as
+     * ``subject_kind`` so URLs remain self-describing).
+     * @param subjectKind
+     * @param key
      * @returns TelemetryModelResponse Successful Response
      * @throws ApiError
      */
-    public static getTelemetryModelTelemetryModelsDeviceTypeGet(
-        deviceType: string,
+    public static getTelemetryModelBySubjectTelemetryModelsSubjectKindKeyGet(
+        subjectKind: string,
+        key: string,
     ): CancelablePromise<TelemetryModelResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/telemetry-models/{subject_kind}/{key}',
+            path: {
+                'subject_kind': subjectKind,
+                'key': key,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * @deprecated
+     * Get Telemetry Model Legacy
+     * Removed in Sprint 21 (ADR-015 §6).
+     *
+     * The Sprint 19 301 redirect to ``/telemetry-models/device/{device_type}``
+     * has been removed after one full retention cycle. Callers must address
+     * the subject-scoped path directly. Returns 410 Gone with a Location-style
+     * hint so any forgotten clients still get a clear migration message.
+     * @param deviceType
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getTelemetryModelLegacyTelemetryModelsDeviceTypeGet(
+        deviceType: string,
+    ): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/telemetry-models/{device_type}',

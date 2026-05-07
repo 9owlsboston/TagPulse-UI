@@ -6,12 +6,12 @@
  * Persisted telemetry row.
  */
 export type TelemetryResponse = {
-    device_id: string;
     id: string;
-    metadata?: (Record<string, any> | null);
+    device_id: string;
+    timestamp: string;
     metric_name: string;
     metric_value: number;
-    timestamp: string;
     unit: (string | null);
+    metadata?: (Record<string, any> | null);
 };
 

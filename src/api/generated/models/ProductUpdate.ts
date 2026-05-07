@@ -3,11 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ProductUpdate = {
-    attributes?: (Record<string, any> | null);
-    category?: (string | null);
+    sku?: (string | null);
     gtin?: (string | null);
     name?: (string | null);
-    sku?: (string | null);
+    category?: (string | null);
     unit?: ('each' | 'case' | 'pallet' | null);
+    attributes?: (Record<string, any> | null);
 };
 

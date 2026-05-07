@@ -6,9 +6,9 @@
  * Patch a site.
  */
 export type SiteUpdate = {
+    name?: (string | null);
     address?: (string | null);
     default_timezone?: (string | null);
     metadata?: (Record<string, any> | null);
-    name?: (string | null);
 };
 

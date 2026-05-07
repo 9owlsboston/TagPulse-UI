@@ -130,6 +130,7 @@ export type ConditionType =
   | 'threshold'
   | 'absence'
   | 'rate_change'
+  | 'telemetry.threshold'
   | 'stock.below_threshold'
   | 'stock.expiring_within'
   | 'stock.unexpected_in_zone'

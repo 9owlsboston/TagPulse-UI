@@ -7,8 +7,8 @@
  */
 export type DeviceTokenResponse = {
     device_id: string;
+    token: string;
     prefix: string;
     rotated_at: string;
-    token: string;
 };
 

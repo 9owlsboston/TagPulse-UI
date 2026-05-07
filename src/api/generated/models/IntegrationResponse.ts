@@ -6,19 +6,19 @@
  * Integration returned from the API.
  */
 export type IntegrationResponse = {
-    config: Record<string, any>;
-    created_at: string;
-    enabled: boolean;
-    enrichments: (Record<string, string> | null);
-    events: Array<string>;
-    filters: null;
-    health_status: string;
     id: string;
-    last_triggered: (string | null);
-    name: string;
-    status: string;
     tenant_id: string;
+    name: string;
     type: string;
+    events: Array<string>;
+    config: Record<string, any>;
+    enabled: boolean;
+    status: string;
+    health_status: string;
+    filters: null;
+    enrichments: (Record<string, string> | null);
+    last_triggered: (string | null);
+    created_at: string;
     updated_at: string;
 };
 

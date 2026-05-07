@@ -10,13 +10,13 @@
  * Returned in ascending chronological order.
  */
 export type AssetPathPoint = {
-    accuracy_meters: (number | null);
-    device_id?: (string | null);
-    external_id?: (string | null);
+    recorded_at: string;
     latitude: number;
     longitude: number;
-    recorded_at: string;
+    accuracy_meters: (number | null);
     source: string;
+    device_id?: (string | null);
     tag_read_id?: (string | null);
+    external_id?: (string | null);
 };
 

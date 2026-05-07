@@ -68,27 +68,6 @@ export class UsersService {
         });
     }
     /**
-     * Revoke Api Key
-     * Revoke a user's API key (admin only).
-     * @param userId
-     * @returns void
-     * @throws ApiError
-     */
-    public static revokeApiKeyUsersUserIdApiKeyDelete(
-        userId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/users/{user_id}/api-key',
-            path: {
-                'user_id': userId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Generate User Api Key
      * Generate an API key for a user (admin only). Key is returned once.
      * @param userId
@@ -100,6 +79,27 @@ export class UsersService {
     ): CancelablePromise<ApiKeyResponse> {
         return __request(OpenAPI, {
             method: 'POST',
+            url: '/users/{user_id}/api-key',
+            path: {
+                'user_id': userId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Revoke Api Key
+     * Revoke a user's API key (admin only).
+     * @param userId
+     * @returns void
+     * @throws ApiError
+     */
+    public static revokeApiKeyUsersUserIdApiKeyDelete(
+        userId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
             url: '/users/{user_id}/api-key',
             path: {
                 'user_id': userId,

@@ -6,8 +6,8 @@
  * Bind a tag value to an asset.
  */
 export type AssetTagBindingCreate = {
-    binding_kind?: AssetTagBindingCreate.binding_kind;
     binding_value: string;
+    binding_kind?: AssetTagBindingCreate.binding_kind;
     metadata?: (Record<string, any> | null);
 };
 export namespace AssetTagBindingCreate {

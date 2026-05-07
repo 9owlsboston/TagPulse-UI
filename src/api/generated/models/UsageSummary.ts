@@ -6,8 +6,8 @@
  * Aggregated usage summary for a billing period.
  */
 export type UsageSummary = {
-    dimension: string;
     tenant_id: string;
+    dimension: string;
     total_quantity: number;
     unit: string;
 };

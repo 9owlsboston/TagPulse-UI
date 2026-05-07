@@ -9,6 +9,47 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class ProvisioningService {
     /**
+     * Provision Device
+     * Self-register a device using a tenant provisioning key.
+     * @param requestBody
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static provisionDeviceDevicesProvisionPost(
+        requestBody: ProvisionRequest,
+    ): CancelablePromise<Record<string, string>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/devices/provision',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Check Provision Status
+     * Check provisioning status of a device.
+     * @param deviceName
+     * @returns ProvisionStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static checkProvisionStatusDevicesProvisionStatusGet(
+        deviceName: string,
+    ): CancelablePromise<ProvisionStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/devices/provision/status',
+            query: {
+                'device_name': deviceName,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Approve Device
      * Approve a pending device (admin only).
      * @param deviceId
@@ -44,47 +85,6 @@ export class ProvisioningService {
             url: '/device-registry/{device_id}/reject',
             path: {
                 'device_id': deviceId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Provision Device
-     * Self-register a device using a tenant provisioning key.
-     * @param requestBody
-     * @returns string Successful Response
-     * @throws ApiError
-     */
-    public static provisionDeviceDevicesProvisionPost(
-        requestBody: ProvisionRequest,
-    ): CancelablePromise<Record<string, string>> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/devices/provision',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Check Provision Status
-     * Check provisioning status of a device.
-     * @param deviceName
-     * @returns ProvisionStatusResponse Successful Response
-     * @throws ApiError
-     */
-    public static checkProvisionStatusDevicesProvisionStatusGet(
-        deviceName: string,
-    ): CancelablePromise<ProvisionStatusResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/devices/provision/status',
-            query: {
-                'device_name': deviceName,
             },
             errors: {
                 422: `Validation Error`,

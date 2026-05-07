@@ -3,12 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export type StockItemCreate = {
-    binding_kind?: StockItemCreate.binding_kind;
-    binding_value: string;
-    lot_id?: (string | null);
-    metadata?: (Record<string, any> | null);
-    parent_stock_item_id?: (string | null);
     product_id: string;
+    lot_id?: (string | null);
+    parent_stock_item_id?: (string | null);
+    binding_value: string;
+    binding_kind?: StockItemCreate.binding_kind;
+    metadata?: (Record<string, any> | null);
 };
 export namespace StockItemCreate {
     export enum binding_kind {

@@ -6,13 +6,13 @@
  * Resolved tile-provider config returned to the UI.
  */
 export type MapConfigResponse = {
-    attribution: string;
     /**
      * Provider kind: osm | mapbox | maptiler | self_hosted
      */
     kind: string;
+    tile_url_template: string;
+    attribution: string;
     max_zoom?: number;
     subdomains?: (Array<string> | null);
-    tile_url_template: string;
 };
 

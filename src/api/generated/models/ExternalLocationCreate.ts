@@ -6,13 +6,13 @@
  * Inbound non-RFID position fix for an asset.
  */
 export type ExternalLocationCreate = {
-    accuracy_meters?: (number | null);
-    heading_deg?: (number | null);
     latitude: number;
     longitude: number;
-    metadata?: (Record<string, any> | null);
     recorded_at: string;
     source: string;
+    accuracy_meters?: (number | null);
     speed_kph?: (number | null);
+    heading_deg?: (number | null);
+    metadata?: (Record<string, any> | null);
 };
 

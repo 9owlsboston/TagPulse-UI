@@ -93,7 +93,11 @@ export function Layout() {
             </>
           ) : (
             <>
-              <Text type="secondary">Tenant: {tenantId}</Text>
+              <Text type="secondary">
+                {tenantConfig?.name
+                  ? `Tenant: ${tenantConfig.name}`
+                  : `Tenant: ${tenantId}`}
+              </Text>
               <Tag>viewer</Tag>
             </>
           )}

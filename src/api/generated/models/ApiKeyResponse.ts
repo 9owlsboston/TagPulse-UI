@@ -7,7 +7,7 @@
  */
 export type ApiKeyResponse = {
     api_key: string;
-    message?: string;
     prefix: string;
+    message?: string;
 };
 

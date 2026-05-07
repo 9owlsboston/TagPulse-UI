@@ -14,29 +14,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class SitesZonesService {
     /**
-     * List Sites
-     * @param limit
-     * @param offset
-     * @returns SiteResponse Successful Response
-     * @throws ApiError
-     */
-    public static listSitesSitesGet(
-        limit: number = 100,
-        offset?: number,
-    ): CancelablePromise<Array<SiteResponse>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/sites',
-            query: {
-                'limit': limit,
-                'offset': offset,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Create Site
      * @param requestBody
      * @returns SiteResponse Successful Response
@@ -56,19 +33,22 @@ export class SitesZonesService {
         });
     }
     /**
-     * Delete Site
-     * @param siteId
-     * @returns void
+     * List Sites
+     * @param limit
+     * @param offset
+     * @returns SiteResponse Successful Response
      * @throws ApiError
      */
-    public static deleteSiteSitesSiteIdDelete(
-        siteId: string,
-    ): CancelablePromise<void> {
+    public static listSitesSitesGet(
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<SiteResponse>> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/sites/{site_id}',
-            path: {
-                'site_id': siteId,
+            method: 'GET',
+            url: '/sites',
+            query: {
+                'limit': limit,
+                'offset': offset,
             },
             errors: {
                 422: `Validation Error`,
@@ -120,25 +100,19 @@ export class SitesZonesService {
         });
     }
     /**
-     * List Zones
+     * Delete Site
      * @param siteId
-     * @param limit
-     * @param offset
-     * @returns ZoneResponse Successful Response
+     * @returns void
      * @throws ApiError
      */
-    public static listZonesZonesGet(
-        siteId?: (string | null),
-        limit: number = 200,
-        offset?: number,
-    ): CancelablePromise<Array<ZoneResponse>> {
+    public static deleteSiteSitesSiteIdDelete(
+        siteId: string,
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
-            method: 'GET',
-            url: '/zones',
-            query: {
+            method: 'DELETE',
+            url: '/sites/{site_id}',
+            path: {
                 'site_id': siteId,
-                'limit': limit,
-                'offset': offset,
             },
             errors: {
                 422: `Validation Error`,
@@ -165,19 +139,25 @@ export class SitesZonesService {
         });
     }
     /**
-     * Delete Zone
-     * @param zoneId
-     * @returns void
+     * List Zones
+     * @param siteId
+     * @param limit
+     * @param offset
+     * @returns ZoneResponse Successful Response
      * @throws ApiError
      */
-    public static deleteZoneZonesZoneIdDelete(
-        zoneId: string,
-    ): CancelablePromise<void> {
+    public static listZonesZonesGet(
+        siteId?: (string | null),
+        limit: number = 200,
+        offset?: number,
+    ): CancelablePromise<Array<ZoneResponse>> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/zones/{zone_id}',
-            path: {
-                'zone_id': zoneId,
+            method: 'GET',
+            url: '/zones',
+            query: {
+                'site_id': siteId,
+                'limit': limit,
+                'offset': offset,
             },
             errors: {
                 422: `Validation Error`,
@@ -223,6 +203,26 @@ export class SitesZonesService {
             },
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Zone
+     * @param zoneId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteZoneZonesZoneIdDelete(
+        zoneId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/zones/{zone_id}',
+            path: {
+                'zone_id': zoneId,
+            },
             errors: {
                 422: `Validation Error`,
             },

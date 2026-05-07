@@ -10,127 +10,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class AdminService {
     /**
-     * List Audit Logs
-     * List audit logs for this tenant.
-     * @param resourceType
-     * @param actions Comma-separated list of actions to filter by (e.g. 'device.token_rotated,device.cert_attached').
-     * @param limit
-     * @param offset
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static listAuditLogsAdminAuditLogsGet(
-        resourceType?: (string | null),
-        actions?: (string | null),
-        limit: number = 100,
-        offset?: number,
-    ): CancelablePromise<Array<Record<string, any>>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/admin/audit-logs',
-            query: {
-                'resource_type': resourceType,
-                'actions': actions,
-                'limit': limit,
-                'offset': offset,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * List Dead Letters
-     * List dead-lettered events for this tenant.
-     * @param limit
-     * @param offset
-     * @returns DeadLetterResponse Successful Response
-     * @throws ApiError
-     */
-    public static listDeadLettersAdminDeadLetterGet(
-        limit: number = 100,
-        offset?: number,
-    ): CancelablePromise<Array<DeadLetterResponse>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/admin/dead-letter',
-            query: {
-                'limit': limit,
-                'offset': offset,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Abandon Dead Letter
-     * Abandon a dead-lettered event.
-     * @param eventId
-     * @returns void
-     * @throws ApiError
-     */
-    public static abandonDeadLetterAdminDeadLetterEventIdDelete(
-        eventId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/admin/dead-letter/{event_id}',
-            path: {
-                'event_id': eventId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Retry Dead Letter
-     * Mark a dead-lettered event for retry.
-     * @param eventId
-     * @returns void
-     * @throws ApiError
-     */
-    public static retryDeadLetterAdminDeadLetterEventIdRetryPost(
-        eventId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/admin/dead-letter/{event_id}/retry',
-            path: {
-                'event_id': eventId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Get Tag Collisions
-     * Return cross-tenant collision count for a binding_value.
-     *
-     * Per docs/design/assets-and-zones.md §11 Q3: returns only the count of
-     * *other* tenants with an active binding for this value, never their
-     * identities. Increments ``tagpulse_tag_collisions_global_total``.
-     * @param bindingValue
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static getTagCollisionsAdminTagCollisionsGet(
-        bindingValue: string,
-    ): CancelablePromise<Record<string, any>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/admin/tag-collisions',
-            query: {
-                'binding_value': bindingValue,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Get Usage
      * Get daily usage records for the authenticated tenant.
      * @param start
@@ -172,6 +51,127 @@ export class AdminService {
             query: {
                 'start': start,
                 'end': end,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Dead Letters
+     * List dead-lettered events for this tenant.
+     * @param limit
+     * @param offset
+     * @returns DeadLetterResponse Successful Response
+     * @throws ApiError
+     */
+    public static listDeadLettersAdminDeadLetterGet(
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<DeadLetterResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/admin/dead-letter',
+            query: {
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Retry Dead Letter
+     * Mark a dead-lettered event for retry.
+     * @param eventId
+     * @returns void
+     * @throws ApiError
+     */
+    public static retryDeadLetterAdminDeadLetterEventIdRetryPost(
+        eventId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/admin/dead-letter/{event_id}/retry',
+            path: {
+                'event_id': eventId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Abandon Dead Letter
+     * Abandon a dead-lettered event.
+     * @param eventId
+     * @returns void
+     * @throws ApiError
+     */
+    public static abandonDeadLetterAdminDeadLetterEventIdDelete(
+        eventId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/admin/dead-letter/{event_id}',
+            path: {
+                'event_id': eventId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Audit Logs
+     * List audit logs for this tenant.
+     * @param resourceType
+     * @param actions Comma-separated list of actions to filter by (e.g. 'device.token_rotated,device.cert_attached').
+     * @param limit
+     * @param offset
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static listAuditLogsAdminAuditLogsGet(
+        resourceType?: (string | null),
+        actions?: (string | null),
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<Record<string, any>>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/admin/audit-logs',
+            query: {
+                'resource_type': resourceType,
+                'actions': actions,
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Tag Collisions
+     * Return cross-tenant collision count for a binding_value.
+     *
+     * Per docs/design/assets-and-zones.md §11 Q3: returns only the count of
+     * *other* tenants with an active binding for this value, never their
+     * identities. Increments ``tagpulse_tag_collisions_global_total``.
+     * @param bindingValue
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getTagCollisionsAdminTagCollisionsGet(
+        bindingValue: string,
+    ): CancelablePromise<Record<string, any>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/admin/tag-collisions',
+            query: {
+                'binding_value': bindingValue,
             },
             errors: {
                 422: `Validation Error`,

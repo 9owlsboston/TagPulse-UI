@@ -26,6 +26,7 @@ import { StockLevels } from '@/pages/inventory/StockLevels';
 import { StockMovements } from '@/pages/inventory/StockMovements';
 import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
 import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
+import LotDetail from '@/pages/inventory/LotDetail';
 import { AssetList } from '@/pages/assets/AssetList';
 import { AssetDetail } from '@/pages/assets/AssetDetail';
 import { SitesZones } from '@/pages/assets/SitesZones';
@@ -69,6 +70,7 @@ export function App() {
                 <Route path="/inventory/products" element={<ProductList />} />
                 <Route path="/inventory/products/:id" element={<ProductDetail />} />
                 <Route path="/inventory/lots" element={<LotExpiryQueue />} />
+                <Route path="/inventory/lots/:id" element={<LotDetail />} />
                 <Route path="/inventory/stock-levels" element={<StockLevels />} />
                 <Route path="/inventory/stock-movements" element={<StockMovements />} />
                 <Route path="/admin/tenant" element={<TenantSettings />} />

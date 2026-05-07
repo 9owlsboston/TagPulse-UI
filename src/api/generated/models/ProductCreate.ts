@@ -3,12 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ProductCreate = {
-    attributes?: (Record<string, any> | null);
-    category?: (string | null);
+    sku: string;
     gtin?: (string | null);
     name: string;
-    sku: string;
+    category?: (string | null);
     unit?: ProductCreate.unit;
+    attributes?: (Record<string, any> | null);
 };
 export namespace ProductCreate {
     export enum unit {

@@ -81,6 +81,14 @@ export function useAllLots(params?: { expiringWithinDays?: number; limit?: numbe
   });
 }
 
+export function useLot(lotId: string | undefined) {
+  return useQuery({
+    queryKey: ['inventory', 'lot', lotId],
+    queryFn: () => InventoryService.getLotLotsLotIdGet(lotId!),
+    enabled: Boolean(lotId),
+  });
+}
+
 export function useCreateLot() {
   const qc = useQueryClient();
   return useMutation({

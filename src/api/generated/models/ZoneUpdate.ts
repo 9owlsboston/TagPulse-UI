@@ -6,9 +6,9 @@
  * Patch a zone.
  */
 export type ZoneUpdate = {
-    fixed_reader_ids?: (Array<string> | null);
-    metadata?: (Record<string, any> | null);
     name?: (string | null);
+    fixed_reader_ids?: (Array<string> | null);
     polygon_geojson?: (Record<string, any> | null);
+    metadata?: (Record<string, any> | null);
 };
 

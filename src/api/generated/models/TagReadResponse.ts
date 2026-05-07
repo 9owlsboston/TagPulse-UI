@@ -6,24 +6,24 @@
  * Tag read event returned from the API.
  */
 export type TagReadResponse = {
-    created_at: string;
-    device_id: string;
-    epc?: (string | null);
-    epc_decoded?: (Record<string, any> | null);
-    epc_hex?: (string | null);
-    epc_scheme?: (string | null);
     id: string;
+    device_id: string;
+    tag_id: string;
+    timestamp: string;
+    signal_strength: (number | null);
+    sensor_data: (Record<string, any> | null);
     latitude?: (number | null);
+    longitude?: (number | null);
     location_accuracy_m?: (number | null);
     location_source?: (string | null);
-    longitude?: (number | null);
-    reader_antenna?: (number | null);
-    sensor_data: (Record<string, any> | null);
-    signal_strength: (number | null);
-    tag_data?: (Record<string, any> | null);
-    tag_id: string;
+    epc?: (string | null);
+    epc_hex?: (string | null);
+    epc_scheme?: (string | null);
+    epc_decoded?: (Record<string, any> | null);
     tid?: (string | null);
-    timestamp: string;
     user_memory_hex?: (string | null);
+    tag_data?: (Record<string, any> | null);
+    reader_antenna?: (number | null);
+    created_at: string;
 };
 

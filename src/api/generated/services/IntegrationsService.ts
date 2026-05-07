@@ -43,48 +43,6 @@ export class IntegrationsService {
         });
     }
     /**
-     * Stream Events
-     * SSE endpoint — streams real-time events filtered by tenant and event type.
-     * @param events
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static streamEventsIntegrationsStreamGet(
-        events: string = 'tag_read.created,alert.triggered',
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/integrations/stream',
-            query: {
-                'events': events,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Delete Integration
-     * Delete an integration target.
-     * @param integrationId
-     * @returns void
-     * @throws ApiError
-     */
-    public static deleteIntegrationIntegrationsIntegrationIdDelete(
-        integrationId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/integrations/{integration_id}',
-            path: {
-                'integration_id': integrationId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Get Integration
      * Get an integration target by ID.
      * @param integrationId
@@ -131,6 +89,27 @@ export class IntegrationsService {
         });
     }
     /**
+     * Delete Integration
+     * Delete an integration target.
+     * @param integrationId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteIntegrationIntegrationsIntegrationIdDelete(
+        integrationId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/integrations/{integration_id}',
+            path: {
+                'integration_id': integrationId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * List Deliveries
      * List delivery history for an integration target.
      * @param integrationId
@@ -153,6 +132,27 @@ export class IntegrationsService {
             query: {
                 'limit': limit,
                 'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Stream Events
+     * SSE endpoint — streams real-time events filtered by tenant and event type.
+     * @param events
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static streamEventsIntegrationsStreamGet(
+        events: string = 'tag_read.created,alert.triggered',
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/integrations/stream',
+            query: {
+                'events': events,
             },
             errors: {
                 422: `Validation Error`,

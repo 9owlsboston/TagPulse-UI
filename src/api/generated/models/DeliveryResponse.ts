@@ -6,13 +6,13 @@
  * Integration delivery log entry.
  */
 export type DeliveryResponse = {
-    attempts: number;
-    created_at: string;
-    error_message: (string | null);
-    event_type: string;
     id: string;
     integration_id: string;
-    response_code: (number | null);
+    event_type: string;
     status: string;
+    attempts: number;
+    response_code: (number | null);
+    error_message: (string | null);
+    created_at: string;
 };
 

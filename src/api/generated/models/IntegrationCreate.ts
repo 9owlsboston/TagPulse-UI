@@ -6,12 +6,12 @@
  * Create an integration target.
  */
 export type IntegrationCreate = {
-    config: Record<string, any>;
-    enabled?: boolean;
-    enrichments?: (Record<string, string> | null);
-    events: Array<string>;
-    filters?: null;
     name: string;
     type: string;
+    events: Array<string>;
+    config: Record<string, any>;
+    filters?: null;
+    enrichments?: (Record<string, string> | null);
+    enabled?: boolean;
 };
 

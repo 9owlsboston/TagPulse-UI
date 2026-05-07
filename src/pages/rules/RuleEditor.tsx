@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Input, Select, Switch, Button, Card, InputNumber, Typography, Steps, Space, Descriptions, message, AutoComplete } from 'antd';
-import { useCreateRule, useUpdateRule, useRule } from '@/hooks/useRules';
+import { Form, Input, Select, Switch, Button, Card, InputNumber, Typography, Steps, Space, Descriptions, message, AutoComplete, Modal, List, Tag } from 'antd';
+import { useCreateRule, useUpdateRule, useRule, useRuleTemplates, type RuleTemplate } from '@/hooks/useRules';
 import { useDevices } from '@/hooks/useDevices';
 import { useTelemetryModels } from '@/hooks/useTelemetryModels';
 import { useProducts } from '@/hooks/useInventory';
+import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery } from '@tanstack/react-query';
 import type { RuleCreate } from '@/types';
@@ -16,6 +17,7 @@ const CONDITION_TYPES = [
   { label: 'Threshold', value: 'threshold' },
   { label: 'Absence', value: 'absence' },
   { label: 'Rate Change', value: 'rate_change' },
+  { label: 'Telemetry — threshold (subject-scoped)', value: 'telemetry.threshold' },
   { label: 'Stock — below threshold', value: 'stock.below_threshold' },
   { label: 'Stock — expiring within', value: 'stock.expiring_within' },
   { label: 'Stock — unexpected zone', value: 'stock.unexpected_in_zone' },
@@ -34,6 +36,7 @@ type ConditionType =
   | 'threshold'
   | 'absence'
   | 'rate_change'
+  | 'telemetry.threshold'
   | 'stock.below_threshold'
   | 'stock.expiring_within'
   | 'stock.unexpected_in_zone'
@@ -67,6 +70,11 @@ interface FormValues {
   subject_kinds?: ('asset' | 'stock_item' | 'device')[];
   cooldown_s?: number;
   dwell_minutes?: number;
+  // Subject-scoped telemetry (Sprint 21)
+  telemetry_subject_kind?: 'asset' | 'lot' | 'stock_item' | 'zone' | 'device';
+  telemetry_metric_name?: string;
+  telemetry_operator?: string;
+  telemetry_value?: number;
 }
 
 const STEP_ITEMS = [
@@ -90,10 +98,41 @@ export function RuleEditor() {
   });
   const createRule = useCreateRule();
   const updateRule = useUpdateRule();
+  const { data: tenant } = useTenantConfig();
+  const { data: templates } = useRuleTemplates();
   const [form] = Form.useForm<FormValues>();
   const [step, setStep] = useState(0);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const conditionType = Form.useWatch('condition_type', form);
   const actionType = Form.useWatch('action_type', form);
+  const enabledSubjectKinds = tenant?.telemetry_subject_kinds ?? [];
+
+  const applyTemplate = (tpl: RuleTemplate) => {
+    if (tpl.condition_type === 'telemetry.threshold') {
+      const cfg = tpl.condition_config as Record<string, unknown>;
+      form.setFieldsValue({
+        name: tpl.name,
+        description: tpl.description,
+        condition_type: 'telemetry.threshold',
+        telemetry_subject_kind: cfg.subject_kind as FormValues['telemetry_subject_kind'],
+        telemetry_metric_name: cfg.metric_name as string,
+        telemetry_operator: cfg.operator as string,
+        telemetry_value: cfg.value as number,
+        cooldown_s: cfg.cooldown_s as number | undefined,
+        action_type: tpl.action_type as FormValues['action_type'],
+      });
+    } else {
+      // Generic fallback: just set name/description/condition_type so the
+      // operator can fill in the rest. (No non-telemetry templates ship today.)
+      form.setFieldsValue({
+        name: tpl.name,
+        description: tpl.description,
+        condition_type: tpl.condition_type as ConditionType,
+      });
+    }
+    setGalleryOpen(false);
+    message.success(`Loaded template: ${tpl.name}`);
+  };
 
   const deviceOptions = [
     { label: 'All Devices (global)', value: '' },
@@ -121,6 +160,14 @@ export function RuleEditor() {
       condition_config = { minutes: values.absence_minutes, tag_id: values.tag_id };
     } else if (values.condition_type === 'rate_change') {
       condition_config = { window_minutes: values.window_minutes, change_percent: values.change_percent };
+    } else if (values.condition_type === 'telemetry.threshold') {
+      condition_config = {
+        subject_kind: values.telemetry_subject_kind,
+        metric_name: values.telemetry_metric_name,
+        operator: values.telemetry_operator,
+        value: values.telemetry_value,
+        ...(values.cooldown_s ? { cooldown_s: values.cooldown_s } : {}),
+      };
     } else if (values.condition_type === 'stock.below_threshold') {
       condition_config = { product_id: values.stock_product_id, threshold: values.stock_threshold };
     } else if (values.condition_type === 'stock.expiring_within') {
@@ -177,6 +224,12 @@ export function RuleEditor() {
           threshold: ['field', 'operator', 'threshold_value'],
           absence: ['absence_minutes'],
           rate_change: ['window_minutes', 'change_percent'],
+          'telemetry.threshold': [
+            'telemetry_subject_kind',
+            'telemetry_metric_name',
+            'telemetry_operator',
+            'telemetry_value',
+          ],
           'stock.below_threshold': ['stock_product_id', 'stock_threshold'],
           'stock.expiring_within': ['stock_expiring_days'],
           'stock.unexpected_in_zone': ['stock_allowed_zone_ids'],
@@ -198,7 +251,12 @@ export function RuleEditor() {
 
   return (
     <div>
-      <Title level={2}>{isEdit ? 'Edit Rule' : 'Create Rule'}</Title>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <Title level={2} style={{ margin: 0 }}>{isEdit ? 'Edit Rule' : 'Create Rule'}</Title>
+        {!isEdit && (
+          <Button onClick={() => setGalleryOpen(true)}>Start from template</Button>
+        )}
+      </Space>
       <Steps current={step} items={STEP_ITEMS} style={{ marginBottom: 24 }} />
       <Card style={{ maxWidth: 700 }}>
         <Form
@@ -269,6 +327,66 @@ export function RuleEditor() {
                   <InputNumber min={1} style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item name="change_percent" label="Change %" rules={[{ required: true }]}>
+                  <InputNumber min={0} style={{ width: '100%' }} />
+                </Form.Item>
+              </>
+            )}
+
+            {conditionType === 'telemetry.threshold' && (
+              <>
+                <Form.Item
+                  name="telemetry_subject_kind"
+                  label="Subject kind"
+                  rules={[{ required: true }]}
+                  extra="Only kinds enabled in Tenant Settings → Subject-scoped telemetry are listed."
+                >
+                  <Select
+                    options={(['asset', 'lot', 'stock_item', 'zone', 'device'] as const)
+                      .filter((k) => enabledSubjectKinds.includes(k))
+                      .map((k) => ({ value: k, label: k }))}
+                    placeholder={
+                      enabledSubjectKinds.length === 0
+                        ? 'No subject kinds enabled — visit Tenant Settings'
+                        : 'Pick a subject kind'
+                    }
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="telemetry_metric_name"
+                  label="Metric"
+                  rules={[{ required: true }]}
+                >
+                  <AutoComplete
+                    options={fieldSuggestions}
+                    placeholder="temperature_c, humidity, …"
+                    filterOption={(input, option) =>
+                      (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="telemetry_operator"
+                  label="Operator"
+                  rules={[{ required: true }]}
+                >
+                  <Select
+                    options={[
+                      { label: '>', value: 'gt' },
+                      { label: '<', value: 'lt' },
+                      { label: '>=', value: 'gte' },
+                      { label: '<=', value: 'lte' },
+                      { label: '=', value: 'eq' },
+                    ]}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="telemetry_value"
+                  label="Value"
+                  rules={[{ required: true }]}
+                >
+                  <InputNumber style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="cooldown_s" label="Cooldown (seconds, optional)">
                   <InputNumber min={0} style={{ width: '100%' }} />
                 </Form.Item>
               </>
@@ -426,6 +544,58 @@ export function RuleEditor() {
           </Space>
         </Form>
       </Card>
+
+      <Modal
+        title="Rule template gallery"
+        open={galleryOpen}
+        onCancel={() => setGalleryOpen(false)}
+        footer={null}
+        width={640}
+      >
+        <Typography.Paragraph type="secondary">
+          Pre-filled starting points. The <code>requires_subject_kind</code> badge marks
+          templates that need a matching opt-in in Tenant Settings.
+        </Typography.Paragraph>
+        <List
+          dataSource={templates ?? []}
+          locale={{ emptyText: 'No templates available.' }}
+          renderItem={(tpl: RuleTemplate) => {
+            const enabled =
+              !tpl.requires_subject_kind ||
+              enabledSubjectKinds.includes(
+                tpl.requires_subject_kind as 'asset' | 'lot' | 'stock_item' | 'zone' | 'device',
+              );
+            return (
+              <List.Item
+                actions={[
+                  <Button
+                    key="use"
+                    type="primary"
+                    disabled={!enabled}
+                    onClick={() => applyTemplate(tpl)}
+                  >
+                    Use
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <span>{tpl.name}</span>
+                      {tpl.requires_subject_kind && (
+                        <Tag color={enabled ? 'green' : 'orange'}>
+                          requires: {tpl.requires_subject_kind}
+                        </Tag>
+                      )}
+                    </Space>
+                  }
+                  description={tpl.description}
+                />
+              </List.Item>
+            );
+          }}
+        />
+      </Modal>
     </div>
   );
 }

@@ -6,9 +6,9 @@
  * One bucket from the ``stock_levels`` view.
  */
 export type StockLevelRow = {
-    lot_id: (string | null);
     product_id: string;
-    quantity: number;
+    lot_id: (string | null);
     zone_id: (string | null);
+    quantity: number;
 };
 

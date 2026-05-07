@@ -4,9 +4,9 @@
 /* eslint-disable */
 import type { RowError } from './RowError';
 export type ImportSummary = {
-    errors: Array<RowError>;
+    rows_total: number;
     rows_created: number;
     rows_skipped: number;
-    rows_total: number;
+    errors: Array<RowError>;
 };
 

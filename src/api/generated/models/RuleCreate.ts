@@ -6,13 +6,13 @@
  * Create a new rule.
  */
 export type RuleCreate = {
-    action_config: Record<string, any>;
-    action_type: string;
-    condition_config: Record<string, any>;
-    condition_type: string;
-    description?: (string | null);
-    enabled?: boolean;
     name: string;
+    description?: (string | null);
+    condition_type: string;
+    condition_config: Record<string, any>;
+    action_type: string;
+    action_config: Record<string, any>;
     scope_device_id?: (string | null);
+    enabled?: boolean;
 };
 

@@ -8,8 +8,8 @@ import type { ManifestEntry } from './ManifestEntry';
  */
 export type ManifestResponse = {
     asset_id: string;
+    name: string;
     asset_type: string;
     children?: Array<ManifestEntry>;
-    name: string;
 };
 

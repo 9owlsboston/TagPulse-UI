@@ -19,6 +19,30 @@ export class HealthService {
         });
     }
     /**
+     * Liveness Alias
+     * Liveness probe (k8s convention alias for ``/health``).
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static livenessAliasHealthLiveGet(): CancelablePromise<Record<string, string>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/health/live',
+        });
+    }
+    /**
+     * Readiness
+     * Readiness probe — checks DB, MQTT, and migration version.
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static readinessHealthReadyGet(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/health/ready',
+        });
+    }
+    /**
      * Detail
      * Detailed health — includes queue sizes and component stats.
      * @returns any Successful Response
@@ -28,18 +52,6 @@ export class HealthService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/health/detail',
-        });
-    }
-    /**
-     * Readiness
-     * Readiness probe — checks DB and critical components.
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static readinessHealthReadyGet(): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/health/ready',
         });
     }
 }

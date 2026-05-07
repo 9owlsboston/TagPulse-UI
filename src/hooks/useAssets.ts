@@ -35,6 +35,34 @@ export function useAssets(params?: {
         params?.limit ?? 100,
         params?.offset ?? 0,
       ),
+    // Asset rows themselves rarely change, but the list page also displays
+    // live "Last seen" / "Location" columns sourced from
+    // `useAssetsCurrentLocations`. Polling here keeps the binding-derived
+    // columns (status changes, retire/load) fresh without a manual refresh.
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  });
+}
+
+/**
+ * Bulk current-location feed for the Assets list page. One row per asset
+ * that has *any* known position (RFID or external), newest-first. Polled
+ * every 5 s to power the live Last-seen / Location columns without N+1
+ * per-row fetches.
+ */
+export function useAssetsCurrentLocations(params?: {
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['assets', 'current-locations', params],
+    queryFn: () =>
+      AssetsService.listAssetsCurrentLocationsAssetsCurrentLocationsGet(
+        params?.limit ?? 200,
+        params?.offset ?? 0,
+      ),
+    refetchInterval: 5_000,
+    staleTime: 4_000,
   });
 }
 
