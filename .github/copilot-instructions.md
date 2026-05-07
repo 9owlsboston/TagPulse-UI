@@ -46,6 +46,7 @@ React SPA admin dashboard for the TagPulse IoT platform. Provides device managem
 - Do not commit generated API client files (`src/api/generated/`)
 
 ## Process & Artifacts
+- **Starting a new sprint:** run `scripts/start-sprint.sh <NN> <topic-slug> ["PR title"]`. This is the canonical workflow — it enforces branch naming (`sprint-NN/topic-slug`), creates the draft PR with the standard checklist, and verifies a clean tree. Do not branch + open PRs manually.
 - Check TagPulse `docs/design/admin-ui.md` for page specs
 - Every PR must update `CHANGELOG.md` under `## Unreleased`
 - Run `npm run check` before marking work complete

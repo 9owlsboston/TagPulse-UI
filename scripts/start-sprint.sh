@@ -36,14 +36,16 @@ git push -u origin "$branch"
 
 gh pr create --draft --base main --head "$branch" \
     --title "$title" \
-    --body "Sprint ${NN} workstream. See \`docs/roadmap.md\` (TagPulse repo) for scope.
+    --body "Sprint ${NN} workstream. Fill in scope below.
+
+## Scope
+_TBD_
 
 ## Checklist
 - [ ] Implementation complete
 - [ ] Tests added / updated
 - [ ] \`npm run check\` clean
-- [ ] CHANGELOG updated under \`## Unreleased\`
-- [ ] Roadmap status updated in TagPulse repo"
+- [ ] CHANGELOG updated under \`## Unreleased\`"
 
 echo ""
 echo "Done. You're now on $branch with a draft PR."
