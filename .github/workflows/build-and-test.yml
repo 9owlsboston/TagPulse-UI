@@ -1,0 +1,39 @@
+name: build-and-test
+
+# Sprint 24 Phase B9 — build/lint/typecheck/test on every PR (build-only,
+# no deploy per ADR-018). Also runs on push to main so a regression that
+# slips past PR review (e.g. force-push, branch-protection bypass) is
+# caught before deploy-azure.yml tries to ship the broken bundle.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Test
+        run: npm run test
+      - name: Build (verify bundle)
+        env:
+          # Use a placeholder value at PR time — real value is injected by
+          # deploy-azure.yml from the GitHub Environment.
+          VITE_API_BASE_URL: https://api.example.com
+        run: npm run build

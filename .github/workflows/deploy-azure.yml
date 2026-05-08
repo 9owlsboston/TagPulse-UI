@@ -1,0 +1,181 @@
+name: deploy-azure
+
+# Sprint 24 Phase B8 — deploy the SPA bundle to the Azure Static Web App
+# matching the chosen environment.
+#
+# Triggers:
+#   - push to main             → auto-deploy to dev
+#   - tag v*                   → auto-deploy to staging
+#   - workflow_dispatch        → manual any env (production gated by
+#                                 reviewer rules on the GH Environment)
+#   - pull_request to main     → SWA preview deploy (action handles it
+#                                 automatically when production_branch=main)
+#
+# Secrets / variables come from the GitHub Environment configured by
+# scripts/ui-cicd-setup.sh:
+#   variables: AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,
+#              AZURE_STATIC_WEB_APPS_NAME, VITE_API_BASE_URL
+#   secret:    AZURE_STATIC_WEB_APPS_API_TOKEN
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        required: true
+        default: dev
+        options: [dev, staging, production]
+
+permissions:
+  contents: read
+  pull-requests: write   # for SWA preview comments on PRs (future-proofing)
+
+concurrency:
+  group: deploy-azure-${{ github.ref }}-${{ github.event.inputs.environment || (startsWith(github.ref, 'refs/tags/v') && 'staging') || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    # PR events use the SWA action's built-in preview environment, not a
+    # named GitHub Environment — skip the resolve job in that case.
+    if: github.event_name != 'pull_request'
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+    steps:
+      - id: pick
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >>"$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "environment=staging" >>"$GITHUB_OUTPUT"
+          else
+            echo "environment=dev" >>"$GITHUB_OUTPUT"
+          fi
+
+  preview:
+    # PR preview deploy. The SWA action provisions/decommissions a preview
+    # slot automatically based on the PR event type; we just hand it the
+    # built bundle. Bound to the `dev` GitHub Environment so it can read
+    # the deploy-token secret that scripts/ui-cicd-setup.sh dev uploads.
+    # Until that script has been run for the first time, the secret is
+    # empty and the action skips gracefully via skip_deploy_on_missing_secrets.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Build (preview)
+        env:
+          # Previews target the dev api so the SPA is exercisable end-to-end.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        # Skip the build on PR-close events; the action only needs to know
+        # the PR is closing so it can tear the preview slot down.
+        if: github.event.action != 'closed'
+        run: npm run build
+      - name: Deploy preview
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: ${{ github.event.action == 'closed' && 'close' || 'upload' }}
+          app_location: "dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          skip_deploy_on_missing_secrets: true
+          production_branch: main
+
+  deploy:
+    needs: resolve
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: https://${{ steps.swa-host.outputs.hostname }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        id: swa-deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          production_branch: main
+
+      - name: Resolve SWA hostname
+        id: swa-host
+        # Authoritative source: the deploy action's static_web_app_url
+        # output, which is the actual https://<name>.<random>.azurestaticapps.net
+        # URL the action just deployed to. Strip the scheme + trailing slash
+        # so the smoke test (and the Environment URL annotation) can
+        # reconstruct https://<host>/.
+        run: |
+          set -euo pipefail
+          url="${{ steps.swa-deploy.outputs.static_web_app_url }}"
+          if [[ -z "$url" ]]; then
+            echo "::error::deploy step did not emit static_web_app_url" >&2
+            exit 1
+          fi
+          host="${url#https://}"
+          host="${host#http://}"
+          host="${host%/}"
+          echo "hostname=$host" >>"$GITHUB_OUTPUT"
+          echo "resolved hostname: $host"
+
+      - name: Smoke test (HTTP 200 + asset hash present)
+        if: ${{ needs.resolve.outputs.environment != 'production' }}
+        run: |
+          set -euo pipefail
+          host="${{ steps.swa-host.outputs.hostname }}"
+          # Pull the main JS asset hash from the locally-built index.html so
+          # we can confirm the deployed origin is serving THIS build.
+          asset=$(grep -oE 'assets/[A-Za-z0-9_-]+\.js' dist/index.html | head -1 || true)
+          echo "Smoke testing https://$host (asset: ${asset:-<none>})"
+          # Retry up to 6 * 10s = 60s for SWA edge propagation.
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /tmp/index.html -w '%{http_code}' "https://$host/" || true)
+            if [[ "$code" == "200" ]]; then
+              if [[ -z "$asset" ]] || grep -q "$asset" /tmp/index.html; then
+                echo "✓ smoke test passed (HTTP 200, asset matched)"
+                exit 0
+              fi
+            fi
+            echo "  attempt $i: HTTP $code, retrying in 10s..."
+            sleep 10
+          done
+          echo "✗ smoke test failed: did not see HTTP 200 + asset $asset within 60s" >&2
+          exit 1
