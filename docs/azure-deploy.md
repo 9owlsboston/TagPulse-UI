@@ -68,6 +68,23 @@ be set to the deployed api origin (e.g.
 The deployment token (`AZURE_STATIC_WEB_APPS_API_TOKEN`) is **never** a
 build-time variable — it lives only as a GitHub Environment secret.
 
+## Source of truth: backend azd env
+
+`scripts/ui-bootstrap.sh` reads the following Bicep outputs from the
+backend's azd env (`tagpulse-<env>`):
+
+| azd key                  | Used as                              |
+| ------------------------ | ------------------------------------ |
+| `apiFqdn`                | `https://${apiFqdn}` → `VITE_API_BASE_URL` |
+| `staticWebAppName`       | `AZURE_STATIC_WEB_APPS_NAME`         |
+| `staticWebAppHostname`   | `AZURE_STATIC_WEB_APPS_HOSTNAME`     |
+| `AZURE_SUBSCRIPTION_ID`  | `AZURE_SUBSCRIPTION_ID`              |
+| `AZURE_RESOURCE_GROUP`   | `AZURE_RESOURCE_GROUP` (for `--rotate`) |
+
+`AZURE_TENANT_ID` is read from `az account show` (azd does not surface
+it). The SWA deploy token is fetched via `az staticwebapp secrets list`
+(or `TagPulse/scripts/azd-ui-token.sh` once Phase A1 ships).
+
 ## Common failures
 
 | Symptom                                       | Likely cause                                                                                  |

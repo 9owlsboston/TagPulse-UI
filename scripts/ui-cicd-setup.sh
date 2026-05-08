@@ -66,6 +66,7 @@ extract() {
 TENANT=$(extract AZURE_TENANT_ID)
 SUB=$(extract AZURE_SUBSCRIPTION_ID)
 SWA_NAME=$(extract AZURE_STATIC_WEB_APPS_NAME)
+SWA_HOST=$(extract AZURE_STATIC_WEB_APPS_HOSTNAME)
 API_BASE=$(extract VITE_API_BASE_URL)
 TOKEN=$(extract AZURE_STATIC_WEB_APPS_API_TOKEN)
 
@@ -73,6 +74,7 @@ missing=()
 [[ -z "$TENANT"   ]] && missing+=(AZURE_TENANT_ID)
 [[ -z "$SUB"      ]] && missing+=(AZURE_SUBSCRIPTION_ID)
 [[ -z "$SWA_NAME" ]] && missing+=(AZURE_STATIC_WEB_APPS_NAME)
+[[ -z "$SWA_HOST" ]] && missing+=(AZURE_STATIC_WEB_APPS_HOSTNAME)
 [[ -z "$API_BASE" ]] && missing+=(VITE_API_BASE_URL)
 if (( ${#missing[@]} > 0 )); then
   echo "error: $ENV_FILE missing required keys: ${missing[*]}" >&2
@@ -81,14 +83,17 @@ fi
 
 echo "==> Configuring CI/CD for environment '${ENV_NAME}'"
 echo "    Repo:  $REPO"
-echo "    SWA:   $SWA_NAME"
+echo "    SWA:   $SWA_NAME ($SWA_HOST)"
 echo "    API:   $API_BASE"
 echo
 
 # --- 1. Optional rotate ----------------------------------------------------
 if (( ROTATE )); then
   echo "==> [rotate] Resolving SWA resource group"
-  RG=$(az staticwebapp list --query "[?name=='$SWA_NAME'].resourceGroup | [0]" -o tsv)
+  RG=$(extract AZURE_RESOURCE_GROUP)
+  if [[ -z "$RG" ]]; then
+    RG=$(az staticwebapp list --query "[?name=='$SWA_NAME'].resourceGroup | [0]" -o tsv)
+  fi
   if [[ -z "$RG" ]]; then
     echo "error: cannot find resource group for SWA '$SWA_NAME' in subscription $SUB" >&2
     exit 1
@@ -125,11 +130,12 @@ echo "    created/updated environment '${ENV_NAME}'"
 
 # --- 3. Variables (non-secret) --------------------------------------------
 echo "==> [2/3] Variables"
-gh variable set AZURE_TENANT_ID            --env "$ENV_NAME" --body "$TENANT"   --repo "$REPO"
-gh variable set AZURE_SUBSCRIPTION_ID      --env "$ENV_NAME" --body "$SUB"      --repo "$REPO"
-gh variable set AZURE_STATIC_WEB_APPS_NAME --env "$ENV_NAME" --body "$SWA_NAME" --repo "$REPO"
-gh variable set VITE_API_BASE_URL          --env "$ENV_NAME" --body "$API_BASE" --repo "$REPO"
-echo "    set 4 variables on environment '${ENV_NAME}'"
+gh variable set AZURE_TENANT_ID                --env "$ENV_NAME" --body "$TENANT"   --repo "$REPO"
+gh variable set AZURE_SUBSCRIPTION_ID          --env "$ENV_NAME" --body "$SUB"      --repo "$REPO"
+gh variable set AZURE_STATIC_WEB_APPS_NAME     --env "$ENV_NAME" --body "$SWA_NAME" --repo "$REPO"
+gh variable set AZURE_STATIC_WEB_APPS_HOSTNAME --env "$ENV_NAME" --body "$SWA_HOST" --repo "$REPO"
+gh variable set VITE_API_BASE_URL              --env "$ENV_NAME" --body "$API_BASE" --repo "$REPO"
+echo "    set 5 variables on environment '${ENV_NAME}'"
 
 # --- 4. Secret (the deploy token) -----------------------------------------
 echo "==> [3/3] Secret"

@@ -4,6 +4,14 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+- **Sprint 24 follow-up — azd env parity fix.** The Phase B scripts assumed Bicep output names that the backend `azd env` does not actually emit. Verified against a live `tagpulse-dev` env and corrected:
+  - [scripts/ui-bootstrap.sh](scripts/ui-bootstrap.sh) now reads the real Bicep output names: `apiFqdn` (constructed as `https://${apiFqdn}` for `VITE_API_BASE_URL`), `staticWebAppName`, `staticWebAppHostname`, plus `AZURE_SUBSCRIPTION_ID` / `AZURE_RESOURCE_GROUP`. `AZURE_TENANT_ID` is read from `az account show` because azd does not surface it. The backend `scripts/azd-ui-token.sh` (Phase A1) is now optional with a warning instead of a hard requirement — falls back to `az staticwebapp secrets list` against the SWA name + RG resolved from azd.
+  - Generated `.env.<env>` now also carries `AZURE_RESOURCE_GROUP` (needed for `--rotate`) and `AZURE_STATIC_WEB_APPS_HOSTNAME` (the real `<random>.azurestaticapps.net` hostname).
+  - [scripts/ui-cicd-setup.sh](scripts/ui-cicd-setup.sh) sets a 5th GitHub variable `AZURE_STATIC_WEB_APPS_HOSTNAME`. [scripts/ui-cicd-verify.sh](scripts/ui-cicd-verify.sh) checks for it.
+  - [.github/workflows/deploy-azure.yml](.github/workflows/deploy-azure.yml) reads the hostname from `vars.AZURE_STATIC_WEB_APPS_HOSTNAME` directly instead of guessing from the action's output (which was unreliable).
+  - Smoke-tested end-to-end: `scripts/ui-bootstrap.sh dev` against the real `tagpulse-dev` env now produces a complete `.env.dev` with no manual editing.
+
 ### Added
 - **Sprint 24 Phase B — Frontend Cloud Deployment** (UI repo half of [TagPulse roadmap.md Sprint 24](../TagPulse/docs/roadmap.md), parity with Sprint 22 backend deploy ergonomics).
   - `staticwebapp.config.json` — SPA fallback to `/index.html`, security headers (HSTS 1y w/ preload, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), and a starter CSP scoped to `*.azurecontainerapps.io` (lock-down deferred per ADR-018 §5).
