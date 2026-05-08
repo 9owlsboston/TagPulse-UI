@@ -26,8 +26,16 @@ export function TenantGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleTenantIdLogin = (values: { tenantId: string }) => {
-    loginWithTenantId(values.tenantId);
+  const handleTenantIdLogin = async (values: { tenantId: string }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithTenantId(values.tenantId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,7 +87,7 @@ export function TenantGuard({ children }: { children: React.ReactNode }) {
                       <Input placeholder="11111111-1111-1111-1111-111111111111" />
                     </Form.Item>
                     <Form.Item>
-                      <Button type="default" htmlType="submit" block>
+                      <Button type="default" htmlType="submit" block loading={loading}>
                         Continue as Viewer
                       </Button>
                     </Form.Item>

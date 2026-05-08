@@ -4,6 +4,9 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+- **Sprint 25 follow-up — reject unknown tenant ids at login.** [src/lib/auth.tsx](src/lib/auth.tsx) `loginWithTenantId` now probes `${VITE_API_BASE_URL}/tenant/config` with the supplied id before committing it to storage. Unknown ids (api 401/404) surface "Tenant not found. Check the tenant ID and try again." in the existing [src/components/TenantGuard.tsx](src/components/TenantGuard.tsx) error banner, and the Continue button shows a loading spinner while the probe is in flight. Previously, any UUID was accepted, the user was logged in as a viewer, and the upper-right header showed `Tenant: <unknown-uuid>` because the subsequent `useTenantConfig()` query returned undefined — masking the lookup failure.
+
 ### Added
 - **Sprint 25 Slice 1 — Frontend resilience & telemetry** (UI half of [TagPulse roadmap.md Sprint 25](../TagPulse/docs/roadmap.md), tasks B1, B2, C1, C2).
   - **B1 — Startup health gate.** New [src/components/ApiHealthGate.tsx](src/components/ApiHealthGate.tsx) probes `${VITE_API_BASE_URL}/health/live` on mount with a 5s timeout. On failure renders a full-page `<Result>` banner ("TagPulse is temporarily unavailable. Retrying…") with exponential-backoff retry (1s → 2s → 4s → cap at 30s) and a "Retry now" button. Re-probes on tab focus when last success was >60s ago. Replaces the silent "login spinner forever" UX when the backend is down or CORS is misconfigured.
