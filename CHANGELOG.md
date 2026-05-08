@@ -5,6 +5,21 @@ All notable changes to TagPulse-UI will be documented in this file.
 ## Unreleased
 
 ### Added
+- **Sprint 24 Phase B — Frontend Cloud Deployment** (UI repo half of [TagPulse roadmap.md Sprint 24](../TagPulse/docs/roadmap.md), parity with Sprint 22 backend deploy ergonomics).
+  - `staticwebapp.config.json` — SPA fallback to `/index.html`, security headers (HSTS 1y w/ preload, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`), and a starter CSP scoped to `*.azurecontainerapps.io` (lock-down deferred per ADR-018 §5).
+  - `.env.example` — build-time-only template documenting `VITE_API_BASE_URL`. Wired into [src/api/client.ts](src/api/client.ts) + [src/api/configureGenerated.ts](src/api/configureGenerated.ts) so the deployed bundle hits the matching api origin (empty in dev → Vite proxy continues to work).
+  - Deployment scripts mirroring `TagPulse/scripts/azd-*.sh`:
+    - [scripts/ui-bootstrap.sh](scripts/ui-bootstrap.sh) — pulls `SERVICE_API_URI`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_STATIC_WEB_APPS_NAME` from the backend `azd env get-values` plus the SWA token via the backend's `scripts/azd-ui-token.sh` (Phase A1), writes `.env.<env>` mode 0600, refuses to overwrite without `--force`.
+    - [scripts/ui-env-load.sh](scripts/ui-env-load.sh) — `source`-able exporter; warns when executed instead of sourced.
+    - [scripts/ui-preflight.sh](scripts/ui-preflight.sh) — `node ≥20`, `npm ≥10`, `gh` signed in, `az` signed in to the tenant matching `.env.<env>`.
+    - [scripts/ui-cicd-setup.sh](scripts/ui-cicd-setup.sh) — idempotent. Creates the GitHub Environment, sets 4 variables, uploads `AZURE_STATIC_WEB_APPS_API_TOKEN` as a secret. `--rotate` resets the SWA api key + re-uploads.
+    - [scripts/ui-cicd-verify.sh](scripts/ui-cicd-verify.sh) — read-only drift check; exit 0 = ready to deploy.
+  - GitHub workflows:
+    - [.github/workflows/deploy-azure.yml](.github/workflows/deploy-azure.yml) — push to `main` → `dev`, `v*` tag → `staging`, `workflow_dispatch` → manual any env (production gated by GitHub Environment reviewer rules). Uses `Azure/static-web-apps-deploy@v1` with the deploy token, then smoke-tests HTTP 200 + the asset hash from `dist/index.html` is present in the served response.
+    - [.github/workflows/build-and-test.yml](.github/workflows/build-and-test.yml) — PR-only lint + typecheck + vitest + bundle build (replaces the prior `ci.yml`).
+  - [docs/azure-deploy.md](docs/azure-deploy.md) — 5-command quick-start, links back to the backend's canonical `docs/runbooks/ui-first-deploy.md` (Phase C1).
+  - `.gitignore` ignores `.env.dev` / `.env.staging` / `.env.production` (mode-600 files contain the SWA deploy token).
+
 - **Sprint 21 — Subject-Scoped Telemetry: UI** (closes the seven UI items deferred from Sprint 20 per [TagPulse roadmap.md L377](../TagPulse/docs/roadmap.md#L377)).
   - Regenerated typed API client from the live backend `openapi.json` (Sprint 19/20/21 surface). New models: `LatestTelemetryEntry`, `TenantConfig.telemetry_subject_kinds`, `TenantConfigUpdate.telemetry_subject_kinds`, `AssetResponse.latest_telemetry`, `LotResponse.latest_telemetry`, `TelemetryReadingResponse` (subject-scoped). New service methods: `TelemetryService.listTelemetryReadingsTelemetryReadingsGet`, `…Aggregates…`, `…IngestPost`; `RulesService.listRuleTemplatesRuleTemplatesGet`, `…getRuleTemplate…`.
   - **Tenant Settings — subject-scoped telemetry opt-in card** ([src/pages/admin/TenantSettings.tsx](src/pages/admin/TenantSettings.tsx)). New "Subject-scoped telemetry" card with switches for `asset` / `lot` / `stock_item` / `zone` (`device` is implicit and always saved). Drives the gating for every other Sprint 21 surface.

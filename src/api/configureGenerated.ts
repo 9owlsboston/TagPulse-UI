@@ -5,6 +5,10 @@
  */
 import { OpenAPI } from './generated/core/OpenAPI';
 
+// Mirror the BASE override in client.ts so generated services hit the same
+// origin. Empty string in dev → relative paths use the Vite proxy.
+OpenAPI.BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
 OpenAPI.TOKEN = async () => {
   const token = (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ as string | undefined;
   return token ?? '';

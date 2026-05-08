@@ -1,4 +1,7 @@
-const BASE = '';
+// Build-time API base URL. Empty string in local dev → relative paths hit the
+// Vite proxy (vite.config.ts). In deployed builds, set VITE_API_BASE_URL to
+// the api origin, e.g. https://tpdev-api.<random>.<region>.azurecontainerapps.io.
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
 function isTokenExpired(token: string): boolean {
   try {
