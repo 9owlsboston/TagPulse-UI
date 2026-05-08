@@ -3,6 +3,8 @@
 // the api origin, e.g. https://tpdev-api.<random>.<region>.azurecontainerapps.io.
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
+import { trackDependency } from '@/lib/telemetry';
+
 function isTokenExpired(token: string): boolean {
   try {
     const parts = token.split('.');
@@ -42,7 +44,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } else if (tenantId) {
     headers['X-Tenant-ID'] = tenantId;
   }
-  const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  const url = `${BASE}${path}`;
+  const startedAt = performance.now();
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch (err) {
+    trackDependency({
+      name: `${init?.method ?? 'GET'} ${path.split('?')[0]}`,
+      url,
+      duration: performance.now() - startedAt,
+      resultCode: 0,
+      success: false,
+    });
+    throw err;
+  }
+  trackDependency({
+    name: `${init?.method ?? 'GET'} ${path.split('?')[0]}`,
+    url,
+    duration: performance.now() - startedAt,
+    resultCode: res.status,
+    success: res.ok,
+  });
   // Handle 401 from server (e.g. token revoked server-side)
   if (res.status === 401 && token) {
     clearExpiredSession();
