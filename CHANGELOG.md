@@ -15,8 +15,8 @@ All notable changes to TagPulse-UI will be documented in this file.
     - [scripts/ui-cicd-setup.sh](scripts/ui-cicd-setup.sh) — idempotent. Creates the GitHub Environment, sets 4 variables, uploads `AZURE_STATIC_WEB_APPS_API_TOKEN` as a secret. `--rotate` resets the SWA api key + re-uploads.
     - [scripts/ui-cicd-verify.sh](scripts/ui-cicd-verify.sh) — read-only drift check; exit 0 = ready to deploy.
   - GitHub workflows:
-    - [.github/workflows/deploy-azure.yml](.github/workflows/deploy-azure.yml) — push to `main` → `dev`, `v*` tag → `staging`, `workflow_dispatch` → manual any env (production gated by GitHub Environment reviewer rules). Uses `Azure/static-web-apps-deploy@v1` with the deploy token, then smoke-tests HTTP 200 + the asset hash from `dist/index.html` is present in the served response.
-    - [.github/workflows/build-and-test.yml](.github/workflows/build-and-test.yml) — PR-only lint + typecheck + vitest + bundle build (replaces the prior `ci.yml`).
+    - [.github/workflows/deploy-azure.yml](.github/workflows/deploy-azure.yml) — push to `main` → `dev`, `v*` tag → `staging`, `workflow_dispatch` → manual any env (production gated by GitHub Environment reviewer rules). PR events trigger the SWA action's built-in preview deploy + auto-teardown on PR close. Resolves the deployed hostname from the action's `static_web_app_url` output, then smoke-tests HTTP 200 + the asset hash from `dist/index.html` is present in the served response.
+    - [.github/workflows/build-and-test.yml](.github/workflows/build-and-test.yml) — PR + push-to-`main` lint + typecheck + vitest + bundle build (replaces the prior `ci.yml`).
   - [docs/azure-deploy.md](docs/azure-deploy.md) — 5-command quick-start, links back to the backend's canonical `docs/runbooks/ui-first-deploy.md` (Phase C1).
   - `.gitignore` ignores `.env.dev` / `.env.staging` / `.env.production` (mode-600 files contain the SWA deploy token).
 

@@ -1,11 +1,14 @@
 name: build-and-test
 
-# Sprint 24 Phase B9 — PR build/lint/typecheck/test (no deploy).
-# Replaces the original ci.yml from sprint 0 with a build verification step
-# so PR review surfaces broken bundles before they reach main.
+# Sprint 24 Phase B9 — build/lint/typecheck/test on every PR (build-only,
+# no deploy per ADR-018). Also runs on push to main so a regression that
+# slips past PR review (e.g. force-push, branch-protection bypass) is
+# caught before deploy-azure.yml tries to ship the broken bundle.
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 permissions:

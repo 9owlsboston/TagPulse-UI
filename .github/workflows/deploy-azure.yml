@@ -8,6 +8,8 @@ name: deploy-azure
 #   - tag v*                   → auto-deploy to staging
 #   - workflow_dispatch        → manual any env (production gated by
 #                                 reviewer rules on the GH Environment)
+#   - pull_request to main     → SWA preview deploy (action handles it
+#                                 automatically when production_branch=main)
 #
 # Secrets / variables come from the GitHub Environment configured by
 # scripts/ui-cicd-setup.sh:
@@ -19,6 +21,9 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
     inputs:
       environment:
@@ -39,6 +44,9 @@ concurrency:
 jobs:
   resolve:
     runs-on: ubuntu-latest
+    # PR events use the SWA action's built-in preview environment, not a
+    # named GitHub Environment — skip the resolve job in that case.
+    if: github.event_name != 'pull_request'
     outputs:
       environment: ${{ steps.pick.outputs.environment }}
     steps:
@@ -52,8 +60,48 @@ jobs:
             echo "environment=dev" >>"$GITHUB_OUTPUT"
           fi
 
+  preview:
+    # PR preview deploy. The SWA action provisions/decommissions a preview
+    # slot automatically based on the PR event type; we just hand it the
+    # built bundle. No GitHub Environment binding (PR previews don't get
+    # reviewer gates — those guard production only).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Build (preview)
+        env:
+          # Previews target the dev api so the SPA is exercisable end-to-end.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        # Skip the build on PR-close events; the action only needs to know
+        # the PR is closing so it can tear the preview slot down.
+        if: github.event.action != 'closed'
+        run: npm run build
+      - name: Deploy preview
+        uses: Azure/static-web-apps-deploy@v1
+        env:
+          # Use the dev environment's deploy token for previews.
+          AZURE_STATIC_WEB_APPS_API_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: ${{ github.event.action == 'closed' && 'close' || 'upload' }}
+          app_location: "dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          production_branch: main
+
   deploy:
     needs: resolve
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: ${{ needs.resolve.outputs.environment }}
@@ -89,26 +137,23 @@ jobs:
 
       - name: Resolve SWA hostname
         id: swa-host
-        env:
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          AZURE_STATIC_WEB_APPS_NAME: ${{ vars.AZURE_STATIC_WEB_APPS_NAME }}
-        # Best-effort hostname resolution for smoke tests + the Environment
-        # URL annotation. Falls back to <name>.azurestaticapps.net which is
-        # NOT the real hostname (those use a random suffix), so failure here
-        # is non-fatal — the deploy step is the source of truth.
+        # Authoritative source: the deploy action's static_web_app_url
+        # output, which is the actual https://<name>.<random>.azurestaticapps.net
+        # URL the action just deployed to. Strip the scheme + trailing slash
+        # so the smoke test (and the Environment URL annotation) can
+        # reconstruct https://<host>/.
         run: |
-          set -e
-          # The action runs unauthenticated to az; we only have variables
-          # not creds. Use the predictable suffix-less default hostname for
-          # the URL annotation; smoke test will use the deployed URL emitted
-          # by the action if available.
-          host="$AZURE_STATIC_WEB_APPS_NAME.azurestaticapps.net"
-          if [[ -n "${SWA_DEPLOY_URL:-}" ]]; then
-            host="${SWA_DEPLOY_URL#https://}"
-            host="${host%/}"
+          set -euo pipefail
+          url="${{ steps.swa-deploy.outputs.static_web_app_url }}"
+          if [[ -z "$url" ]]; then
+            echo "::error::deploy step did not emit static_web_app_url" >&2
+            exit 1
           fi
+          host="${url#https://}"
+          host="${host#http://}"
+          host="${host%/}"
           echo "hostname=$host" >>"$GITHUB_OUTPUT"
+          echo "resolved hostname: $host"
 
       - name: Smoke test (HTTP 200 + asset hash present)
         if: ${{ needs.resolve.outputs.environment != 'production' }}
