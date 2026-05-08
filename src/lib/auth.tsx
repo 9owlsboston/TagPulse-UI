@@ -17,7 +17,7 @@ interface AuthContextValue {
   accessToken: string | null;
   isAuthenticated: boolean;
   loginWithApiKey: (email: string, apiKey: string) => Promise<void>;
-  loginWithTenantId: (id: string) => void;
+  loginWithTenantId: (id: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -68,7 +68,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  const loginWithTenantId = useCallback((id: string) => {
+  const loginWithTenantId = useCallback(async (id: string) => {
+    // Validate the id against the api before committing it to storage.
+    // This prevents the header from showing "Tenant: <unknown-uuid>" for
+    // tenants that don't exist in the database (most user-visible symptom).
+    const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+    let res: Response;
+    try {
+      res = await fetch(`${base}/tenant/config`, {
+        headers: { 'X-Tenant-ID': id },
+      });
+    } catch {
+      throw new Error('Could not reach TagPulse API. Check your connection.');
+    }
+    if (res.status === 401 || res.status === 404) {
+      throw new Error('Tenant not found. Check the tenant ID and try again.');
+    }
+    if (!res.ok) {
+      throw new Error(`Tenant lookup failed (${res.status})`);
+    }
     setTenantIdState(id);
     setUser(null);
     setAccessToken(null);
@@ -139,7 +157,7 @@ const DEFAULT_AUTH: AuthContextValue = {
   loginWithApiKey: async () => {
     throw new Error('AuthProvider missing');
   },
-  loginWithTenantId: () => {
+  loginWithTenantId: async () => {
     throw new Error('AuthProvider missing');
   },
   logout: () => {
