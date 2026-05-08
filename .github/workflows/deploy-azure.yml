@@ -138,23 +138,28 @@ jobs:
 
       - name: Resolve SWA hostname
         id: swa-host
-        # Authoritative source: the deploy action's static_web_app_url
-        # output, which is the actual https://<name>.<random>.azurestaticapps.net
-        # URL the action just deployed to. Strip the scheme + trailing slash
-        # so the smoke test (and the Environment URL annotation) can
-        # reconstruct https://<host>/.
+        env:
+          # Sourced from the GitHub Environment variable seeded by
+          # scripts/ui-cicd-setup.sh, which itself reads the Bicep output
+          # `staticWebAppHostname` from the backend azd env. This is the
+          # real <random>.azurestaticapps.net hostname (production slot).
+          SWA_HOST: ${{ vars.AZURE_STATIC_WEB_APPS_HOSTNAME }}
         run: |
           set -euo pipefail
-          url="${{ steps.swa-deploy.outputs.static_web_app_url }}"
-          if [[ -z "$url" ]]; then
-            echo "::error::deploy step did not emit static_web_app_url" >&2
+          if [[ -z "${SWA_HOST:-}" ]]; then
+            # Fallback to the action's output for repos that wired CI/CD
+            # before AZURE_STATIC_WEB_APPS_HOSTNAME was added.
+            SWA_HOST="${{ steps.swa-deploy.outputs.static_web_app_url }}"
+            SWA_HOST="${SWA_HOST#https://}"
+            SWA_HOST="${SWA_HOST#http://}"
+            SWA_HOST="${SWA_HOST%/}"
+          fi
+          if [[ -z "$SWA_HOST" ]]; then
+            echo "::error::no AZURE_STATIC_WEB_APPS_HOSTNAME variable and deploy step emitted no static_web_app_url" >&2
             exit 1
           fi
-          host="${url#https://}"
-          host="${host#http://}"
-          host="${host%/}"
-          echo "hostname=$host" >>"$GITHUB_OUTPUT"
-          echo "resolved hostname: $host"
+          echo "hostname=$SWA_HOST" >>"$GITHUB_OUTPUT"
+          echo "resolved hostname: $SWA_HOST"
 
       - name: Smoke test (HTTP 200 + asset hash present)
         if: ${{ needs.resolve.outputs.environment != 'production' }}

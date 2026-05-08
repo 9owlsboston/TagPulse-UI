@@ -34,12 +34,12 @@ gh api "/repos/${REPO}/environments/${ENV_NAME}" >/dev/null 2>&1 \
 ok "GitHub Environment exists"
 
 # 2. Variables
-EXPECTED_VARS=(AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_STATIC_WEB_APPS_NAME VITE_API_BASE_URL)
+EXPECTED_VARS=(AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_STATIC_WEB_APPS_NAME AZURE_STATIC_WEB_APPS_HOSTNAME VITE_API_BASE_URL)
 ACTUAL=$(gh variable list --env "$ENV_NAME" --repo "$REPO" --json name -q '.[].name' | sort)
 for v in "${EXPECTED_VARS[@]}"; do
   echo "$ACTUAL" | grep -qx "$v" || fail "GitHub variable '$v' missing on environment '${ENV_NAME}'"
 done
-ok "All 4 GitHub variables set"
+ok "All 5 GitHub variables set"
 
 # Confirm VITE_API_BASE_URL looks like an https URL.
 API_VAL=$(gh variable list --env "$ENV_NAME" --repo "$REPO" --json name,value \
