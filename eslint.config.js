@@ -41,6 +41,11 @@ export default [
         cancelAnimationFrame: 'readonly',
         navigator: 'readonly',
         location: 'readonly',
+        performance: 'readonly',
+        Response: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        crypto: 'readonly',
       },
     },
     plugins: {

@@ -3,6 +3,9 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';
+import { ApiHealthGate } from '@/components/ApiHealthGate';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { RouteTracker } from '@/components/RouteTracker';
 import { Dashboard } from '@/pages/Dashboard';
 import { DeviceList } from '@/pages/devices/DeviceList';
 import { DeviceDetail } from '@/pages/devices/DeviceDetail';
@@ -44,10 +47,13 @@ const queryClient = new QueryClient({
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <TenantGuard>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ApiHealthGate>
+          <AuthProvider>
+            <BrowserRouter>
+              <RouteTracker />
+              <TenantGuard>
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
@@ -82,9 +88,11 @@ export function App() {
                 <Route path="/admin/audit-logs" element={<AuditLog />} />
               </Route>
             </Routes>
-          </TenantGuard>
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+              </TenantGuard>
+            </BrowserRouter>
+          </AuthProvider>
+        </ApiHealthGate>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
