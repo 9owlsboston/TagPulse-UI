@@ -63,10 +63,13 @@ jobs:
   preview:
     # PR preview deploy. The SWA action provisions/decommissions a preview
     # slot automatically based on the PR event type; we just hand it the
-    # built bundle. No GitHub Environment binding (PR previews don't get
-    # reviewer gates — those guard production only).
+    # built bundle. Bound to the `dev` GitHub Environment so it can read
+    # the deploy-token secret that scripts/ui-cicd-setup.sh dev uploads.
+    # Until that script has been run for the first time, the secret is
+    # empty and the action skips gracefully via skip_deploy_on_missing_secrets.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    environment: dev
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,9 +89,6 @@ jobs:
         run: npm run build
       - name: Deploy preview
         uses: Azure/static-web-apps-deploy@v1
-        env:
-          # Use the dev environment's deploy token for previews.
-          AZURE_STATIC_WEB_APPS_API_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -97,6 +97,7 @@ jobs:
           api_location: ""
           output_location: ""
           skip_app_build: true
+          skip_deploy_on_missing_secrets: true
           production_branch: main
 
   deploy:
