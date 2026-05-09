@@ -1,18 +1,24 @@
-import { useMemo } from 'react';
-import { Button, Card, Empty, Space, Table, Typography } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Space, Table, Typography, message } from 'antd';
+import { DownloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useStockLevels } from '@/hooks/useInventory';
 import { useProducts } from '@/hooks/useInventory';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { stockMovementsApi, stockItemsApi } from '@/api/client';
+import { useCanPerform } from '@/components/useCanPerform';
+import type { StockMovementCreate } from '@/api/client';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const UNASSIGNED = '__unassigned__';
 
 interface PivotRow {
   key: string;
   product: string;
+  product_id: string;
+  lot_id?: string;
+  zone_id?: string;
   total: number;
   perZone: Record<string, number>;
 }
@@ -44,12 +50,34 @@ function downloadCsv(filename: string, body: string): void {
   URL.revokeObjectURL(url);
 }
 
+interface AdjustFormValues {
+  movement_type: 'enter' | 'exit';
+  quantity: number;
+  reason?: string;
+}
+
 export function StockLevels() {
   const { data: levels, isLoading } = useStockLevels();
   const { data: products } = useProducts({ limit: 500 });
   const { data: zones } = useQuery({
     queryKey: ['zones'],
     queryFn: () => SitesZonesService.listZonesZonesGet(),
+  });
+  const canEdit = useCanPerform('editor');
+  const qc = useQueryClient();
+
+  const [adjustRow, setAdjustRow] = useState<PivotRow | null>(null);
+  const [adjustForm] = Form.useForm<AdjustFormValues>();
+
+  const createMovement = useMutation({
+    mutationFn: (data: StockMovementCreate) => stockMovementsApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory'] });
+      message.success('Stock adjustment recorded');
+      setAdjustRow(null);
+      adjustForm.resetFields();
+    },
+    onError: (err: Error) => message.error(err.message),
   });
 
   const productLabel = useMemo(() => {
@@ -73,6 +101,9 @@ export function StockLevels() {
       const existing = byProduct.get(lvl.product_id) ?? {
         key: lvl.product_id,
         product: productLabel.get(lvl.product_id) ?? lvl.product_id.slice(0, 8),
+        product_id: lvl.product_id,
+        lot_id: lvl.lot_id ?? undefined,
+        zone_id: lvl.zone_id ?? undefined,
         total: 0,
         perZone: {},
       };
@@ -92,6 +123,18 @@ export function StockLevels() {
 
   const onExport = () => {
     downloadCsv('stock-levels.csv', toCsv(rows, zoneCols));
+  };
+
+  const onAdjust = (values: AdjustFormValues) => {
+    if (!adjustRow) return;
+    createMovement.mutate({
+      product_id: adjustRow.product_id,
+      lot_id: adjustRow.lot_id,
+      zone_id: adjustRow.zone_id,
+      movement_type: values.movement_type,
+      quantity: values.quantity,
+      reason: values.reason,
+    });
   };
 
   return (
@@ -123,14 +166,60 @@ export function StockLevels() {
               {
                 title: 'Total',
                 dataIndex: 'total',
-                fixed: 'right' as const,
                 align: 'right' as const,
                 render: (v: number) => <b>{v}</b>,
               },
+              ...(canEdit
+                ? [
+                    {
+                      title: 'Actions',
+                      fixed: 'right' as const,
+                      width: 100,
+                      render: (_: unknown, row: PivotRow) => (
+                        <Button
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => {
+                            setAdjustRow(row);
+                            adjustForm.resetFields();
+                          }}
+                        >
+                          Adjust
+                        </Button>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         )}
       </Card>
+
+      <Modal
+        title={`Adjust stock — ${adjustRow?.product ?? ''}`}
+        open={!!adjustRow}
+        onOk={() => adjustForm.submit()}
+        onCancel={() => setAdjustRow(null)}
+        confirmLoading={createMovement.isPending}
+        destroyOnClose
+      >
+        <Form<AdjustFormValues> form={adjustForm} layout="vertical" onFinish={onAdjust}>
+          <Form.Item name="movement_type" label="Movement type" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { value: 'enter', label: 'Enter (add stock)' },
+                { value: 'exit', label: 'Exit (remove stock)' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="quantity" label="Quantity" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="reason" label="Reason">
+            <Input placeholder="e.g. manual count correction" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
