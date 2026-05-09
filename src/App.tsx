@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
@@ -6,6 +6,7 @@ import { Layout } from '@/components/Layout';
 import { ApiHealthGate } from '@/components/ApiHealthGate';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteTracker } from '@/components/RouteTracker';
+import { handleGlobal401 } from '@/lib/auth';
 import { Dashboard } from '@/pages/Dashboard';
 import { DeviceList } from '@/pages/devices/DeviceList';
 import { DeviceDetail } from '@/pages/devices/DeviceDetail';
@@ -37,10 +38,19 @@ import { MapPage } from '@/pages/map/MapPage';
 import { TenantSettings } from '@/pages/admin/TenantSettings';
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: handleGlobal401 }),
+  mutationCache: new MutationCache({ onError: handleGlobal401 }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        // Never retry 401s — session is dead, retrying just delays the redirect.
+        if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 401) {
+          return false;
+        }
+        return failureCount < 3;
+      },
     },
   },
 });

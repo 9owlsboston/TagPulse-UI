@@ -166,6 +166,28 @@ const DEFAULT_AUTH: AuthContextValue = {
   },
 };
 
+/**
+ * Global 401 handler for TanStack Query caches. When the generated API client
+ * (or any query/mutation) receives a 401, clear the stored session and reload
+ * so the user lands on the login page instead of staring at a hung spinner.
+ *
+ * Wired via QueryCache.onError + MutationCache.onError in App.tsx.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function handleGlobal401(error: Error): void {
+  if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 401) {
+    const token = (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ as string | undefined;
+    if (token) {
+      sessionStorage.removeItem('tagpulse_token');
+      sessionStorage.removeItem('tagpulse_user');
+      localStorage.removeItem('tagpulse_tenant_id');
+      delete (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__;
+      delete (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__;
+      window.location.reload();
+    }
+  }
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
