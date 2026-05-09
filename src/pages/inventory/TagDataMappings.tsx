@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useCreateTagDataMapping, useDeleteTagDataMapping, useProducts, useTagDataMappings } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { tagDataMappingsApi } from '@/api/client';
 import { TagDataMappingCreate } from '@/api/generated/models/TagDataMappingCreate';
 import type { TagDataMappingResponse } from '@/api/generated/models/TagDataMappingResponse';
 
@@ -13,6 +15,12 @@ interface FormValues {
   semantic_field: string;
   scope_kind: TagDataMappingCreate.scope_kind;
   scope_id?: string;
+  transform?: string;
+}
+
+interface EditFormValues {
+  tag_data_key: string;
+  semantic_field: string;
   transform?: string;
 }
 
@@ -27,12 +35,26 @@ export function TagDataMappings() {
   const { data: products } = useProducts({ limit: 500 });
   const create = useCreateTagDataMapping();
   const remove = useDeleteTagDataMapping();
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<TagDataMappingResponse | null>(null);
   const [form] = Form.useForm<FormValues>();
+  const [editForm] = Form.useForm<EditFormValues>();
   const scopeKind = Form.useWatch('scope_kind', form);
 
   const productLabel = new Map<string, string>();
   for (const p of products ?? []) productLabel.set(p.id, p.sku);
+
+  const updateMapping = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { tag_data_key?: string; semantic_field?: string; transform?: string | null } }) =>
+      tagDataMappingsApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory', 'tag-data-mappings'] });
+      message.success('Mapping updated');
+      setEditRecord(null);
+    },
+    onError: (err: Error) => message.error(err.message),
+  });
 
   const onFinish = async (values: FormValues) => {
     try {
@@ -54,6 +76,27 @@ export function TagDataMappings() {
   const onDelete = async (id: string) => {
     await remove.mutateAsync(id);
     message.success('Mapping deleted');
+  };
+
+  const handleEdit = (record: TagDataMappingResponse) => {
+    setEditRecord(record);
+    editForm.setFieldsValue({
+      tag_data_key: record.tag_data_key,
+      semantic_field: record.semantic_field,
+      transform: record.transform ?? '',
+    });
+  };
+
+  const onEditFinish = (values: EditFormValues) => {
+    if (!editRecord) return;
+    updateMapping.mutate({
+      id: editRecord.id,
+      data: {
+        tag_data_key: values.tag_data_key,
+        semantic_field: values.semantic_field,
+        transform: values.transform || null,
+      },
+    });
   };
 
   return (
@@ -89,18 +132,22 @@ export function TagDataMappings() {
             { title: 'Transform', dataIndex: 'transform', render: (v: string | null) => v ?? '—' },
             {
               title: '',
-              width: 80,
+              width: 120,
               render: (_, row) =>
                 isAdmin ? (
-                  <Popconfirm title="Delete mapping?" onConfirm={() => onDelete(row.id)}>
-                    <Button danger size="small" icon={<DeleteOutlined />} />
-                  </Popconfirm>
+                  <Space>
+                    <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(row)} />
+                    <Popconfirm title="Delete mapping?" onConfirm={() => onDelete(row.id)}>
+                      <Button danger size="small" icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  </Space>
                 ) : null,
             },
           ]}
         />
       </Card>
 
+      {/* Create modal */}
       <Modal
         title="Create tag-data mapping"
         open={open}
@@ -138,6 +185,28 @@ export function TagDataMappings() {
               />
             </Form.Item>
           )}
+          <Form.Item name="transform" label="Transform (optional)">
+            <Input placeholder="e.g. upper, lower" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit modal */}
+      <Modal
+        title="Edit tag-data mapping"
+        open={!!editRecord}
+        onOk={() => editForm.submit()}
+        onCancel={() => setEditRecord(null)}
+        confirmLoading={updateMapping.isPending}
+        destroyOnClose
+      >
+        <Form<EditFormValues> form={editForm} layout="vertical" onFinish={onEditFinish}>
+          <Form.Item name="tag_data_key" label="Tag-data key" rules={[{ required: true, max: 64 }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="semantic_field" label="Semantic field" rules={[{ required: true }]}>
+            <Select options={SEMANTIC_FIELDS} />
+          </Form.Item>
           <Form.Item name="transform" label="Transform (optional)">
             <Input placeholder="e.g. upper, lower" />
           </Form.Item>

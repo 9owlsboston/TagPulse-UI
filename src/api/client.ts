@@ -268,3 +268,92 @@ export const usersApi = {
   revokeApiKey: (id: string) =>
     request<void>(`/users/${id}/api-key`, { method: 'DELETE' }),
 };
+
+// ── Integrations: test-fire (Sprint 27, C2) ──
+
+export const integrationTestApi = {
+  test: (id: string) =>
+    request<{ status_code: number; response_time_ms: number; body?: string }>(`/integrations/${id}/test`, { method: 'POST' }),
+};
+
+// ── Dead-letter events (Sprint 27, C5) ──
+
+interface DeadLetterEvent {
+  id: string;
+  topic: string;
+  error: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export const deadLetterApi = {
+  list: () => request<DeadLetterEvent[]>('/admin/dead-letter'),
+  retry: (id: string) => request<void>(`/admin/dead-letter/${id}/retry`, { method: 'POST' }),
+  abandon: (id: string) => request<void>(`/admin/dead-letter/${id}`, { method: 'DELETE' }),
+};
+
+// ── Stock movements: create (Sprint 27, A4) ──
+
+export interface StockMovementCreate {
+  product_id: string;
+  lot_id?: string;
+  zone_id?: string;
+  movement_type: 'enter' | 'exit';
+  quantity: number;
+  reason?: string;
+}
+
+export const stockMovementsApi = {
+  create: (data: StockMovementCreate) =>
+    request<unknown>('/stock-movements', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Lots: update (Sprint 27, A1) ──
+
+export interface LotUpdate {
+  lot_code?: string;
+  manufactured_at?: string | null;
+  expires_at?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export const lotsApi = {
+  update: (id: string, data: LotUpdate) =>
+    request<unknown>(`/lots/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+// ── Products: update (Sprint 27, A2) ──
+
+export interface ProductUpdateManual {
+  name?: string;
+  sku?: string;
+  gtin?: string | null;
+  category?: string | null;
+  unit?: string;
+  attributes?: Record<string, unknown> | null;
+}
+
+export const productsApi = {
+  update: (id: string, data: ProductUpdateManual) =>
+    request<unknown>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+// ── Stock items: update state (Sprint 27, A3) ──
+
+export const stockItemsApi = {
+  updateState: (id: string, state: string) =>
+    request<unknown>(`/stock-items/${id}`, { method: 'PATCH', body: JSON.stringify({ state }) }),
+};
+
+// ── Tag-data mappings: update (Sprint 27, A6) ──
+
+export interface TagDataMappingUpdate {
+  tag_data_key?: string;
+  semantic_field?: string;
+  transform?: string | null;
+}
+
+export const tagDataMappingsApi = {
+  update: (id: string, data: TagDataMappingUpdate) =>
+    request<unknown>(`/tag-data-mappings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};

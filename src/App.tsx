@@ -1,5 +1,6 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { App as AntApp } from 'antd';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';
@@ -24,11 +25,13 @@ import { UserList } from '@/pages/admin/UserList';
 import { UserCreatePage } from '@/pages/admin/UserCreatePage';
 import { UserDetail } from '@/pages/admin/UserDetail';
 import { AuditLog } from '@/pages/admin/AuditLog';
+import { DeadLetters } from '@/pages/admin/DeadLetters';
 import { ProductList } from '@/pages/inventory/ProductList';
 import { ProductDetail } from '@/pages/inventory/ProductDetail';
 import { StockLevels } from '@/pages/inventory/StockLevels';
 import { StockMovements } from '@/pages/inventory/StockMovements';
 import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
+import { CsvImport } from '@/pages/inventory/CsvImport';
 import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
 import LotDetail from '@/pages/inventory/LotDetail';
 import { AssetList } from '@/pages/assets/AssetList';
@@ -59,11 +62,12 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ApiHealthGate>
-          <AuthProvider>
-            <BrowserRouter>
-              <RouteTracker />
-              <TenantGuard>
+        <AntApp>
+          <ApiHealthGate>
+            <AuthProvider>
+              <BrowserRouter>
+                <RouteTracker />
+                <TenantGuard>
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
@@ -89,6 +93,7 @@ export function App() {
                 <Route path="/inventory/lots/:id" element={<LotDetail />} />
                 <Route path="/inventory/stock-levels" element={<StockLevels />} />
                 <Route path="/inventory/stock-movements" element={<StockMovements />} />
+                <Route path="/inventory/csv-import" element={<CsvImport />} />
                 <Route path="/admin/tenant" element={<TenantSettings />} />
                 <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
@@ -96,12 +101,14 @@ export function App() {
                 <Route path="/admin/users/new" element={<UserCreatePage />} />
                 <Route path="/admin/users/:id" element={<UserDetail />} />
                 <Route path="/admin/audit-logs" element={<AuditLog />} />
+                <Route path="/admin/dead-letters" element={<DeadLetters />} />
               </Route>
             </Routes>
-              </TenantGuard>
-            </BrowserRouter>
-          </AuthProvider>
-        </ApiHealthGate>
+                </TenantGuard>
+              </BrowserRouter>
+            </AuthProvider>
+          </ApiHealthGate>
+        </AntApp>
       </QueryClientProvider>
     </ErrorBoundary>
   );

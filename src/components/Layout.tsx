@@ -18,6 +18,8 @@ import {
   GlobalOutlined,
   SettingOutlined,
   AuditOutlined,
+  UploadOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
@@ -43,10 +45,12 @@ const ALL_MENU_ITEMS = [
   { key: '/inventory/lots', icon: <ClockCircleOutlined />, label: 'Lot Expiry', minRole: 'viewer' as const, requires: 'inventory' as const },
   { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer' as const, requires: 'inventory' as const },
   { key: '/inventory/stock-movements', icon: <SwapOutlined />, label: 'Stock Movements', minRole: 'viewer' as const, requires: 'inventory' as const },
+  { key: '/inventory/csv-import', icon: <UploadOutlined />, label: 'CSV Import', minRole: 'admin' as const, requires: 'inventory' as const },
   { key: '/admin/tenant', icon: <SettingOutlined />, label: 'Tenant Settings', minRole: 'admin' as const },
   { key: '/admin/usage', icon: <BarChartOutlined />, label: 'Usage', minRole: 'admin' as const },
   { key: '/admin/users', icon: <TeamOutlined />, label: 'Users', minRole: 'admin' as const },
   { key: '/admin/audit-logs', icon: <AuditOutlined />, label: 'Audit Log', minRole: 'admin' as const },
+  { key: '/admin/dead-letters', icon: <WarningOutlined />, label: 'Dead Letters', minRole: 'admin' as const },
 ];
 
 const ROLE_LEVEL: Record<string, number> = { viewer: 0, editor: 1, admin: 2 };
