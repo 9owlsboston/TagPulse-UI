@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, Input, Form, message } from 'antd';
+import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, Input, Form, App } from 'antd';
 import { CopyOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
@@ -15,6 +15,7 @@ const { Title, Text } = Typography;
 export function DeviceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data: device, isLoading } = useDevice(id!);
   const { data: recentReads } = useRecentReads(id!, 100);
   const { data: health } = useDeviceHealth(id!);
@@ -29,7 +30,7 @@ export function DeviceDetail() {
   if (isLoading || !device) return <Spin size="large" />;
 
   const handleDecommission = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Decommission Device',
       content: `Are you sure you want to decommission "${device.name}"?`,
       okType: 'danger',
@@ -41,7 +42,7 @@ export function DeviceDetail() {
   };
 
   const handleRotateToken = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Rotate Device Token',
       content: (
         <>

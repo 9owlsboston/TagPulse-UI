@@ -14,7 +14,7 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
+  App,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import {
@@ -48,6 +48,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function AssetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data: asset, isLoading } = useAsset(id);
   const { data: allBindings } = useAssetBindings(id, false);
   const { data: zones } = useZones();
@@ -87,7 +88,7 @@ export function AssetDetail() {
   if (isLoading || !asset) return <Spin size="large" />;
 
   const handleRetire = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Retire Asset',
       content: `Mark "${asset.name}" as retired? Its bindings remain in history.`,
       okType: 'danger',
@@ -110,7 +111,7 @@ export function AssetDetail() {
   };
 
   const handleUnbind = (binding: AssetTagBindingResponse) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Unbind Tag',
       content: `Unbind ${binding.binding_kind} value "${binding.binding_value}"?`,
       onOk: async () => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, InputNumber, Typography, message } from 'antd';
+import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, InputNumber, Typography, App } from 'antd';
 import { PlusOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,7 @@ const TYPE_OPTIONS = [
 
 export function IntegrationList() {
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data, isLoading } = useIntegrations();
   const createIntegration = useCreateIntegration();
   const updateIntegration = useUpdateIntegration();
@@ -48,7 +49,7 @@ export function IntegrationList() {
   };
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Integration',
       content: 'Are you sure?',
       okType: 'danger',

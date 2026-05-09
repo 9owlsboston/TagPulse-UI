@@ -1,4 +1,4 @@
-import { Table, Button, Modal, Form, Input, Typography, Space, message, InputNumber, Card, Select, Tag } from 'antd';
+import { Table, Button, Modal, Form, Input, Typography, Space, App, InputNumber, Card, Select, Tag } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
@@ -49,6 +49,7 @@ const columns = (onDelete: (id: string) => void, showDelete: boolean): ColumnsTy
 ];
 
 export function TelemetryModels() {
+  const { modal, message } = App.useApp();
   const { data, isLoading } = useTelemetryModels();
   const createModel = useCreateTelemetryModel();
   const deleteModel = useDeleteTelemetryModel();
@@ -64,7 +65,7 @@ export function TelemetryModels() {
   };
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Telemetry Model',
       content: 'Are you sure?',
       okType: 'danger',

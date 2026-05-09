@@ -11,7 +11,7 @@ import {
   Table,
   Tag,
   Typography,
-  message,
+  App,
 } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
@@ -35,6 +35,7 @@ import { PolygonDraw } from '@/components/PolygonDraw';
 const { Title, Text } = Typography;
 
 export function SitesZones() {
+  const { modal, message } = App.useApp();
   const { data: sites, isLoading: sitesLoading } = useSites();
   const { data: zones, isLoading: zonesLoading } = useZones();
   const { data: devices } = useDevices();
@@ -97,7 +98,7 @@ export function SitesZones() {
   };
 
   const handleDeleteSite = (site: SiteResponse) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Site',
       content: `Delete "${site.name}"? Its zones will be deleted too.`,
       okType: 'danger',
@@ -106,7 +107,7 @@ export function SitesZones() {
   };
 
   const handleDeleteZone = (zone: ZoneResponse) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Zone',
       content: `Delete zone "${zone.name}"?`,
       okType: 'danger',

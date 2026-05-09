@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, Descriptions, Tag, Select, Input, Space, Typography, Modal, message, Spin, Alert } from 'antd';
+import { Button, Card, Descriptions, Tag, Select, Input, Space, Typography, App, Spin, Alert } from 'antd';
 import { KeyOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useUsers, useUpdateUser, useGenerateApiKey, useRevokeApiKey } from '@/hooks/useUsers';
 
@@ -23,6 +23,7 @@ function relativeTime(dateStr: string): string {
 export function UserDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data: users, isLoading } = useUsers();
   const updateUser = useUpdateUser();
   const generateApiKey = useGenerateApiKey();
@@ -50,7 +51,7 @@ export function UserDetail() {
 
   const handleToggleStatus = () => {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    Modal.confirm({
+    modal.confirm({
       title: `${newStatus === 'inactive' ? 'Deactivate' : 'Reactivate'} User`,
       content: `Are you sure you want to ${newStatus === 'inactive' ? 'deactivate' : 'reactivate'} ${user.name}?`,
       okType: newStatus === 'inactive' ? 'danger' : 'primary',
@@ -67,7 +68,7 @@ export function UserDetail() {
   };
 
   const handleRevokeKey = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Revoke API Key',
       content: 'This will immediately invalidate the key. The user will need a new key to authenticate.',
       okType: 'danger',

@@ -1,4 +1,4 @@
-import { Table, Tag, Button, Space, Typography, message, Modal } from 'antd';
+import { Table, Tag, Button, Space, Typography, App } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -9,12 +9,13 @@ const { Title } = Typography;
 
 export function UserList() {
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data, isLoading } = useUsers();
   const updateUser = useUpdateUser();
 
   const handleToggleStatus = (user: UserResponse) => {
     const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    Modal.confirm({
+    modal.confirm({
       title: `${newStatus === 'inactive' ? 'Deactivate' : 'Reactivate'} User`,
       content: `Are you sure you want to ${newStatus === 'inactive' ? 'deactivate' : 'reactivate'} ${user.name}?`,
       okType: newStatus === 'inactive' ? 'danger' : 'primary',

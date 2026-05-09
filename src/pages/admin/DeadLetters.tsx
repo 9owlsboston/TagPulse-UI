@@ -4,7 +4,7 @@
  * Lists dead-letter events with retry/abandon actions and bulk operations.
  */
 import { useState } from 'react';
-import { Button, Modal, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, Modal, Space, Table, Tag, Typography, App } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { deadLetterApi } from '@/api/client';
@@ -22,6 +22,7 @@ interface DeadLetterEvent {
 
 export function DeadLetters() {
   const qc = useQueryClient();
+  const { modal, message } = App.useApp();
   const [selected, setSelected] = useState<string[]>([]);
   const [previewPayload, setPreviewPayload] = useState<Record<string, unknown> | null>(null);
 
@@ -57,7 +58,7 @@ export function DeadLetters() {
   };
 
   const handleBulkAbandon = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Abandon selected events?',
       content: `${selected.length} event(s) will be permanently discarded.`,
       okType: 'danger',
@@ -108,7 +109,7 @@ export function DeadLetters() {
             size="small"
             danger
             onClick={() =>
-              Modal.confirm({
+              modal.confirm({
                 title: 'Abandon event?',
                 okType: 'danger',
                 onOk: () => abandonOne.mutateAsync(record.id),

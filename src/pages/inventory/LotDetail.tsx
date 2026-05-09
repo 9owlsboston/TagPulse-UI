@@ -10,7 +10,7 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, DatePicker, Descriptions, Form, Input, Modal, Space, Spin, Tabs, Tag, Typography, Statistic, Alert, message } from 'antd';
+import { Button, Card, DatePicker, Descriptions, Form, Input, Modal, Space, Spin, Tabs, Tag, Typography, Statistic, Alert, App } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useLot, useProduct } from '@/hooks/useInventory';
@@ -78,6 +78,7 @@ function ColdChainCard({ latest }: { latest: NonNullable<ReturnType<typeof useLo
 export function LotDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
   const { data: lot, isLoading } = useLot(id);
   const { data: product } = useProduct(lot?.product_id ?? '');
   const { data: tenant } = useTenantConfig();
@@ -128,7 +129,7 @@ export function LotDetail() {
 
     // Warn about expires_at changes
     if (lot?.expires_at && values.expires_at?.toISOString() !== lot.expires_at) {
-      Modal.confirm({
+      modal.confirm({
         title: 'Expiry date changed',
         content: 'Changing the expiry date may affect stock.expiring_within rules. Continue?',
         onOk: () => updateLot.mutate(data),
