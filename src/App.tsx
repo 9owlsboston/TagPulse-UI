@@ -1,5 +1,6 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { App as AntApp } from 'antd';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';
@@ -59,11 +60,12 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ApiHealthGate>
-          <AuthProvider>
-            <BrowserRouter>
-              <RouteTracker />
-              <TenantGuard>
+        <AntApp>
+          <ApiHealthGate>
+            <AuthProvider>
+              <BrowserRouter>
+                <RouteTracker />
+                <TenantGuard>
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
@@ -98,10 +100,11 @@ export function App() {
                 <Route path="/admin/audit-logs" element={<AuditLog />} />
               </Route>
             </Routes>
-              </TenantGuard>
-            </BrowserRouter>
-          </AuthProvider>
-        </ApiHealthGate>
+                </TenantGuard>
+              </BrowserRouter>
+            </AuthProvider>
+          </ApiHealthGate>
+        </AntApp>
       </QueryClientProvider>
     </ErrorBoundary>
   );
