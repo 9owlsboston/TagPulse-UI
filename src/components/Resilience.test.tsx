@@ -1,10 +1,12 @@
-// Sprint 25 — tests for B1 ApiHealthGate, B2 ErrorBoundary, C1/C2 telemetry.
+// Sprint 25 — tests for B1 ApiHealthGate, B2 ErrorBoundary, C1/C2 telemetry,
+// and the global 401 interceptor (SWA JWT expiry fix).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { ApiHealthGate } from '@/components/ApiHealthGate';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { normalizeRoutePattern } from '@/lib/routes';
+import { handleGlobal401 } from '@/lib/auth';
 
 const fetchMock = vi.fn();
 
@@ -140,4 +142,52 @@ describe('telemetry no-op mode (C1)', () => {
 it('act-warning suppression', () => {
   // Ensure the module exports surface as expected (smoke test).
   expect(typeof act).toBe('function');
+});
+
+describe('handleGlobal401 (JWT 401 interceptor)', () => {
+  let reloadMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    reloadMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, reload: reloadMock },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    delete (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__;
+    delete (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__;
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
+  it('clears session and reloads on 401 when a token is present', () => {
+    (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ = 'some-jwt';
+    sessionStorage.setItem('tagpulse_token', 'some-jwt');
+    sessionStorage.setItem('tagpulse_user', '{}');
+    localStorage.setItem('tagpulse_tenant_id', 'tenant-1');
+
+    const error = Object.assign(new Error('Unauthorized'), { status: 401 });
+    handleGlobal401(error);
+
+    expect(sessionStorage.getItem('tagpulse_token')).toBeNull();
+    expect(sessionStorage.getItem('tagpulse_user')).toBeNull();
+    expect(localStorage.getItem('tagpulse_tenant_id')).toBeNull();
+    expect(reloadMock).toHaveBeenCalledOnce();
+  });
+
+  it('does nothing on non-401 errors', () => {
+    (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ = 'some-jwt';
+    const error = Object.assign(new Error('Server Error'), { status: 500 });
+    handleGlobal401(error);
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it('does nothing on 401 when no token is present (tenant-only auth)', () => {
+    const error = Object.assign(new Error('Unauthorized'), { status: 401 });
+    handleGlobal401(error);
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
 });

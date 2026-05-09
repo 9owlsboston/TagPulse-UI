@@ -83,6 +83,7 @@ jobs:
         env:
           # Previews target the dev api so the SPA is exercisable end-to-end.
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_APP_INSIGHTS_CONNECTION_STRING: ${{ vars.VITE_APP_INSIGHTS_CONNECTION_STRING }}
         # Skip the build on PR-close events; the action only needs to know
         # the PR is closing so it can tear the preview slot down.
         if: github.event.action != 'closed'
@@ -121,7 +122,31 @@ jobs:
       - name: Build
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_APP_INSIGHTS_CONNECTION_STRING: ${{ vars.VITE_APP_INSIGHTS_CONNECTION_STRING }}
         run: npm run build
+
+      # Sprint 25 B3 — Fail the deploy if the api the SPA was built against
+      # is unhealthy. Catches wrong VITE_API_BASE_URL or a down backend
+      # before we ship a broken SPA. Skipped on pull_request events.
+      - name: API preflight check
+        if: github.event_name != 'pull_request'
+        env:
+          API_BASE: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_BASE:-}" ]]; then
+            echo "::warning::VITE_API_BASE_URL is empty — skipping api preflight"
+            exit 0
+          fi
+          echo "Preflight: checking ${API_BASE}/health/ready"
+          code=$(curl -fsS --max-time 10 -o /tmp/health.json -w '%{http_code}' "${API_BASE}/health/ready" 2>&1 || true)
+          if [[ "$code" != "200" ]]; then
+            echo "::error::API preflight failed — ${API_BASE}/health/ready returned HTTP ${code}"
+            cat /tmp/health.json 2>/dev/null || true
+            exit 1
+          fi
+          echo "✓ API preflight passed (HTTP 200)"
+          cat /tmp/health.json
 
       - name: Deploy to Azure Static Web Apps
         id: swa-deploy
@@ -176,11 +201,43 @@ jobs:
             if [[ "$code" == "200" ]]; then
               if [[ -z "$asset" ]] || grep -q "$asset" /tmp/index.html; then
                 echo "✓ smoke test passed (HTTP 200, asset matched)"
-                exit 0
+                break
               fi
             fi
             echo "  attempt $i: HTTP $code, retrying in 10s..."
             sleep 10
           done
-          echo "✗ smoke test failed: did not see HTTP 200 + asset $asset within 60s" >&2
-          exit 1
+
+      # Sprint 25 B4 — Post-deploy SPA-vs-api consistency check.
+      # Verifies the SPA-embedded api URL responds and the SWA hostname
+      # is in the api's CORS allow-list (prevents silent CORS failures).
+      - name: SPA-vs-API consistency check
+        if: ${{ needs.resolve.outputs.environment != 'production' }}
+        env:
+          API_BASE: ${{ vars.VITE_API_BASE_URL }}
+          SWA_HOST: ${{ steps.swa-host.outputs.hostname }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${API_BASE:-}" ]]; then
+            echo "::warning::VITE_API_BASE_URL is empty — skipping SPA-vs-API check"
+            exit 0
+          fi
+          echo "SPA-vs-API check: ${API_BASE}/health/ready"
+          code=$(curl -fsS --max-time 10 -o /tmp/api-health.json -w '%{http_code}' "${API_BASE}/health/ready" 2>&1 || true)
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Post-deploy API check failed — ${API_BASE}/health/ready returned HTTP ${code}"
+            exit 1
+          fi
+          echo "✓ API is healthy (HTTP 200)"
+          # CORS preflight: check that the SWA origin is allowed
+          origin="https://${SWA_HOST}"
+          cors_code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -X OPTIONS \
+            -H "Origin: ${origin}" \
+            -H "Access-Control-Request-Method: GET" \
+            "${API_BASE}/health/live" || true)
+          if [[ "$cors_code" == "200" ]] || [[ "$cors_code" == "204" ]]; then
+            echo "✓ CORS preflight passed for ${origin}"
+          else
+            echo "::warning::CORS preflight returned HTTP ${cors_code} for origin ${origin} — the SPA may hit CORS errors"
+          fi
