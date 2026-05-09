@@ -12,6 +12,14 @@ const ROLE_OPTIONS = [
   { label: 'Admin', value: 'admin' },
 ];
 
+function relativeTime(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'today';
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
 export function UserDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -144,7 +152,14 @@ export function UserDetail() {
           <div>
             <Text strong>Current key: </Text>
             {user.api_key_prefix ? (
-              <Tag icon={<KeyOutlined />}>{user.api_key_prefix}...</Tag>
+              <Space>
+                <Tag icon={<KeyOutlined />}>{user.api_key_prefix}...</Tag>
+                {(user as Record<string, unknown>).api_key_created_at && (
+                  <Text type="secondary">
+                    Key issued {relativeTime((user as Record<string, unknown>).api_key_created_at as string)}
+                  </Text>
+                )}
+              </Space>
             ) : (
               <Text type="secondary">No key generated</Text>
             )}
