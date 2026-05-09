@@ -84,6 +84,7 @@ jobs:
           # Previews target the dev api so the SPA is exercisable end-to-end.
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_APP_INSIGHTS_CONNECTION_STRING: ${{ vars.VITE_APP_INSIGHTS_CONNECTION_STRING }}
+          VITE_BUILD_VERSION: ${{ github.sha }}
         # Skip the build on PR-close events; the action only needs to know
         # the PR is closing so it can tear the preview slot down.
         if: github.event.action != 'closed'
@@ -123,6 +124,7 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_APP_INSIGHTS_CONNECTION_STRING: ${{ vars.VITE_APP_INSIGHTS_CONNECTION_STRING }}
+          VITE_BUILD_VERSION: ${{ github.sha }}
         run: npm run build
 
       # Sprint 25 B3 — Fail the deploy if the api the SPA was built against

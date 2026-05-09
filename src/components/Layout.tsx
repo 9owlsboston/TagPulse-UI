@@ -22,6 +22,7 @@ import {
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
+import { useVersionInfo } from '@/components/ApiHealthGate';
 import { Button, Typography } from 'antd';
 
 const { Sider, Header, Content } = AntLayout;
@@ -55,6 +56,7 @@ export function Layout() {
   const location = useLocation();
   const { user, role, tenantId, logout } = useAuth();
   const { data: tenantConfig } = useTenantConfig();
+  const versionInfo = useVersionInfo();
   const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
   const menuItems = ALL_MENU_ITEMS.filter(
@@ -82,6 +84,20 @@ export function Layout() {
           items={menuItems}
           onClick={({ key }) => navigate(key)}
         />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            width: '100%',
+            padding: '12px 24px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+          }}
+          data-testid="version-footer"
+        >
+          <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, display: 'block' }}>
+            UI {versionInfo.uiVersion} · API {versionInfo.apiVersion}
+          </Text>
+        </div>
       </Sider>
       <AntLayout>
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>

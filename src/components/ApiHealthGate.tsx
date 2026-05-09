@@ -5,7 +5,7 @@
 // exponential-backoff retry. Once a probe succeeds, children render and we
 // stay quiet until the idle threshold is crossed again.
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Button, Result, Spin, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 
@@ -17,18 +17,45 @@ const PROBE_TIMEOUT_MS = 5_000;
 
 type Status = 'probing' | 'ok' | 'unreachable';
 
+export interface VersionInfo {
+  apiVersion: string;
+  apiBuildTime: string;
+  uiVersion: string;
+}
+
+const VersionContext = createContext<VersionInfo>({
+  apiVersion: 'dev',
+  apiBuildTime: '',
+  uiVersion: 'dev',
+});
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useVersionInfo(): VersionInfo {
+  return useContext(VersionContext);
+}
+
+const UI_VERSION = (import.meta.env.VITE_BUILD_VERSION ?? 'dev').slice(0, 7);
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
-async function probeHealth(signal: AbortSignal): Promise<boolean> {
+interface HealthResponse {
+  status: string;
+  version?: string;
+  build_time?: string;
+}
+
+async function probeHealth(signal: AbortSignal): Promise<HealthResponse | null> {
   try {
     const res = await fetch(`${BASE}${HEALTH_PATH}`, {
       method: 'GET',
       cache: 'no-store',
       signal,
     });
-    return res.ok;
+    if (!res.ok) return null;
+    const body: unknown = await res.json().catch(() => null);
+    if (body && typeof body === 'object') return body as HealthResponse;
+    return { status: 'alive' };
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -39,6 +66,11 @@ interface ApiHealthGateProps {
 export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
   const [status, setStatus] = useState<Status>('probing');
   const [attempt, setAttempt] = useState(0);
+  const [versionInfo, setVersionInfo] = useState<VersionInfo>({
+    apiVersion: 'dev',
+    apiBuildTime: '',
+    uiVersion: UI_VERSION,
+  });
   const lastSuccessRef = useRef<number>(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,11 +80,16 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
 
     const runProbe = async (): Promise<void> => {
       const timeoutId = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
-      const ok = await probeHealth(controller.signal);
+      const health = await probeHealth(controller.signal);
       clearTimeout(timeoutId);
       if (cancelled) return;
-      if (ok) {
+      if (health) {
         lastSuccessRef.current = Date.now();
+        setVersionInfo({
+          apiVersion: (health.version ?? 'dev').slice(0, 7),
+          apiBuildTime: health.build_time ?? '',
+          uiVersion: UI_VERSION,
+        });
         setStatus('ok');
         setAttempt(0);
       } else {
@@ -99,7 +136,7 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
   };
 
   if (status === 'ok') {
-    return children;
+    return <VersionContext.Provider value={versionInfo}>{children}</VersionContext.Provider>;
   }
 
   if (status === 'probing' && attempt === 0) {
