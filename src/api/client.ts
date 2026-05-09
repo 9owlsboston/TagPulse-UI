@@ -66,10 +66,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     resultCode: res.status,
     success: res.ok,
   });
-  // Handle 401 from server (e.g. token revoked server-side)
-  if (res.status === 401 && token) {
-    clearExpiredSession();
-    throw new Error('Session expired. Please log in again.');
+  // Handle 401 from server (e.g. token revoked server-side, or stale
+  // session after page reload where token was cleared but tenantId persisted).
+  if (res.status === 401) {
+    // Only clear + reload when there's an active session. Avoids clearing
+    // on truly anonymous / tenant-only-login-validation requests.
+    const hasSession = !!(token || sessionStorage.getItem('tagpulse_token') || sessionStorage.getItem('tagpulse_user'));
+    if (hasSession) {
+      clearExpiredSession();
+      throw new Error('Session expired. Please log in again.');
+    }
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');

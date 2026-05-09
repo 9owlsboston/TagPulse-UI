@@ -41,7 +41,30 @@ function isTokenExpired(token: string): boolean {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // ── Session expiry gate ──
+  // Check once on mount whether the stored JWT is still valid. If expired,
+  // wipe ALL persisted session state (token, user, tenantId) so every
+  // useState initializer below sees a clean slate and the app lands on the
+  // login screen instead of in a half-authenticated limbo.
+  //
+  // This runs as a module-level side-effect before any useState initializer
+  // so the initialization order of tenantId / user / accessToken doesn't
+  // matter.
+  const expiredOnMount = (() => {
+    const token = sessionStorage.getItem('tagpulse_token');
+    if (token && isTokenExpired(token)) {
+      sessionStorage.removeItem('tagpulse_token');
+      sessionStorage.removeItem('tagpulse_user');
+      localStorage.removeItem('tagpulse_tenant_id');
+      delete (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__;
+      delete (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__;
+      return true;
+    }
+    return false;
+  })();
+
   const [tenantId, setTenantIdState] = useState<string | null>(() => {
+    if (expiredOnMount) return null;
     const stored = localStorage.getItem('tagpulse_tenant_id');
     if (stored) {
       (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__ = stored;
@@ -50,20 +73,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const [user, setUser] = useState<AuthUser | null>(() => {
+    if (expiredOnMount) return null;
     const stored = sessionStorage.getItem('tagpulse_user');
     return stored ? (JSON.parse(stored) as AuthUser) : null;
   });
 
   const [accessToken, setAccessToken] = useState<string | null>(() => {
+    if (expiredOnMount) return null;
     const stored = sessionStorage.getItem('tagpulse_token');
     if (stored && !isTokenExpired(stored)) {
       (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ = stored;
       return stored;
-    }
-    // Clear expired token
-    if (stored) {
-      sessionStorage.removeItem('tagpulse_token');
-      sessionStorage.removeItem('tagpulse_user');
     }
     return null;
   });
