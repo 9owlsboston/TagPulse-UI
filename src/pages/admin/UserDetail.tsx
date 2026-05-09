@@ -154,11 +154,11 @@ export function UserDetail() {
             {user.api_key_prefix ? (
               <Space>
                 <Tag icon={<KeyOutlined />}>{user.api_key_prefix}...</Tag>
-                {(user as Record<string, unknown>).api_key_created_at && (
+                {user.api_key_created_at ? (
                   <Text type="secondary">
-                    Key issued {relativeTime((user as Record<string, unknown>).api_key_created_at as string)}
+                    Key issued {relativeTime(user.api_key_created_at)}
                   </Text>
-                )}
+                ) : null}
               </Space>
             ) : (
               <Text type="secondary">No key generated</Text>

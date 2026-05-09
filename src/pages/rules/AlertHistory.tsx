@@ -59,12 +59,6 @@ export function AlertHistory() {
     });
   }, [data, search, range]);
 
-  // Only open alerts can be selected for bulk ack
-  const selectableRows = useMemo(
-    () => filtered.filter((a) => a.status === 'open'),
-    [filtered],
-  );
-
   const handleBulkAcknowledge = async () => {
     if (selected.length === 0) return;
     setBulkLoading(true);

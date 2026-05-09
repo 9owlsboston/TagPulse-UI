@@ -348,6 +348,7 @@ export interface UserResponse {
   role: string;
   status: string;
   api_key_prefix: string | null;
+  api_key_created_at: string | null;
   created_at: string;
   last_login: string | null;
 }

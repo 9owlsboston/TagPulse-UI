@@ -5,11 +5,11 @@ import { useStockLevels } from '@/hooks/useInventory';
 import { useProducts } from '@/hooks/useInventory';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { stockMovementsApi, stockItemsApi } from '@/api/client';
+import { stockMovementsApi } from '@/api/client';
 import { useCanPerform } from '@/components/useCanPerform';
 import type { StockMovementCreate } from '@/api/client';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const UNASSIGNED = '__unassigned__';
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Col, DatePicker, Descriptions, Form, Input, Modal, Row, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, Col, DatePicker, Descriptions, Form, Input, Modal, Row, Space, Table, Tag, Typography, message } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -104,7 +104,7 @@ export function ProductDetail() {
           sku: values.sku,
           gtin: values.gtin || null,
           category: values.category || null,
-          unit: values.unit,
+          unit: values.unit as 'each' | 'case' | 'pallet',
           attributes,
         },
       });

@@ -135,12 +135,12 @@ export function IntegrationList() {
           </Space>
           {testResult[record.id] && (
             <Text
-              type={testResult[record.id].error ? 'danger' : 'success'}
+              type={testResult[record.id]?.error ? 'danger' : 'success'}
               style={{ fontSize: 12 }}
             >
-              {testResult[record.id].error
-                ? `Error: ${testResult[record.id].error}`
-                : `${testResult[record.id].status_code} · ${testResult[record.id].response_time_ms}ms`}
+              {testResult[record.id]?.error
+                ? `Error: ${testResult[record.id]?.error}`
+                : `${testResult[record.id]?.status_code} · ${testResult[record.id]?.response_time_ms}ms`}
             </Text>
           )}
         </Space>
