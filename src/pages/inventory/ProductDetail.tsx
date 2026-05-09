@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Col, DatePicker, Descriptions, Form, Input, Modal, Row, Space, Table, Tag, Typography, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Col, DatePicker, Descriptions, Form, Input, Modal, Row, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useCreateLot, useLots, useProduct, useStockLevels } from '@/hooks/useInventory';
+import { useCreateLot, useLots, useProduct, useStockLevels, useUpdateProduct } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
 import type { LotResponse } from '@/api/generated/models/LotResponse';
 
@@ -16,6 +16,15 @@ interface LotFormValues {
   expires_at?: Dayjs | null;
 }
 
+interface ProductEditFormValues {
+  name: string;
+  sku: string;
+  gtin?: string;
+  category?: string;
+  unit: string;
+  attributes_json?: string;
+}
+
 export function ProductDetail() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,10 +32,14 @@ export function ProductDetail() {
   const { data: lots, isLoading: lotsLoading } = useLots(id);
   const { data: levels } = useStockLevels({ product_id: id });
   const createLot = useCreateLot();
+  const updateProduct = useUpdateProduct();
   const canEdit = useCanPerform('editor');
+  const isAdmin = useCanPerform('admin');
 
   const [lotModalOpen, setLotModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [form] = Form.useForm<LotFormValues>();
+  const [editForm] = Form.useForm<ProductEditFormValues>();
 
   const chartData = useMemo(
     () =>
@@ -60,12 +73,57 @@ export function ProductDetail() {
     }
   };
 
+  const handleEditProduct = () => {
+    if (!product) return;
+    editForm.setFieldsValue({
+      name: product.name,
+      sku: product.sku,
+      gtin: product.gtin ?? '',
+      category: product.category ?? '',
+      unit: product.unit,
+      attributes_json: product.attributes ? JSON.stringify(product.attributes, null, 2) : '',
+    });
+    setEditModalOpen(true);
+  };
+
+  const onSaveProduct = async (values: ProductEditFormValues) => {
+    let attributes: Record<string, unknown> | null = null;
+    if (values.attributes_json?.trim()) {
+      try {
+        attributes = JSON.parse(values.attributes_json);
+      } catch {
+        message.error('Invalid JSON in attributes');
+        return;
+      }
+    }
+    try {
+      await updateProduct.mutateAsync({
+        id,
+        data: {
+          name: values.name,
+          sku: values.sku,
+          gtin: values.gtin || null,
+          category: values.category || null,
+          unit: values.unit,
+          attributes,
+        },
+      });
+      message.success('Product updated');
+      setEditModalOpen(false);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update product');
+    }
+  };
+
   if (isLoading || !product) return <div>Loading…</div>;
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
         <Button onClick={() => navigate('/inventory/products')}>← Products</Button>
+        {isAdmin && (
+          <Button icon={<EditOutlined />} onClick={handleEditProduct}>Edit</Button>
+        )}
       </Space>
       <Title level={2}>{product.sku} — {product.name}</Title>
 
@@ -155,6 +213,36 @@ export function ProductDetail() {
           </Form.Item>
           <Form.Item name="expires_at" label="Expires at">
             <DatePicker showTime style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Edit Product"
+        open={editModalOpen}
+        onOk={() => editForm.submit()}
+        onCancel={() => setEditModalOpen(false)}
+        confirmLoading={updateProduct.isPending}
+        destroyOnClose
+      >
+        <Form<ProductEditFormValues> form={editForm} layout="vertical" onFinish={onSaveProduct}>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="sku" label="SKU" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="gtin" label="GTIN">
+            <Input />
+          </Form.Item>
+          <Form.Item name="category" label="Category">
+            <Input />
+          </Form.Item>
+          <Form.Item name="unit" label="Unit" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="attributes_json" label="Attributes (JSON)">
+            <Input.TextArea rows={4} placeholder='{"key": "value"}' />
           </Form.Item>
         </Form>
       </Modal>
