@@ -46,6 +46,9 @@ export default [
         AbortController: 'readonly',
         AbortSignal: 'readonly',
         crypto: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        FormData: 'readonly',
       },
     },
     plugins: {
