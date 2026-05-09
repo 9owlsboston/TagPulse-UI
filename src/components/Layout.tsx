@@ -73,7 +73,7 @@ export function Layout() {
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
-      <Sider width={220}>
+      <Sider width={220} style={{ position: 'relative' }}>
         <div style={{ padding: '16px 24px', color: '#fff', fontWeight: 700, fontSize: 18 }}>
           TagPulse
         </div>
@@ -83,6 +83,7 @@ export function Layout() {
           selectedKeys={[selectedKey]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
+          style={{ marginBottom: 48 }}
         />
         <div
           style={{
