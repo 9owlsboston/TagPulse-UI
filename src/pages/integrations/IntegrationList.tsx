@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, InputNumber, Typography, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { useIntegrations, useCreateIntegration, useUpdateIntegration, useDeleteIntegration } from '@/hooks/useIntegrations';
+import { integrationTestApi } from '@/api/client';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import type { IntegrationResponse, IntegrationCreate } from '@/types';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const TYPE_OPTIONS = [
   { label: 'Webhook', value: 'webhook' },
@@ -27,6 +29,19 @@ export function IntegrationList() {
   const [open, setOpen] = useState(false);
   const [integrationType, setIntegrationType] = useState<string>('webhook');
   const [form] = Form.useForm<IntegrationCreate & { eventsStr?: string; configUrl?: string; configSchedule?: string; configFormat?: string; configMaxConnections?: number }>();
+  const [testResult, setTestResult] = useState<Record<string, { status_code: number; response_time_ms: number; error?: string }>>({});
+
+  const testMutation = useMutation({
+    mutationFn: (id: string) => integrationTestApi.test(id),
+    onSuccess: (result, id) => {
+      setTestResult((prev) => ({ ...prev, [id]: result }));
+      message.success(`Test fired: ${result.status_code} in ${result.response_time_ms}ms`);
+    },
+    onError: (err: Error, id) => {
+      setTestResult((prev) => ({ ...prev, [id]: { status_code: 0, response_time_ms: 0, error: err.message } }));
+      message.error(`Test failed: ${err.message}`);
+    },
+  });
 
   const handleToggle = (id: string, enabled: boolean) => {
     updateIntegration.mutate({ id, data: { enabled } });
@@ -95,15 +110,38 @@ export function IntegrationList() {
     },
     {
       title: 'Actions',
+      width: 260,
       render: (_, record) => (
-        <Space>
-          <Button size="small" onClick={() => navigate(`/integrations/${record.id}/deliveries`)}>
-            Deliveries
-          </Button>
-          {canDelete && (
-            <Button size="small" danger onClick={() => handleDelete(record.id)}>
-              Delete
+        <Space direction="vertical" size={4}>
+          <Space>
+            <Button size="small" onClick={() => navigate(`/integrations/${record.id}/deliveries`)}>
+              Deliveries
             </Button>
+            {record.type === 'webhook' && canEdit && (
+              <Button
+                size="small"
+                icon={<ThunderboltOutlined />}
+                onClick={() => testMutation.mutate(record.id)}
+                loading={testMutation.isPending && testMutation.variables === record.id}
+              >
+                Test
+              </Button>
+            )}
+            {canDelete && (
+              <Button size="small" danger onClick={() => handleDelete(record.id)}>
+                Delete
+              </Button>
+            )}
+          </Space>
+          {testResult[record.id] && (
+            <Text
+              type={testResult[record.id].error ? 'danger' : 'success'}
+              style={{ fontSize: 12 }}
+            >
+              {testResult[record.id].error
+                ? `Error: ${testResult[record.id].error}`
+                : `${testResult[record.id].status_code} · ${testResult[record.id].response_time_ms}ms`}
+            </Text>
           )}
         </Space>
       ),
