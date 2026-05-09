@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Select, Typography } from 'antd';
+import { Select, Typography, Button } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useReadsPerHour } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
@@ -13,6 +15,7 @@ const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
 export function TelemetryDashboard() {
+  const navigate = useNavigate();
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
@@ -58,7 +61,12 @@ export function TelemetryDashboard() {
 
   return (
     <div>
-      <Title level={2}>Telemetry</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={2} style={{ margin: 0 }}>Telemetry</Title>
+        <Button icon={<SearchOutlined />} onClick={() => navigate('/telemetry/explore')}>
+          Data Explorer
+        </Button>
+      </div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           options={deviceOptions}
