@@ -65,6 +65,11 @@ interface ApiHealthGateProps {
 
 export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
   const [status, setStatus] = useState<Status>('probing');
+  // probeSeq is incremented to trigger the probe effect. Using a monotonic
+  // counter instead of `attempt` avoids the bug where setAttempt(0) is a
+  // no-op when attempt is already 0 (e.g. after a successful probe + idle
+  // re-probe on focus).
+  const [probeSeq, setProbeSeq] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [versionInfo, setVersionInfo] = useState<VersionInfo>({
     apiVersion: 'dev',
@@ -97,7 +102,10 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (cap).
         const delay = Math.min(INITIAL_DELAY_MS * 2 ** attempt, MAX_DELAY_MS);
         retryTimerRef.current = setTimeout(() => {
-          if (!cancelled) setAttempt((a) => a + 1);
+          if (!cancelled) {
+            setAttempt((a) => a + 1);
+            setProbeSeq((s) => s + 1);
+          }
         }, delay);
       }
     };
@@ -111,7 +119,7 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
         clearTimeout(retryTimerRef.current);
       }
     };
-  }, [attempt]);
+  }, [probeSeq]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Idle re-probe: when the tab regains focus after >60s of last success.
   useEffect(() => {
@@ -120,6 +128,7 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
       if (status === 'ok' && idleFor > IDLE_THRESHOLD_MS) {
         setStatus('probing');
         setAttempt(0);
+        setProbeSeq((s) => s + 1);
       }
     };
     window.addEventListener('focus', onFocus);
@@ -133,6 +142,7 @@ export function ApiHealthGate({ children }: ApiHealthGateProps): ReactNode {
     }
     setStatus('probing');
     setAttempt(0);
+    setProbeSeq((s) => s + 1);
   };
 
   if (status === 'ok') {
