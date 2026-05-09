@@ -42,8 +42,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Sprint 27 follow-up — run the full lint/typecheck/test/build matrix as
+  # a gating job so a regression on push to main never reaches SWA. Calls
+  # build-and-test.yml as a reusable workflow. Skipped on pull_request
+  # because that event already triggers build-and-test.yml directly (and
+  # the SWA preview slot is its own deploy path below).
+  check:
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/build-and-test.yml
+
   resolve:
     runs-on: ubuntu-latest
+    needs: check
     # PR events use the SWA action's built-in preview environment, not a
     # named GitHub Environment — skip the resolve job in that case.
     if: github.event_name != 'pull_request'
