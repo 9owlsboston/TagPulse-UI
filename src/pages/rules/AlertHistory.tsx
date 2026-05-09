@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Table, Tag, Button, Space, Typography, Input, DatePicker } from 'antd';
+import { Table, Tag, Button, Space, Typography, Input, DatePicker, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
 import { useCanPerform } from '@/components/useCanPerform';
+import { alertsApi } from '@/api/client';
 import type { AlertResponse } from '@/types';
 
 const { Title } = Typography;
@@ -26,6 +27,8 @@ const RANGE_PRESETS: { label: string; value: [Dayjs, Dayjs] }[] = [
 export function AlertHistory() {
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const { data, isLoading } = useAlerts();
   const acknowledge = useAcknowledgeAlert();
   const canAcknowledge = useCanPerform('editor');
@@ -55,6 +58,28 @@ export function AlertHistory() {
       return true;
     });
   }, [data, search, range]);
+
+  // Only open alerts can be selected for bulk ack
+  const selectableRows = useMemo(
+    () => filtered.filter((a) => a.status === 'open'),
+    [filtered],
+  );
+
+  const handleBulkAcknowledge = async () => {
+    if (selected.length === 0) return;
+    setBulkLoading(true);
+    const results = await Promise.allSettled(
+      selected.map((id) => alertsApi.acknowledge(id)),
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    acknowledge.reset?.();
+    // Force refetch
+    setBulkLoading(false);
+    setSelected([]);
+    message.success(`${ok}/${selected.length} alerts acknowledged`);
+    // Invalidate to refresh
+    window.location.reload();
+  };
 
   const columns: ColumnsType<AlertResponse> = [
     {
@@ -168,6 +193,11 @@ export function AlertHistory() {
         <Typography.Text type="secondary">
           {filtered.length} of {data?.length ?? 0}
         </Typography.Text>
+        {canAcknowledge && selected.length > 0 && (
+          <Button type="primary" onClick={handleBulkAcknowledge} loading={bulkLoading}>
+            Acknowledge {selected.length} selected
+          </Button>
+        )}
       </Space>
       <Table
         rowKey="id"
@@ -175,6 +205,17 @@ export function AlertHistory() {
         dataSource={filtered}
         loading={isLoading}
         pagination={{ pageSize: 20, showSizeChanger: true }}
+        rowSelection={
+          canAcknowledge
+            ? {
+                selectedRowKeys: selected,
+                onChange: (keys) => setSelected(keys as string[]),
+                getCheckboxProps: (record) => ({
+                  disabled: record.status !== 'open',
+                }),
+              }
+            : undefined
+        }
         expandable={{
           expandedRowRender: (record) => (
             <div>
