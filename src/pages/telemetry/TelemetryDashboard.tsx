@@ -78,11 +78,14 @@ export function TelemetryDashboard() {
         <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
       </div>
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData}>
+        <LineChart data={chartData} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="bucket" />
-          <YAxis />
-          <Tooltip />
+          <YAxis
+            allowDecimals={false}
+            label={{ value: 'Reads / hour', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
+          />
+          <Tooltip formatter={(value: number) => [`${value} reads`, undefined]} />
           <Legend />
           {deviceIds.map((id, i) => (
             <Line

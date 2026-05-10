@@ -203,11 +203,13 @@ export function DataExplorer() {
         />
       ) : (
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData}>
+          <LineChart data={chartData} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
+            <YAxis
+              label={{ value: 'Signal strength (dBm)', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
+            />
+            <Tooltip formatter={(value: number) => [`${value} dBm`, 'Signal']} />
             <Line type="monotone" dataKey="signal" stroke="#1890ff" dot={false} />
           </LineChart>
         </ResponsiveContainer>
