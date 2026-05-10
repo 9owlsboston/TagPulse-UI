@@ -7,6 +7,7 @@ import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
+import { REFETCH_INTERVAL } from '@/lib/constants';
 import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
@@ -33,9 +34,13 @@ export function DataExplorer() {
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   const { data: devices } = useDevices();
-  const { data: rawData, isLoading } = useTagReads({ device_id: deviceId, tag_id: tagId, start, end, limit });
+  const { data: rawData, isLoading } = useTagReads(
+    { device_id: deviceId, tag_id: tagId, start, end, limit },
+    { refetchInterval: REFETCH_INTERVAL },
+  );
 
-  // Auto-refresh on new tag reads pushed via SSE.
+  // Auto-refresh on new tag reads pushed via SSE (polling above is the
+  // fallback when EventSource can't carry the JWT header).
   useSSE(SSE_EVENTS, SSE_KEYS);
 
   const data = useMemo(() => {
