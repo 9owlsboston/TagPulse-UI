@@ -7,6 +7,8 @@ import { ApiHealthGate } from '@/components/ApiHealthGate';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { normalizeRoutePattern } from '@/lib/routes';
 import { handleGlobal401 } from '@/lib/auth';
+import { useHealthStatus } from '@/components/ApiHealthGate';
+import React from 'react';
 
 const fetchMock = vi.fn();
 
@@ -59,6 +61,81 @@ describe('ApiHealthGate (B1)', () => {
     await waitFor(() =>
       expect(screen.getByTestId('api-health-unreachable')).toBeInTheDocument(),
     );
+  });
+
+  it('surfaces degraded banner via useHealthStatus when /health/ready returns 503 with database down', async () => {
+    // 1st fetch: /health/live → 200 (gate passes)
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: 'alive', version: 'abc1234' }), { status: 200 }),
+    );
+    // 2nd fetch: /health/ready → 503 with database down
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 'degraded',
+          checks: {
+            database: { status: 'down', error: 'connection refused' },
+            mqtt: { status: 'up', latency_ms: 4.2 },
+          },
+        }),
+        { status: 503 },
+      ),
+    );
+
+    function Probe(): React.ReactElement {
+      const { degraded, degradedReason, degradedDetail } = useHealthStatus();
+      return (
+        <div>
+          <span data-testid="degraded">{String(degraded)}</span>
+          <span data-testid="reason">{degradedReason ?? ''}</span>
+          <span data-testid="detail">{degradedDetail ?? ''}</span>
+        </div>
+      );
+    }
+
+    render(
+      <ApiHealthGate>
+        <Probe />
+      </ApiHealthGate>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('degraded').textContent).toBe('true'));
+    expect(screen.getByTestId('reason').textContent).toBe('database');
+    expect(screen.getByTestId('detail').textContent).toContain('connection refused');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/health/ready'),
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+  });
+
+  it('does not flag degraded when /health/ready returns 200', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: 'alive', version: 'abc1234' }), { status: 200 }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 'healthy',
+          checks: { database: { status: 'up' }, mqtt: { status: 'up' } },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    function Probe(): React.ReactElement {
+      const { degraded } = useHealthStatus();
+      return <span data-testid="degraded">{String(degraded)}</span>;
+    }
+
+    render(
+      <ApiHealthGate>
+        <Probe />
+      </ApiHealthGate>,
+    );
+
+    // Wait for both probes to settle.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('degraded').textContent).toBe('false');
   });
 });
 
