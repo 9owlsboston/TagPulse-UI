@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Table, Select, Form, InputNumber, Button, Space, Typography, Segmented, Checkbox } from 'antd';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -6,40 +6,19 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
+import { useSSE } from '@/lib/sse';
 import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
 
 const EPC_SCHEMES = ['sgtin-96', 'sgtin-198', 'sscc-96', 'giai-96', 'giai-202', 'grai-96', 'grai-170', 'raw'];
 
-const columns: ColumnsType<TagReadResponse> = [
-  { title: 'Tag ID', dataIndex: 'tag_id' },
-  { title: 'EPC', dataIndex: 'epc', render: (v: string | null | undefined) => v ?? '—' },
-  {
-    title: 'Scheme',
-    dataIndex: 'epc_scheme',
-    render: (v: string | null | undefined) => v ?? '—',
-  },
-  { title: 'TID', dataIndex: 'tid', render: (v: string | null | undefined) => v ?? '—' },
-  { title: 'Device', dataIndex: 'device_id' },
-  {
-    title: 'Timestamp',
-    dataIndex: 'timestamp',
-    render: (v: string) => new Date(v).toLocaleString(),
-    sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  },
-  { title: 'Signal', dataIndex: 'signal_strength', render: (v: number | null) => v ?? '—' },
-  {
-    title: 'Latitude',
-    dataIndex: 'latitude',
-    render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
-  },
-  {
-    title: 'Longitude',
-    dataIndex: 'longitude',
-    render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
-  },
-];
+// Stock-ticker style row-flash, mirrors AssetList. Cap how many rows can
+// flash per refresh so a burst doesn't strobe the whole table.
+const MAX_FLASHES_PER_REFRESH = 12;
+const FLASH_DURATION_MS = 900;
+const SSE_EVENTS = ['tag_read.created'];
+const SSE_KEYS = [['tag-reads']];
 
 export function DataExplorer() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
@@ -56,6 +35,9 @@ export function DataExplorer() {
   const { data: devices } = useDevices();
   const { data: rawData, isLoading } = useTagReads({ device_id: deviceId, tag_id: tagId, start, end, limit });
 
+  // Auto-refresh on new tag reads pushed via SSE.
+  useSSE(SSE_EVENTS, SSE_KEYS);
+
   const data = useMemo(() => {
     if (!rawData) return rawData;
     return rawData.filter((r) => {
@@ -66,6 +48,98 @@ export function DataExplorer() {
       return true;
     });
   }, [rawData, signalMin, signalMax, hasLocation, epcScheme]);
+
+  // ── Row-flash on new read ─────────────────────────────────────────────
+  // Track ids seen in previous payloads; new ids since the last refresh
+  // flash green for FLASH_DURATION_MS. First payload is just seeded so
+  // we don't strobe the whole table on initial mount.
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const flashTimersRef = useRef<Map<string, number>>(new Map());
+  const seededRef = useRef(false);
+  const [flashing, setFlashing] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!rawData) return;
+    if (!seededRef.current) {
+      for (const r of rawData) seenIdsRef.current.add(r.id);
+      seededRef.current = true;
+      return;
+    }
+    const fresh: string[] = [];
+    for (const r of rawData) {
+      if (!seenIdsRef.current.has(r.id)) {
+        fresh.push(r.id);
+        seenIdsRef.current.add(r.id);
+      }
+    }
+    if (fresh.length === 0) return;
+    const toFlash = fresh.slice(0, MAX_FLASHES_PER_REFRESH);
+    setFlashing((prev) => {
+      const next = new Set(prev);
+      for (const id of toFlash) next.add(id);
+      return next;
+    });
+    for (const id of toFlash) {
+      const existing = flashTimersRef.current.get(id);
+      if (existing) window.clearTimeout(existing);
+      const t = window.setTimeout(() => {
+        setFlashing((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        flashTimersRef.current.delete(id);
+      }, FLASH_DURATION_MS);
+      flashTimersRef.current.set(id, t);
+    }
+  }, [rawData]);
+
+  useEffect(
+    () => () => {
+      for (const t of flashTimersRef.current.values()) window.clearTimeout(t);
+    },
+    [],
+  );
+
+  const columns = useMemo<ColumnsType<TagReadResponse>>(
+    () => [
+      { title: 'Tag ID', dataIndex: 'tag_id' },
+      { title: 'EPC', dataIndex: 'epc', render: (v: string | null | undefined) => v ?? '—' },
+      {
+        title: 'Scheme',
+        dataIndex: 'epc_scheme',
+        render: (v: string | null | undefined) => v ?? '—',
+      },
+      { title: 'TID', dataIndex: 'tid', render: (v: string | null | undefined) => v ?? '—' },
+      { title: 'Device', dataIndex: 'device_id' },
+      {
+        title: 'Timestamp',
+        dataIndex: 'timestamp',
+        sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        render: (v: string, row: TagReadResponse) => {
+          const isFlashing = flashing.has(row.id);
+          return (
+            <span key={v} className={isFlashing ? 'tagpulse-cell-pop' : undefined}>
+              {new Date(v).toLocaleString()}
+            </span>
+          );
+        },
+      },
+      { title: 'Signal', dataIndex: 'signal_strength', render: (v: number | null) => v ?? '—' },
+      {
+        title: 'Latitude',
+        dataIndex: 'latitude',
+        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+      },
+      {
+        title: 'Longitude',
+        dataIndex: 'longitude',
+        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+      },
+    ],
+    [flashing],
+  );
 
   const deviceOptions = useMemo(
     () => [
@@ -140,6 +214,30 @@ export function DataExplorer() {
 
   return (
     <div>
+      <style>{`
+        @keyframes tagpulse-row-flash {
+          0%   { background-color: rgba(82, 196, 26, 0.28); }
+          60%  { background-color: rgba(82, 196, 26, 0.14); }
+          100% { background-color: transparent; }
+        }
+        .tagpulse-row-flash > td {
+          animation: tagpulse-row-flash ${FLASH_DURATION_MS}ms ease-out;
+        }
+        @keyframes tagpulse-cell-pop {
+          0%   { transform: scale(1); color: #389e0d; font-weight: 600; }
+          40%  { transform: scale(1.06); color: #389e0d; font-weight: 600; }
+          100% { transform: scale(1); color: inherit; font-weight: inherit; }
+        }
+        .tagpulse-cell-pop {
+          display: inline-block;
+          animation: tagpulse-cell-pop ${FLASH_DURATION_MS}ms ease-out;
+          transform-origin: left center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tagpulse-row-flash > td,
+          .tagpulse-cell-pop { animation: none; }
+        }
+      `}</style>
       <Title level={2}>Data Explorer</Title>
       <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <Form.Item label="Device">
@@ -199,6 +297,7 @@ export function DataExplorer() {
           columns={columns}
           dataSource={data}
           loading={isLoading}
+          rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
           pagination={{ pageSize: 20 }}
         />
       ) : (
