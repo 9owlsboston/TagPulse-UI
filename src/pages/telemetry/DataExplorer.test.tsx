@@ -20,6 +20,14 @@ vi.mock('@/hooks/useTagReads', () => ({
   }),
 }));
 
+vi.mock('@/lib/sse', () => ({
+  useSSE: vi.fn(),
+}));
+
+vi.mock('@/lib/auth', () => ({
+  useAuth: () => ({ tenantId: 'test-tenant', setTenantId: vi.fn(), logout: vi.fn() }),
+}));
+
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

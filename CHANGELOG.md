@@ -4,6 +4,9 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+- **Data Explorer — live row-flash on new tag reads.** Mirrors the stock-ticker animation already used on Assets list. [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx) now subscribes to the `tag_read.created` SSE channel (auto-invalidates the `['tag-reads']` query), and tracks read ids across refreshes — newly arrived rows flash green for 900 ms with a `cell-pop` on the Timestamp column. First payload is seeded silently (no strobe on mount), bursts are capped to 12 simultaneous flashes per refresh, and `prefers-reduced-motion` disables the keyframes.
+
 ### Fixed
 - **Telemetry chart axis labels.** Both Telemetry views were rendering bare Y axes with no unit, so the value could be misread. Added explicit axis labels and tooltip units: [src/pages/telemetry/TelemetryDashboard.tsx](src/pages/telemetry/TelemetryDashboard.tsx) Y axis is now labeled "Reads / hour" with integer-only ticks and tooltips formatted as `<n> reads`; [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx) Y axis is labeled "Signal strength (dBm)" with tooltips formatted as `<n> dBm`.
 - **401 session-expiry interceptor for generated API client.** The generated OpenAPI client (`openapi-typescript-codegen`) threw `ApiError` on HTTP 401 but did not clear the stored JWT or redirect to login — the SPA rendered a loading state indefinitely. Added `QueryCache.onError` + `MutationCache.onError` in [src/App.tsx](src/App.tsx) wired to `handleGlobal401` in [src/lib/auth.tsx](src/lib/auth.tsx) which clears `sessionStorage`, `localStorage`, and `window.__TAGPULSE_TOKEN__` then reloads. Also disables TanStack Query retry on 401 (was retrying 3× before surfacing the error).
