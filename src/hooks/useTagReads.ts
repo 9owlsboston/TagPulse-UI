@@ -2,10 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { tagReadsApi } from '@/api/client';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 
-export function useTagReads(params?: { device_id?: string; tag_id?: string; start?: string; end?: string; limit?: number; offset?: number }) {
+export function useTagReads(
+  params?: { device_id?: string; tag_id?: string; start?: string; end?: string; limit?: number; offset?: number },
+  options?: { refetchInterval?: number },
+) {
   return useQuery({
     queryKey: ['tag-reads', params],
     queryFn: () => tagReadsApi.list(params),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
