@@ -1,4 +1,4 @@
-import { Layout as AntLayout, Menu, Tag } from 'antd';
+import { Layout as AntLayout, Menu, Tag, Alert } from 'antd';
 import {
   DashboardOutlined,
   HddOutlined,
@@ -24,7 +24,7 @@ import {
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
-import { useVersionInfo } from '@/components/ApiHealthGate';
+import { useVersionInfo, useHealthStatus } from '@/components/ApiHealthGate';
 import { Button, Typography } from 'antd';
 
 const { Sider, Header, Content } = AntLayout;
@@ -61,6 +61,7 @@ export function Layout() {
   const { user, role, tenantId, logout } = useAuth();
   const { data: tenantConfig } = useTenantConfig();
   const versionInfo = useVersionInfo();
+  const { degraded, degradedReason, degradedDetail } = useHealthStatus();
   const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
   const menuItems = ALL_MENU_ITEMS.filter(
@@ -125,6 +126,24 @@ export function Layout() {
           <Button size="small" onClick={logout}>Logout</Button>
         </Header>
         <Content style={{ margin: 24 }}>
+          {degraded && (
+            <Alert
+              type="warning"
+              showIcon
+              data-testid="api-degraded-banner"
+              style={{ marginBottom: 16 }}
+              message={
+                degradedReason === 'database'
+                  ? 'TagPulse database is unreachable — live data may be stale or missing.'
+                  : `TagPulse API reports a degraded dependency: ${degradedReason ?? 'unknown'}.`
+              }
+              description={
+                degradedReason === 'database'
+                  ? 'Operators: check the dev Postgres server in tagpulse-dev-rg (Burstable tier auto-stops after ~7 days idle).'
+                  : degradedDetail ?? undefined
+              }
+            />
+          )}
           <Outlet />
         </Content>
       </AntLayout>
