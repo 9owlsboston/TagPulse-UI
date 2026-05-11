@@ -12,6 +12,7 @@ vi.mock('@/hooks/useTelemetryModels', () => ({
   }),
   useCreateTelemetryModel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteTelemetryModel: () => ({ mutateAsync: vi.fn() }),
+  useUpdateTelemetryModel: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

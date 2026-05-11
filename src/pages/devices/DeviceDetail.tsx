@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, Input, Form, App } from 'antd';
-import { CopyOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert } from '@/hooks/useDevices';
+import { Descriptions, Tag, Tabs, Button, Spin, Modal, Typography, Space, Alert, Input, Form, Select, App } from 'antd';
+import { CopyOutlined, EditOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert, useUpdateDevice } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
 import { useZones } from '@/hooks/useAssets';
 import { DeviceTelemetryTab } from '@/pages/devices/DeviceTelemetryTab';
 import { DeviceLocationTab } from '@/pages/devices/DeviceLocationTab';
+import type { DeviceUpdate } from '@/types';
 
 const { Title, Text } = Typography;
 
@@ -23,9 +24,12 @@ export function DeviceDetail() {
   const decommission = useDecommissionDevice();
   const rotateToken = useRotateDeviceToken();
   const attachCert = useAttachDeviceCert();
+  const updateDevice = useUpdateDevice();
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [certModalOpen, setCertModalOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [certForm] = Form.useForm<{ cert_pem: string }>();
+  const [editForm] = Form.useForm<DeviceUpdate & { metadata_text?: string }>();
 
   if (isLoading || !device) return <Spin size="large" />;
 
@@ -70,6 +74,53 @@ export function DeviceDetail() {
       message.success('Token copied to clipboard');
     } catch {
       message.error('Copy failed — select and copy manually');
+    }
+  };
+
+  // Sprint 28 G4 — edit device modal. Backend `DeviceUpdate` exposes
+  // name/device_type/firmware_version/status/metadata. Devices are not
+  // assigned to sites/zones directly — zone membership lives on
+  // `Zone.fixed_reader_ids` and is edited from Sites & Zones (G3) or
+  // bulk-reassigned from the Devices list (G5).
+  const openEdit = () => {
+    editForm.setFieldsValue({
+      name: device.name,
+      device_type: device.device_type,
+      firmware_version: device.firmware_version ?? undefined,
+      status: device.status,
+      metadata_text: JSON.stringify(device.metadata ?? {}, null, 2),
+    });
+    setEditOpen(true);
+  };
+
+  const onEdit = async (values: DeviceUpdate & { metadata_text?: string }) => {
+    let metadata: Record<string, unknown> | null | undefined;
+    if (values.metadata_text !== undefined) {
+      const trimmed = values.metadata_text.trim();
+      if (trimmed === '') {
+        metadata = null;
+      } else {
+        try {
+          metadata = JSON.parse(trimmed);
+        } catch {
+          message.error('Metadata must be valid JSON');
+          return;
+        }
+      }
+    }
+    const payload: DeviceUpdate = {
+      name: values.name,
+      device_type: values.device_type,
+      firmware_version: values.firmware_version,
+      status: values.status,
+      metadata: metadata as DeviceUpdate['metadata'],
+    };
+    try {
+      await updateDevice.mutateAsync({ id: device.id, data: payload });
+      message.success('Device updated');
+      setEditOpen(false);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update device');
     }
   };
 
@@ -346,15 +397,66 @@ export function DeviceDetail() {
       </Modal>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>{device.name}</Title>
-        {device.status === 'active' && (
-          <RoleGuard roles={['admin']}>
-            <Button danger onClick={handleDecommission} loading={decommission.isPending}>
-              Decommission
+        <Space>
+          <RoleGuard roles={['admin', 'editor']}>
+            <Button icon={<EditOutlined />} onClick={openEdit}>
+              Edit
             </Button>
           </RoleGuard>
-        )}
+          {device.status === 'active' && (
+            <RoleGuard roles={['admin']}>
+              <Button danger onClick={handleDecommission} loading={decommission.isPending}>
+                Decommission
+              </Button>
+            </RoleGuard>
+          )}
+        </Space>
       </div>
       <Tabs items={tabItems} />
+
+      {/* Sprint 28 G4 — edit device modal. */}
+      <Modal
+        open={editOpen}
+        title={`Edit Device — ${device.name}`}
+        onCancel={() => setEditOpen(false)}
+        onOk={() => editForm.submit()}
+        confirmLoading={updateDevice.isPending}
+        destroyOnClose
+        width={640}
+      >
+        <Form form={editForm} layout="vertical" onFinish={onEdit}>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Device Type" name="device_type" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Firmware Version" name="firmware_version">
+            <Input placeholder="e.g. 1.4.2" />
+          </Form.Item>
+          <Form.Item label="Status" name="status">
+            <Select
+              options={[
+                { value: 'active', label: 'active' },
+                { value: 'maintenance', label: 'maintenance' },
+                { value: 'decommissioned', label: 'decommissioned' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Metadata (JSON)"
+            name="metadata_text"
+            help="Free-form JSON object. Leave empty to clear."
+          >
+            <Input.TextArea rows={6} style={{ fontFamily: 'monospace' }} />
+          </Form.Item>
+          <Alert
+            type="info"
+            showIcon
+            message="Zone assignment is edited from Sites & Zones (per-zone reader list) or via the Devices list bulk action."
+          />
+        </Form>
+      </Modal>
     </div>
   );
 }

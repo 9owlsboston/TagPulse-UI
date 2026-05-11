@@ -1,8 +1,13 @@
 import { Table, Button, Modal, Form, Input, Typography, Space, App, InputNumber, Card, Select, Tag } from 'antd';
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
-import { useTelemetryModels, useCreateTelemetryModel, useDeleteTelemetryModel } from '@/hooks/useTelemetryModels';
+import {
+  useTelemetryModels,
+  useCreateTelemetryModel,
+  useDeleteTelemetryModel,
+  useUpdateTelemetryModel,
+} from '@/hooks/useTelemetryModels';
 import { useTelemetryQuarantine } from '@/hooks/useTelemetry';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
@@ -30,7 +35,11 @@ const REASON_COLOR: Record<QuarantineReason, string> = {
   stale_timestamp: 'volcano',
 };
 
-const columns = (onDelete: (id: string) => void, showDelete: boolean): ColumnsType<TelemetryModelResponse> => [
+const columns = (
+  onDelete: (id: string) => void,
+  onEdit: (record: TelemetryModelResponse) => void,
+  showActions: boolean,
+): ColumnsType<TelemetryModelResponse> => [
   { title: 'Device Type', dataIndex: 'device_type' },
   { title: 'Metrics', dataIndex: 'metrics', render: (m: MetricDefinition[]) => m.length },
   {
@@ -38,12 +47,23 @@ const columns = (onDelete: (id: string) => void, showDelete: boolean): ColumnsTy
     dataIndex: 'created_at',
     render: (v: string) => new Date(v).toLocaleDateString(),
   },
-  ...(showDelete ? [{
+  ...(showActions ? [{
     title: 'Actions',
+    width: 160,
     render: (_: unknown, record: TelemetryModelResponse) => (
-      <Button danger size="small" onClick={() => onDelete(record.id)}>
-        Delete
-      </Button>
+      <Space>
+        <Button
+          size="small"
+          icon={<EditOutlined />}
+          onClick={() => onEdit(record)}
+          aria-label={`Edit telemetry model ${record.device_type ?? record.id}`}
+        >
+          Edit
+        </Button>
+        <Button danger size="small" onClick={() => onDelete(record.id)}>
+          Delete
+        </Button>
+      </Space>
     ),
   }] : []),
 ];
@@ -53,9 +73,13 @@ export function TelemetryModels() {
   const { data, isLoading } = useTelemetryModels();
   const createModel = useCreateTelemetryModel();
   const deleteModel = useDeleteTelemetryModel();
+  const updateModel = useUpdateTelemetryModel();
   const canDelete = useCanPerform('admin');
+  const canEdit = useCanPerform('editor');
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<TelemetryModelResponse | null>(null);
   const [form] = Form.useForm<TelemetryModelCreate>();
+  const [editForm] = Form.useForm<{ metrics: MetricDefinition[] }>();
 
   const handleCreate = async (values: TelemetryModelCreate) => {
     await createModel.mutateAsync(values);
@@ -73,6 +97,25 @@ export function TelemetryModels() {
     });
   };
 
+  // Sprint 28 G6 — edit metric (PATCH from G1). subject_kind/device_type
+  // are immutable identity columns per backend; only `metrics` is mutable.
+  const openEdit = (record: TelemetryModelResponse) => {
+    editForm.setFieldsValue({ metrics: record.metrics });
+    setEditing(record);
+  };
+
+  const onEdit = async (values: { metrics: MetricDefinition[] }) => {
+    if (!editing) return;
+    try {
+      await updateModel.mutateAsync({ id: editing.id, data: { metrics: values.metrics } });
+      message.success('Telemetry model updated');
+      setEditing(null);
+      editForm.resetFields();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update telemetry model');
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -85,7 +128,7 @@ export function TelemetryModels() {
       </div>
       <Table
         rowKey="id"
-        columns={columns(handleDelete, canDelete)}
+        columns={columns(handleDelete, openEdit, canDelete || canEdit)}
         dataSource={data}
         loading={isLoading}
         expandable={{
@@ -148,6 +191,60 @@ export function TelemetryModels() {
               Create
             </Button>
           </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Sprint 28 G6 — edit metrics modal. device_type/subject_kind immutable. */}
+      <Modal
+        title={editing ? `Edit Metrics — ${editing.device_type ?? editing.id}` : 'Edit Metrics'}
+        open={editing !== null}
+        onCancel={() => {
+          setEditing(null);
+          editForm.resetFields();
+        }}
+        onOk={() => editForm.submit()}
+        confirmLoading={updateModel.isPending}
+        destroyOnClose
+        width={720}
+      >
+        <Form form={editForm} layout="vertical" onFinish={onEdit}>
+          <Form.Item label="Device Type">
+            <Input value={editing?.device_type ?? ''} disabled />
+          </Form.Item>
+          <Form.List name="metrics">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map((field) => (
+                  <Space key={field.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
+                    <Form.Item name={[field.name, 'name']} rules={[{ required: true }]}>
+                      <Input placeholder="Metric name" />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'unit']} rules={[{ required: true }]}>
+                      <Input placeholder="Unit" style={{ width: 80 }} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'min_value']}>
+                      <InputNumber placeholder="Min" style={{ width: 80 }} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'max_value']}>
+                      <InputNumber placeholder="Max" style={{ width: 80 }} />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'description']}>
+                      <Input placeholder="Description" style={{ width: 180 }} />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(field.name)} />
+                  </Space>
+                ))}
+                <Button type="dashed" onClick={() => add({ name: '', unit: '' })} block icon={<PlusOutlined />}>
+                  Add Metric
+                </Button>
+              </>
+            )}
+          </Form.List>
+          <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>
+            Edits the model in place — historical readings keep their
+            quarantine status against this model id (no orphaning, unlike
+            delete + recreate).
+          </Typography.Paragraph>
         </Form>
       </Modal>
       <RoleGuard roles={['admin']}>

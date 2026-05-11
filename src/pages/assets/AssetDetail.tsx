@@ -16,7 +16,7 @@ import {
   Typography,
   App,
 } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined } from '@ant-design/icons';
 import {
   useAsset,
   useAssetBindings,
@@ -27,6 +27,7 @@ import {
   useRetireAsset,
   useTagReadsForBinding,
   useUnbindTag,
+  useUpdateAsset,
   useZones,
 } from '@/hooks/useAssets';
 import { useDevices } from '@/hooks/useDevices';
@@ -35,6 +36,7 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import type { AssetTagBindingResponse } from '@/api/generated/models/AssetTagBindingResponse';
 import { AssetTagBindingCreate } from '@/api/generated/models/AssetTagBindingCreate';
+import type { AssetUpdate } from '@/api/generated/models/AssetUpdate';
 import type { ExternalLocationResponse } from '@/api/generated/models/ExternalLocationResponse';
 
 const { Title, Text } = Typography;
@@ -56,9 +58,12 @@ export function AssetDetail() {
   const retire = useRetireAsset();
   const bind = useBindTag(id ?? '');
   const unbind = useUnbindTag(id ?? '');
+  const updateAsset = useUpdateAsset();
   const canEdit = useCanPerform('editor');
   const [bindOpen, setBindOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [bindForm] = Form.useForm<AssetTagBindingCreate>();
+  const [editForm] = Form.useForm<AssetUpdate & { metadata_text?: string }>();
 
   const activeBinding = useMemo(
     () => (allBindings ?? []).find((b) => b.unbound_at === null) ?? null,
@@ -107,6 +112,41 @@ export function AssetDetail() {
       bindForm.resetFields();
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to bind tag');
+    }
+  };
+
+  // Sprint 28 G8 — edit asset attributes (name/type/external_ref/metadata).
+  // Status changes go via Retire (above). parent_asset_id is intentionally
+  // omitted from this UI — hierarchy edits are out of scope per audit.
+  const onEditAsset = async (values: AssetUpdate & { metadata_text?: string }) => {
+    let metadata: Record<string, unknown> | null | undefined;
+    if (values.metadata_text !== undefined) {
+      const trimmed = values.metadata_text.trim();
+      if (trimmed === '') {
+        metadata = null;
+      } else {
+        try {
+          metadata = JSON.parse(trimmed);
+        } catch {
+          message.error('Metadata must be valid JSON');
+          return;
+        }
+      }
+    }
+    try {
+      await updateAsset.mutateAsync({
+        id: asset.id,
+        data: {
+          name: values.name,
+          asset_type: values.asset_type,
+          external_ref: values.external_ref,
+          metadata: metadata as AssetUpdate['metadata'],
+        },
+      });
+      message.success('Asset updated');
+      setEditOpen(false);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update asset');
     }
   };
 
@@ -383,13 +423,31 @@ export function AssetDetail() {
         }}
       >
         <Title level={2} style={{ margin: 0 }}>{asset.name}</Title>
-        {asset.status === 'active' && (
+        <Space>
           <RoleGuard roles={['admin', 'editor']}>
-            <Button danger onClick={handleRetire} loading={retire.isPending}>
-              Retire
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => {
+                editForm.setFieldsValue({
+                  name: asset.name,
+                  asset_type: asset.asset_type,
+                  external_ref: asset.external_ref,
+                  metadata_text: JSON.stringify(asset.metadata ?? {}, null, 2),
+                });
+                setEditOpen(true);
+              }}
+            >
+              Edit
             </Button>
           </RoleGuard>
-        )}
+          {asset.status === 'active' && (
+            <RoleGuard roles={['admin', 'editor']}>
+              <Button danger onClick={handleRetire} loading={retire.isPending}>
+                Retire
+              </Button>
+            </RoleGuard>
+          )}
+        </Space>
       </div>
       <Tabs items={tabItems} />
 
@@ -428,6 +486,37 @@ export function AssetDetail() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Sprint 28 G8 — edit asset attributes. */}
+      <Modal
+        title={`Edit Asset — ${asset.name}`}
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={() => editForm.submit()}
+        confirmLoading={updateAsset.isPending}
+        destroyOnClose
+        width={600}
+      >
+        <Form form={editForm} layout="vertical" onFinish={onEditAsset}>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Asset Type" name="asset_type">
+            <Input placeholder="e.g. forklift, pallet" />
+          </Form.Item>
+          <Form.Item label="External Reference" name="external_ref">
+            <Input placeholder="External system identifier" />
+          </Form.Item>
+          <Form.Item
+            label="Metadata (JSON)"
+            name="metadata_text"
+            help="Free-form JSON object. Leave empty to clear."
+          >
+            <Input.TextArea rows={6} style={{ fontFamily: 'monospace' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
       {/* Suppress unused-var warning when zones is empty */}
       {zoneById.size === 0 && null}
     </div>

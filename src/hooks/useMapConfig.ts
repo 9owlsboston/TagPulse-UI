@@ -5,9 +5,10 @@
  * `<TileLayer>` without baking in vendor-specific URLs. Falls back to OSM
  * default when the call fails (e.g., dev backend without the endpoint yet).
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantService } from '@/api/generated/services/TenantService';
 import type { MapConfigResponse } from '@/api/generated/models/MapConfigResponse';
+import type { TileProviderUpdate } from '@/api/generated/models/TileProviderUpdate';
 
 export const OSM_FALLBACK: MapConfigResponse = {
   kind: 'osm',
@@ -23,5 +24,15 @@ export function useMapConfig() {
     queryFn: () => TenantService.getMapConfigTenantMapConfigGet(),
     staleTime: 5 * 60_000,
     retry: false,
+  });
+}
+
+// Sprint 28 G7 — admin update of tile provider blob.
+export function useUpdateMapConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: TileProviderUpdate) =>
+      TenantService.updateMapConfigTenantMapConfigPatch(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenant', 'map-config'] }),
   });
 }
