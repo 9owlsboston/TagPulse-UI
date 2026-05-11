@@ -11,14 +11,14 @@
  * reading was meant to describe.
  */
 export type TelemetryQuarantineResponse = {
-    id: string;
     device_id: string;
-    received_at: string;
+    id: string;
     metric_name: string;
     metric_value: (number | null);
     raw_payload: Record<string, any>;
     reason: string;
-    subject_kind?: ('device' | 'asset' | 'lot' | 'stock_item' | 'zone' | null);
+    received_at: string;
     subject_id?: (string | null);
+    subject_kind?: ('device' | 'asset' | 'lot' | 'stock_item' | 'zone' | null);
 };
 

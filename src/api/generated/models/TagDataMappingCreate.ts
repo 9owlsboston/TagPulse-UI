@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export type TagDataMappingCreate = {
-    scope_kind: TagDataMappingCreate.scope_kind;
     scope_id?: (string | null);
+    scope_kind: TagDataMappingCreate.scope_kind;
     semantic_field: string;
     tag_data_key: string;
     transform?: (string | null);

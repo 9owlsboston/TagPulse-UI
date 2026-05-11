@@ -6,9 +6,9 @@
  * Create a site.
  */
 export type SiteCreate = {
-    name: string;
     address?: (string | null);
     default_timezone?: string;
     metadata?: (Record<string, any> | null);
+    name: string;
 };
 

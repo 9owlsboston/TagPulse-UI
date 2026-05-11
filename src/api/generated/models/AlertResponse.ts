@@ -6,14 +6,14 @@
  * Alert returned from the API.
  */
 export type AlertResponse = {
-    id: string;
-    tenant_id: string;
-    rule_id: string;
-    device_id: (string | null);
-    severity: string;
-    message: string;
     context: Record<string, any>;
+    device_id: (string | null);
+    id: string;
+    message: string;
+    rule_id: string;
+    severity: string;
     status: string;
+    tenant_id: string;
     triggered_at: string;
 };
 

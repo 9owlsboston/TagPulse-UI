@@ -3,13 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 export type TagDataMappingResponse = {
+    created_at: string;
     id: string;
-    tenant_id: string;
-    scope_kind: string;
     scope_id: (string | null);
+    scope_kind: string;
     semantic_field: string;
     tag_data_key: string;
+    tenant_id: string;
     transform: (string | null);
-    created_at: string;
 };
 

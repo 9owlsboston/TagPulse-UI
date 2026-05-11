@@ -11,6 +11,48 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class QueryService {
     /**
+     * Device Health
+     * Get health summaries for all devices.
+     * @param status
+     * @returns DeviceHealthSummary Successful Response
+     * @throws ApiError
+     */
+    public static deviceHealthDeviceHealthGet(
+        status?: (string | null),
+    ): CancelablePromise<Array<DeviceHealthSummary>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/device-health',
+            query: {
+                'status': status,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Single Device Health
+     * Get health summary for a single device.
+     * @param deviceId
+     * @returns DeviceHealthSummary Successful Response
+     * @throws ApiError
+     */
+    public static singleDeviceHealthDeviceHealthDeviceIdGet(
+        deviceId: string,
+    ): CancelablePromise<DeviceHealthSummary> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/device-health/{device_id}',
+            path: {
+                'device_id': deviceId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Query Tag Reads
      * Query tag reads with filters and pagination.
      * @param deviceId
@@ -129,48 +171,6 @@ export class QueryService {
             },
             query: {
                 'limit': limit,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Device Health
-     * Get health summaries for all devices.
-     * @param status
-     * @returns DeviceHealthSummary Successful Response
-     * @throws ApiError
-     */
-    public static deviceHealthDeviceHealthGet(
-        status?: (string | null),
-    ): CancelablePromise<Array<DeviceHealthSummary>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/device-health',
-            query: {
-                'status': status,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Single Device Health
-     * Get health summary for a single device.
-     * @param deviceId
-     * @returns DeviceHealthSummary Successful Response
-     * @throws ApiError
-     */
-    public static singleDeviceHealthDeviceHealthDeviceIdGet(
-        deviceId: string,
-    ): CancelablePromise<DeviceHealthSummary> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/device-health/{device_id}',
-            path: {
-                'device_id': deviceId,
             },
             errors: {
                 422: `Validation Error`,

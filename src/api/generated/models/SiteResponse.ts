@@ -6,13 +6,13 @@
  * Persisted site row.
  */
 export type SiteResponse = {
-    id: string;
-    tenant_id: string;
-    name: string;
     address: (string | null);
-    default_timezone: string;
-    metadata?: (Record<string, any> | null);
     created_at: string;
+    default_timezone: string;
+    id: string;
+    metadata?: (Record<string, any> | null);
+    name: string;
+    tenant_id: string;
     updated_at: string;
 };
 

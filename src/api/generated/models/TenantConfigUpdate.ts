@@ -12,8 +12,8 @@
  * requests-per-minute; pass ``{}`` to clear all overrides).
  */
 export type TenantConfigUpdate = {
-    tracking_modes?: (Array<'asset' | 'inventory'> | null);
-    telemetry_subject_kinds?: (Array<'device' | 'asset' | 'lot' | 'stock_item' | 'zone'> | null);
     rate_limit_overrides?: (Record<string, number> | null);
+    telemetry_subject_kinds?: (Array<'device' | 'asset' | 'lot' | 'stock_item' | 'zone'> | null);
+    tracking_modes?: (Array<'asset' | 'inventory'> | null);
 };
 

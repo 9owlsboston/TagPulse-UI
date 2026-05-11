@@ -6,10 +6,10 @@
  * A single telemetry reading inside a batched payload.
  */
 export type TelemetryReading = {
-    timestamp: string;
+    metadata?: (Record<string, any> | null);
     metric_name: string;
     metric_value: number;
+    timestamp: string;
     unit?: (string | null);
-    metadata?: (Record<string, any> | null);
 };
 

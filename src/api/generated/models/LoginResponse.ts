@@ -8,8 +8,8 @@ import type { LoginUserInfo } from './LoginUserInfo';
  */
 export type LoginResponse = {
     access_token: string;
-    token_type?: string;
     expires_in: number;
+    token_type?: string;
     user: LoginUserInfo;
 };
 

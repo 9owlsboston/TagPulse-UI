@@ -6,11 +6,11 @@
  * Patch an asset.
  */
 export type AssetUpdate = {
-    name?: (string | null);
     asset_type?: (string | null);
     external_ref?: (string | null);
-    status?: ('active' | 'retired' | 'lost' | null);
-    parent_asset_id?: (string | null);
     metadata?: (Record<string, any> | null);
+    name?: (string | null);
+    parent_asset_id?: (string | null);
+    status?: ('active' | 'retired' | 'lost' | null);
 };
 

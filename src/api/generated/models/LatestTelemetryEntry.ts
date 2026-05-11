@@ -13,9 +13,9 @@
 export type LatestTelemetryEntry = {
     metric_name: string;
     metric_value: number;
-    unit?: (string | null);
-    timestamp: string;
     source: LatestTelemetryEntry.source;
+    timestamp: string;
+    unit?: (string | null);
 };
 export namespace LatestTelemetryEntry {
     export enum source {

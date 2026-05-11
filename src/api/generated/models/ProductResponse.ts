@@ -3,15 +3,15 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ProductResponse = {
-    id: string;
-    tenant_id: string;
-    sku: string;
-    gtin: (string | null);
-    name: string;
-    category: (string | null);
-    unit: string;
     attributes?: (Record<string, any> | null);
+    category: (string | null);
     created_at: string;
+    gtin: (string | null);
+    id: string;
+    name: string;
+    sku: string;
+    tenant_id: string;
+    unit: string;
     updated_at: string;
 };
 

@@ -15,12 +15,12 @@
  * ``polygon_geojson``.
  */
 export type ZoneCreate = {
-    site_id: string;
-    name: string;
-    kind?: ZoneCreate.kind;
     fixed_reader_ids?: (Array<string> | null);
-    polygon_geojson?: (Record<string, any> | null);
+    kind?: ZoneCreate.kind;
     metadata?: (Record<string, any> | null);
+    name: string;
+    polygon_geojson?: (Record<string, any> | null);
+    site_id: string;
 };
 export namespace ZoneCreate {
     export enum kind {

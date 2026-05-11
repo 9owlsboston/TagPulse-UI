@@ -6,13 +6,13 @@
  * Persisted asset_tag_bindings row.
  */
 export type AssetTagBindingResponse = {
-    id: string;
-    tenant_id: string;
     asset_id: string;
-    binding_value: string;
     binding_kind: string;
+    binding_value: string;
     bound_at: string;
-    unbound_at: (string | null);
+    id: string;
     metadata?: (Record<string, any> | null);
+    tenant_id: string;
+    unbound_at: (string | null);
 };
 

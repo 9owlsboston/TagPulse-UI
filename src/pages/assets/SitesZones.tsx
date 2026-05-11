@@ -13,7 +13,7 @@ import {
   Typography,
   App,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   useAssetsInZone,
   useCreateSite,
@@ -21,6 +21,8 @@ import {
   useDeleteSite,
   useDeleteZone,
   useSites,
+  useUpdateSite,
+  useUpdateZone,
   useZones,
 } from '@/hooks/useAssets';
 import { useDevices } from '@/hooks/useDevices';
@@ -30,6 +32,8 @@ import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
 import type { SiteCreate } from '@/api/generated/models/SiteCreate';
+import type { SiteUpdate } from '@/api/generated/models/SiteUpdate';
+import type { ZoneUpdate } from '@/api/generated/models/ZoneUpdate';
 import { PolygonDraw } from '@/components/PolygonDraw';
 
 const { Title, Text } = Typography;
@@ -41,15 +45,21 @@ export function SitesZones() {
   const { data: devices } = useDevices();
   const createSite = useCreateSite();
   const createZone = useCreateZone();
+  const updateSite = useUpdateSite();
+  const updateZone = useUpdateZone();
   const deleteSite = useDeleteSite();
   const deleteZone = useDeleteZone();
   const isAdmin = useCanPerform('admin');
 
   const [siteModalOpen, setSiteModalOpen] = useState(false);
   const [zoneModalSiteId, setZoneModalSiteId] = useState<string | null>(null);
+  const [editingSite, setEditingSite] = useState<SiteResponse | null>(null);
+  const [editingZone, setEditingZone] = useState<ZoneResponse | null>(null);
   const [occupantsZone, setOccupantsZone] = useState<ZoneResponse | null>(null);
   const [siteForm] = Form.useForm<SiteCreate>();
   const [zoneForm] = Form.useForm<ZoneCreate>();
+  const [editSiteForm] = Form.useForm<SiteUpdate>();
+  const [editZoneForm] = Form.useForm<ZoneUpdate>();
   const zoneKind = Form.useWatch('kind', zoneForm);
 
   const zonesBySite = useMemo(() => {
@@ -115,6 +125,48 @@ export function SitesZones() {
     });
   };
 
+  // Sprint 28 G3 — edit handlers.
+  const openEditSite = (site: SiteResponse) => {
+    editSiteForm.setFieldsValue({
+      name: site.name,
+      address: site.address ?? null,
+      default_timezone: site.default_timezone,
+    });
+    setEditingSite(site);
+  };
+
+  const onEditSite = async (values: SiteUpdate) => {
+    if (!editingSite) return;
+    try {
+      await updateSite.mutateAsync({ id: editingSite.id, data: values });
+      message.success(`Site "${values.name ?? editingSite.name}" updated`);
+      setEditingSite(null);
+      editSiteForm.resetFields();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update site');
+    }
+  };
+
+  const openEditZone = (zone: ZoneResponse) => {
+    editZoneForm.setFieldsValue({
+      name: zone.name,
+      fixed_reader_ids: zone.fixed_reader_ids ?? undefined,
+    });
+    setEditingZone(zone);
+  };
+
+  const onEditZone = async (values: ZoneUpdate) => {
+    if (!editingZone) return;
+    try {
+      await updateZone.mutateAsync({ id: editingZone.id, data: values });
+      message.success(`Zone "${values.name ?? editingZone.name}" updated`);
+      setEditingZone(null);
+      editZoneForm.resetFields();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update zone');
+    }
+  };
+
   return (
     <div>
       <div
@@ -162,6 +214,12 @@ export function SitesZones() {
                     </Button>
                     <Button
                       size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => openEditSite(site)}
+                      aria-label={`Edit site ${site.name}`}
+                    />
+                    <Button
+                      size="small"
                       danger
                       icon={<DeleteOutlined />}
                       onClick={() => handleDeleteSite(site)}
@@ -201,7 +259,7 @@ export function SitesZones() {
                       },
                       {
                         title: '',
-                        width: 160,
+                        width: 200,
                         render: (_, row) => (
                           <Space>
                             <Button
@@ -211,12 +269,20 @@ export function SitesZones() {
                               Occupants
                             </Button>
                             {isAdmin ? (
-                              <Button
-                                size="small"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={() => handleDeleteZone(row)}
-                              />
+                              <>
+                                <Button
+                                  size="small"
+                                  icon={<EditOutlined />}
+                                  onClick={() => openEditZone(row)}
+                                  aria-label={`Edit zone ${row.name}`}
+                                />
+                                <Button
+                                  size="small"
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => handleDeleteZone(row)}
+                                />
+                              </>
                             ) : null}
                           </Space>
                         ),
@@ -305,6 +371,77 @@ export function SitesZones() {
         zone={occupantsZone}
         onClose={() => setOccupantsZone(null)}
       />
+
+      {/* Sprint 28 G3 — edit site modal. Closes the Boston DC timezone trigger. */}
+      <Modal
+        title={editingSite ? `Edit Site — ${editingSite.name}` : 'Edit Site'}
+        open={editingSite !== null}
+        onCancel={() => {
+          setEditingSite(null);
+          editSiteForm.resetFields();
+        }}
+        onOk={() => editSiteForm.submit()}
+        confirmLoading={updateSite.isPending}
+        destroyOnClose
+      >
+        <Form form={editSiteForm} layout="vertical" onFinish={onEditSite}>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Address" name="address">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item
+            label="Default Timezone"
+            name="default_timezone"
+            help="IANA TZ database name (e.g. UTC, America/New_York, Europe/Berlin)."
+          >
+            <Input placeholder="e.g. UTC, America/Los_Angeles" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Sprint 28 G3 — edit zone modal. Polygon edit deferred per roadmap. */}
+      <Modal
+        title={editingZone ? `Edit Zone — ${editingZone.name}` : 'Edit Zone'}
+        open={editingZone !== null}
+        onCancel={() => {
+          setEditingZone(null);
+          editZoneForm.resetFields();
+        }}
+        onOk={() => editZoneForm.submit()}
+        confirmLoading={updateZone.isPending}
+        destroyOnClose
+      >
+        <Form form={editZoneForm} layout="vertical" onFinish={onEditZone}>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Kind"
+            help="Zone kind is immutable. To change kind, delete and recreate."
+          >
+            <Input value={editingZone?.kind ?? ''} disabled />
+          </Form.Item>
+          {editingZone?.kind === 'reader_bound' && (
+            <Form.Item label="Readers" name="fixed_reader_ids">
+              <Select
+                mode="multiple"
+                placeholder="Pick one or more readers from the device registry"
+                options={deviceOptions}
+                optionFilterProp="label"
+                showSearch
+                allowClear
+              />
+            </Form.Item>
+          )}
+          {editingZone?.kind === 'geofence' && (
+            <Text type="secondary">
+              Polygon edits are deferred to the Map page in a later sprint.
+            </Text>
+          )}
+        </Form>
+      </Modal>
     </div>
   );
 }

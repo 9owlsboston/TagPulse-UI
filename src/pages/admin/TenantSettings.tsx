@@ -1,5 +1,5 @@
 /**
- * Tenant Settings (Sprint 15b Phase F + Sprint 21).
+ * Tenant Settings (Sprint 15b Phase F + Sprint 21 + Sprint 28 G7).
  *
  * Tabbed admin page for tenant-scope configuration:
  *  • General — toggle `tracking_modes` (asset / inventory) and the
@@ -7,10 +7,13 @@
  *  • Sensor metrics — embeds the existing TelemetryModels editor.
  *  • Tag-data fields — embeds the existing TagDataMappings editor; only
  *    visible while `inventory` mode is enabled (per docs/design/admin-ui).
+ *  • Map — admin-only inline editor for the tile provider blob (G7).
  */
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Form, Switch, Tabs, message } from 'antd';
+import { Alert, Button, Card, Form, Input, Select, Switch, Tabs, Typography, message } from 'antd';
 import { useTenantConfig, useUpdateTenantConfig } from '@/hooks/useTenantConfig';
+import { useMapConfig, useUpdateMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
+import { useCanPerform } from '@/components/useCanPerform';
 import { TelemetryModels } from '@/pages/telemetry-models/TelemetryModels';
 import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
 
@@ -136,6 +139,7 @@ function GeneralTab() {
 
 export function TenantSettings() {
   const { data } = useTenantConfig();
+  const isAdmin = useCanPerform('admin');
   const inventoryEnabled = data?.tracking_modes.includes('inventory') ?? false;
   const items = [
     { key: 'general', label: 'General', children: <GeneralTab /> },
@@ -143,8 +147,220 @@ export function TenantSettings() {
     ...(inventoryEnabled
       ? [{ key: 'tag-data', label: 'Tag-data fields', children: <TagDataMappings /> }]
       : []),
+    ...(isAdmin
+      ? [{ key: 'map', label: 'Map', children: <MapConfigTab /> }]
+      : []),
   ];
   return <Tabs defaultActiveKey="general" items={items} />;
 }
 
 export default TenantSettings;
+
+// Sprint 28 G7 — inline editor for /tenant/map-config (admin only).
+// Backend `TileProviderUpdate` is `{ provider: Record<string, any> | null }`,
+// so we offer a kind dropdown + per-kind fields and serialize them into
+// the provider blob. "OSM (default)" sends `{ provider: null }` so the
+// backend falls back to the system default.
+type ProviderKind = 'osm' | 'mapbox' | 'maptiler' | 'self_hosted' | 'custom';
+
+type MapForm = {
+  kind: ProviderKind;
+  api_key?: string;
+  style_id?: string;
+  tile_url_template?: string;
+  attribution?: string;
+  custom_json?: string;
+};
+
+function MapConfigTab() {
+  const { data: current, isLoading } = useMapConfig();
+  const update = useUpdateMapConfig();
+  const [form] = Form.useForm<MapForm>();
+  const kind = Form.useWatch('kind', form);
+  const [previewKey, setPreviewKey] = useState(0);
+
+  useEffect(() => {
+    if (!current) return;
+    // Best-effort prefill from the resolved config. The backend returns
+    // the *resolved* config (URL/attribution), not the raw `provider` blob,
+    // so for non-default kinds the operator may need to re-enter the api
+    // key (the resolved URL doesn't always reveal it).
+    const initialKind = (current.kind as ProviderKind) ?? 'osm';
+    form.setFieldsValue({
+      kind: initialKind,
+      tile_url_template: current.tile_url_template,
+      attribution: current.attribution,
+    });
+  }, [current, form]);
+
+  const onSave = async (values: MapForm) => {
+    let provider: Record<string, unknown> | null;
+    switch (values.kind) {
+      case 'osm':
+        provider = null;
+        break;
+      case 'mapbox':
+        if (!values.api_key) {
+          message.error('Mapbox requires an API key');
+          return;
+        }
+        provider = {
+          kind: 'mapbox',
+          api_key: values.api_key,
+          style_id: values.style_id ?? 'mapbox/streets-v12',
+          attribution: values.attribution ?? '© Mapbox © OpenStreetMap',
+        };
+        break;
+      case 'maptiler':
+        if (!values.api_key) {
+          message.error('MapTiler requires an API key');
+          return;
+        }
+        provider = {
+          kind: 'maptiler',
+          api_key: values.api_key,
+          style_id: values.style_id ?? 'streets-v2',
+          attribution: values.attribution ?? '© MapTiler © OpenStreetMap contributors',
+        };
+        break;
+      case 'self_hosted':
+        if (!values.tile_url_template) {
+          message.error('Self-hosted requires a tile URL template');
+          return;
+        }
+        provider = {
+          kind: 'self_hosted',
+          tile_url_template: values.tile_url_template,
+          attribution: values.attribution ?? 'Self-hosted tiles',
+        };
+        break;
+      case 'custom': {
+        const trimmed = (values.custom_json ?? '').trim();
+        if (!trimmed) {
+          message.error('Paste a provider JSON blob');
+          return;
+        }
+        try {
+          provider = JSON.parse(trimmed);
+        } catch {
+          message.error('Custom provider must be valid JSON');
+          return;
+        }
+        break;
+      }
+      default:
+        provider = null;
+    }
+    try {
+      await update.mutateAsync({ provider });
+      message.success('Map config updated');
+      setPreviewKey((k) => k + 1);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to update map config');
+    }
+  };
+
+  const resolved = current ?? OSM_FALLBACK;
+  const sampleTile = resolved.tile_url_template
+    .replace('{s}', (resolved.subdomains ?? ['a'])[0] ?? 'a')
+    .replace('{z}', '4')
+    .replace('{x}', '8')
+    .replace('{y}', '5');
+
+  return (
+    <>
+      <Card title="Tile provider" loading={isLoading} style={{ marginBottom: 16 }}>
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="The backend stores a provider blob; the GET endpoint returns the resolved tile URL and attribution. Switching to OSM (default) clears the stored provider."
+        />
+        <Form<MapForm>
+          form={form}
+          layout="vertical"
+          onFinish={onSave}
+          initialValues={{ kind: 'osm' }}
+        >
+          <Form.Item label="Provider" name="kind" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { value: 'osm', label: 'OSM (default, public tiles)' },
+                { value: 'mapbox', label: 'Mapbox' },
+                { value: 'maptiler', label: 'MapTiler' },
+                { value: 'self_hosted', label: 'Self-hosted' },
+                { value: 'custom', label: 'Custom (raw JSON)' },
+              ]}
+            />
+          </Form.Item>
+          {(kind === 'mapbox' || kind === 'maptiler') && (
+            <>
+              <Form.Item label="API key" name="api_key" rules={[{ required: true }]}>
+                <Input.Password placeholder="sk… or pk…" autoComplete="off" />
+              </Form.Item>
+              <Form.Item label="Style ID" name="style_id">
+                <Input placeholder={kind === 'mapbox' ? 'mapbox/streets-v12' : 'streets-v2'} />
+              </Form.Item>
+              <Form.Item label="Attribution (HTML allowed)" name="attribution">
+                <Input />
+              </Form.Item>
+            </>
+          )}
+          {kind === 'self_hosted' && (
+            <>
+              <Form.Item
+                label="Tile URL template"
+                name="tile_url_template"
+                rules={[{ required: true }]}
+                help="Use {s}/{z}/{x}/{y} placeholders."
+              >
+                <Input placeholder="https://tiles.example.com/{z}/{x}/{y}.png" />
+              </Form.Item>
+              <Form.Item label="Attribution" name="attribution">
+                <Input />
+              </Form.Item>
+            </>
+          )}
+          {kind === 'custom' && (
+            <Form.Item
+              label="Provider JSON"
+              name="custom_json"
+              rules={[{ required: true }]}
+              help="Raw provider blob — see services.map_config for shape."
+            >
+              <Input.TextArea rows={6} style={{ fontFamily: 'monospace' }} />
+            </Form.Item>
+          )}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={update.isPending}>
+              Save
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+
+      <Card title="Live preview" style={{ marginBottom: 16 }}>
+        <Typography.Paragraph type="secondary">
+          Sample tile from the resolved provider (z=4, x=8, y=5). Reflects the
+          *current* server-side config — click Save above and the preview will
+          re-fetch.
+        </Typography.Paragraph>
+        <img
+          key={previewKey}
+          src={sampleTile}
+          alt="Sample map tile"
+          width={256}
+          height={256}
+          style={{ border: '1px solid #d9d9d9', borderRadius: 4 }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.opacity = '0.3';
+          }}
+        />
+        <Typography.Paragraph style={{ marginTop: 8 }}>
+          <strong>Attribution:</strong>{' '}
+          <span dangerouslySetInnerHTML={{ __html: resolved.attribution }} />
+        </Typography.Paragraph>
+      </Card>
+    </>
+  );
+}

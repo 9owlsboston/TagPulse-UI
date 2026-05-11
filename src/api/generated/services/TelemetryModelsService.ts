@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { TelemetryModelCreate } from '../models/TelemetryModelCreate';
 import type { TelemetryModelResponse } from '../models/TelemetryModelResponse';
+import type { TelemetryModelUpdate } from '../models/TelemetryModelUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -35,35 +36,6 @@ export class TelemetryModelsService {
             url: '/telemetry-models',
             body: requestBody,
             mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Get Telemetry Model By Subject
-     * Sprint 19 subject-scoped telemetry-model lookup.
-     *
-     * For ``subject_kind='device'`` ``key`` is the device_type;
-     * for non-device kinds the only model permitted per tenant is
-     * addressed with any non-empty ``key`` (typically the same string as
-     * ``subject_kind`` so URLs remain self-describing).
-     * @param subjectKind
-     * @param key
-     * @returns TelemetryModelResponse Successful Response
-     * @throws ApiError
-     */
-    public static getTelemetryModelBySubjectTelemetryModelsSubjectKindKeyGet(
-        subjectKind: string,
-        key: string,
-    ): CancelablePromise<TelemetryModelResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/telemetry-models/{subject_kind}/{key}',
-            path: {
-                'subject_kind': subjectKind,
-                'key': key,
-            },
             errors: {
                 422: `Validation Error`,
             },
@@ -111,6 +83,64 @@ export class TelemetryModelsService {
             url: '/telemetry-models/{model_id}',
             path: {
                 'model_id': modelId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Update Telemetry Model
+     * Sprint 28 G1: update a telemetry model's metrics list.
+     *
+     * Only ``metrics`` is mutable. To change ``subject_kind`` or ``device_type``
+     * delete the model and POST a new one — those columns key the Sprint 18
+     * unique constraint and are part of the model's identity.
+     * @param modelId
+     * @param requestBody
+     * @returns TelemetryModelResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateTelemetryModelTelemetryModelsModelIdPatch(
+        modelId: string,
+        requestBody: TelemetryModelUpdate,
+    ): CancelablePromise<TelemetryModelResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/telemetry-models/{model_id}',
+            path: {
+                'model_id': modelId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Telemetry Model By Subject
+     * Sprint 19 subject-scoped telemetry-model lookup.
+     *
+     * For ``subject_kind='device'`` ``key`` is the device_type;
+     * for non-device kinds the only model permitted per tenant is
+     * addressed with any non-empty ``key`` (typically the same string as
+     * ``subject_kind`` so URLs remain self-describing).
+     * @param subjectKind
+     * @param key
+     * @returns TelemetryModelResponse Successful Response
+     * @throws ApiError
+     */
+    public static getTelemetryModelBySubjectTelemetryModelsSubjectKindKeyGet(
+        subjectKind: string,
+        key: string,
+    ): CancelablePromise<TelemetryModelResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/telemetry-models/{subject_kind}/{key}',
+            path: {
+                'subject_kind': subjectKind,
+                'key': key,
             },
             errors: {
                 422: `Validation Error`,

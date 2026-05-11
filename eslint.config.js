@@ -28,6 +28,8 @@ export default [
         React: 'readonly',
         Element: 'readonly',
         CSSStyleDeclaration: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLImageElement: 'readonly',
         // Browser storage / timers / encoding
         localStorage: 'readonly',
         sessionStorage: 'readonly',

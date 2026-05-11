@@ -6,9 +6,9 @@
  * Optional location attached to a tag read or sent on the location topic.
  */
 export type Location = {
+    accuracy_m?: (number | null);
     latitude: number;
     longitude: number;
-    accuracy_m?: (number | null);
     source?: Location.source;
 };
 export namespace Location {

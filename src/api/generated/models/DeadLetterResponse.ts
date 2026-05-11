@@ -6,13 +6,13 @@
  * Dead-lettered event.
  */
 export type DeadLetterResponse = {
-    id: string;
-    tenant_id: (string | null);
-    topic: string;
-    payload: Record<string, any>;
     error_message: string;
+    failed_at: string;
+    id: string;
+    payload: Record<string, any>;
     retry_count: number;
     status: string;
-    failed_at: string;
+    tenant_id: (string | null);
+    topic: string;
 };
 

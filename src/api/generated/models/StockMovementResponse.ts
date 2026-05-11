@@ -3,14 +3,14 @@
 /* tslint:disable */
 /* eslint-disable */
 export type StockMovementResponse = {
-    id: string;
-    tenant_id: string;
-    stock_item_id: string;
-    from_zone_id: (string | null);
-    to_zone_id: (string | null);
-    movement_type: string;
-    quantity: number;
     device_id: (string | null);
+    from_zone_id: (string | null);
+    id: string;
+    movement_type: string;
     occurred_at: string;
+    quantity: number;
+    stock_item_id: string;
+    tenant_id: string;
+    to_zone_id: (string | null);
 };
 

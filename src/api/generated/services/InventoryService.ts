@@ -17,180 +17,15 @@ import type { StockItemCreate } from '../models/StockItemCreate';
 import type { StockItemResponse } from '../models/StockItemResponse';
 import type { StockItemUpdate } from '../models/StockItemUpdate';
 import type { StockLevelRow } from '../models/StockLevelRow';
+import type { StockMovementCreate } from '../models/StockMovementCreate';
 import type { StockMovementResponse } from '../models/StockMovementResponse';
 import type { TagDataMappingCreate } from '../models/TagDataMappingCreate';
 import type { TagDataMappingResponse } from '../models/TagDataMappingResponse';
+import type { TagDataMappingUpdate } from '../models/TagDataMappingUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class InventoryService {
-    /**
-     * Create Product
-     * @param requestBody
-     * @returns ProductResponse Successful Response
-     * @throws ApiError
-     */
-    public static createProductProductsPost(
-        requestBody: ProductCreate,
-    ): CancelablePromise<ProductResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/products',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * List Products
-     * @param category
-     * @param q
-     * @param limit
-     * @param offset
-     * @returns ProductResponse Successful Response
-     * @throws ApiError
-     */
-    public static listProductsProductsGet(
-        category?: (string | null),
-        q?: (string | null),
-        limit: number = 100,
-        offset?: number,
-    ): CancelablePromise<Array<ProductResponse>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/products',
-            query: {
-                'category': category,
-                'q': q,
-                'limit': limit,
-                'offset': offset,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Get Product
-     * @param productId
-     * @returns ProductResponse Successful Response
-     * @throws ApiError
-     */
-    public static getProductProductsProductIdGet(
-        productId: string,
-    ): CancelablePromise<ProductResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/products/{product_id}',
-            path: {
-                'product_id': productId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Update Product
-     * @param productId
-     * @param requestBody
-     * @returns ProductResponse Successful Response
-     * @throws ApiError
-     */
-    public static updateProductProductsProductIdPatch(
-        productId: string,
-        requestBody: ProductUpdate,
-    ): CancelablePromise<ProductResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/products/{product_id}',
-            path: {
-                'product_id': productId,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Delete Product
-     * @param productId
-     * @returns void
-     * @throws ApiError
-     */
-    public static deleteProductProductsProductIdDelete(
-        productId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/products/{product_id}',
-            path: {
-                'product_id': productId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Create Lot
-     * @param productId
-     * @param requestBody
-     * @returns LotResponse Successful Response
-     * @throws ApiError
-     */
-    public static createLotProductsProductIdLotsPost(
-        productId: string,
-        requestBody: LotCreate,
-    ): CancelablePromise<LotResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/products/{product_id}/lots',
-            path: {
-                'product_id': productId,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * List Lots
-     * @param productId
-     * @param expiringWithinDays
-     * @param limit
-     * @param offset
-     * @returns LotResponse Successful Response
-     * @throws ApiError
-     */
-    public static listLotsProductsProductIdLotsGet(
-        productId: string,
-        expiringWithinDays?: (number | null),
-        limit: number = 100,
-        offset?: number,
-    ): CancelablePromise<Array<LotResponse>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/products/{product_id}/lots',
-            path: {
-                'product_id': productId,
-            },
-            query: {
-                'expiring_within_days': expiringWithinDays,
-                'limit': limit,
-                'offset': offset,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
     /**
      * List All Lots
      * Cross-product lot list. Used by the UI Lot Expiry Queue page.
@@ -212,6 +47,45 @@ export class InventoryService {
                 'expiring_within_days': expiringWithinDays,
                 'limit': limit,
                 'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Import Lots
+     * @param formData
+     * @returns ImportSummary Successful Response
+     * @throws ApiError
+     */
+    public static importLotsLotsImportPost(
+        formData: Body_import_lots_lots_import_post,
+    ): CancelablePromise<ImportSummary> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/lots/import',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Lot
+     * @param lotId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteLotLotsLotIdDelete(
+        lotId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/lots/{lot_id}',
+            path: {
+                'lot_id': lotId,
             },
             errors: {
                 422: `Validation Error`,
@@ -265,17 +139,184 @@ export class InventoryService {
         });
     }
     /**
-     * Create Stock Item
-     * @param requestBody
-     * @returns StockItemResponse Successful Response
+     * List Products
+     * @param category
+     * @param q
+     * @param limit
+     * @param offset
+     * @returns ProductResponse Successful Response
      * @throws ApiError
      */
-    public static createStockItemStockItemsPost(
-        requestBody: StockItemCreate,
-    ): CancelablePromise<StockItemResponse> {
+    public static listProductsProductsGet(
+        category?: (string | null),
+        q?: (string | null),
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<ProductResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/products',
+            query: {
+                'category': category,
+                'q': q,
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Product
+     * @param requestBody
+     * @returns ProductResponse Successful Response
+     * @throws ApiError
+     */
+    public static createProductProductsPost(
+        requestBody: ProductCreate,
+    ): CancelablePromise<ProductResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/stock-items',
+            url: '/products',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Import Products
+     * @param formData
+     * @returns ImportSummary Successful Response
+     * @throws ApiError
+     */
+    public static importProductsProductsImportPost(
+        formData: Body_import_products_products_import_post,
+    ): CancelablePromise<ImportSummary> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/products/import',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Product
+     * @param productId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteProductProductsProductIdDelete(
+        productId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/products/{product_id}',
+            path: {
+                'product_id': productId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Product
+     * @param productId
+     * @returns ProductResponse Successful Response
+     * @throws ApiError
+     */
+    public static getProductProductsProductIdGet(
+        productId: string,
+    ): CancelablePromise<ProductResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/products/{product_id}',
+            path: {
+                'product_id': productId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Update Product
+     * @param productId
+     * @param requestBody
+     * @returns ProductResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateProductProductsProductIdPatch(
+        productId: string,
+        requestBody: ProductUpdate,
+    ): CancelablePromise<ProductResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/products/{product_id}',
+            path: {
+                'product_id': productId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Lots
+     * @param productId
+     * @param expiringWithinDays
+     * @param limit
+     * @param offset
+     * @returns LotResponse Successful Response
+     * @throws ApiError
+     */
+    public static listLotsProductsProductIdLotsGet(
+        productId: string,
+        expiringWithinDays?: (number | null),
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<LotResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/products/{product_id}/lots',
+            path: {
+                'product_id': productId,
+            },
+            query: {
+                'expiring_within_days': expiringWithinDays,
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Lot
+     * @param productId
+     * @param requestBody
+     * @returns LotResponse Successful Response
+     * @throws ApiError
+     */
+    public static createLotProductsProductIdLotsPost(
+        productId: string,
+        requestBody: LotCreate,
+    ): CancelablePromise<LotResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/products/{product_id}/lots',
+            path: {
+                'product_id': productId,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -312,6 +353,74 @@ export class InventoryService {
                 'state': state,
                 'limit': limit,
                 'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Stock Item
+     * @param requestBody
+     * @returns StockItemResponse Successful Response
+     * @throws ApiError
+     */
+    public static createStockItemStockItemsPost(
+        requestBody: StockItemCreate,
+    ): CancelablePromise<StockItemResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/stock-items',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Import Stock Items
+     * @param formData
+     * @param preflight If true, return cross-tenant collision report and create nothing.
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static importStockItemsStockItemsImportPost(
+        formData: Body_import_stock_items_stock_items_import_post,
+        preflight: boolean = false,
+    ): CancelablePromise<(ImportSummary | CollisionPreflight)> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/stock-items/import',
+            query: {
+                'preflight': preflight,
+            },
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Stock Item
+     * @param stockItemId
+     * @param force
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteStockItemStockItemsStockItemIdDelete(
+        stockItemId: string,
+        force: boolean = false,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/stock-items/{stock_item_id}',
+            path: {
+                'stock_item_id': stockItemId,
+            },
+            query: {
+                'force': force,
             },
             errors: {
                 422: `Validation Error`,
@@ -424,17 +533,18 @@ export class InventoryService {
         });
     }
     /**
-     * Create Tag Data Mapping
+     * Create Stock Movement
+     * Create a manual stock adjustment (enter/exit/adjustment).
      * @param requestBody
-     * @returns TagDataMappingResponse Successful Response
+     * @returns StockMovementResponse Successful Response
      * @throws ApiError
      */
-    public static createTagDataMappingTagDataMappingsPost(
-        requestBody: TagDataMappingCreate,
-    ): CancelablePromise<TagDataMappingResponse> {
+    public static createStockMovementStockMovementsPost(
+        requestBody: StockMovementCreate,
+    ): CancelablePromise<StockMovementResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/tag-data-mappings',
+            url: '/stock-movements',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -466,6 +576,25 @@ export class InventoryService {
         });
     }
     /**
+     * Create Tag Data Mapping
+     * @param requestBody
+     * @returns TagDataMappingResponse Successful Response
+     * @throws ApiError
+     */
+    public static createTagDataMappingTagDataMappingsPost(
+        requestBody: TagDataMappingCreate,
+    ): CancelablePromise<TagDataMappingResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/tag-data-mappings',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Delete Tag Data Mapping
      * @param mappingId
      * @returns void
@@ -486,62 +615,24 @@ export class InventoryService {
         });
     }
     /**
-     * Import Products
-     * @param formData
-     * @returns ImportSummary Successful Response
+     * Update Tag Data Mapping
+     * @param mappingId
+     * @param requestBody
+     * @returns TagDataMappingResponse Successful Response
      * @throws ApiError
      */
-    public static importProductsProductsImportPost(
-        formData: Body_import_products_products_import_post,
-    ): CancelablePromise<ImportSummary> {
+    public static updateTagDataMappingTagDataMappingsMappingIdPatch(
+        mappingId: string,
+        requestBody: TagDataMappingUpdate,
+    ): CancelablePromise<TagDataMappingResponse> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/products/import',
-            formData: formData,
-            mediaType: 'multipart/form-data',
-            errors: {
-                422: `Validation Error`,
+            method: 'PATCH',
+            url: '/tag-data-mappings/{mapping_id}',
+            path: {
+                'mapping_id': mappingId,
             },
-        });
-    }
-    /**
-     * Import Lots
-     * @param formData
-     * @returns ImportSummary Successful Response
-     * @throws ApiError
-     */
-    public static importLotsLotsImportPost(
-        formData: Body_import_lots_lots_import_post,
-    ): CancelablePromise<ImportSummary> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/lots/import',
-            formData: formData,
-            mediaType: 'multipart/form-data',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Import Stock Items
-     * @param formData
-     * @param preflight If true, return cross-tenant collision report and create nothing.
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static importStockItemsStockItemsImportPost(
-        formData: Body_import_stock_items_stock_items_import_post,
-        preflight: boolean = false,
-    ): CancelablePromise<(ImportSummary | CollisionPreflight)> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/stock-items/import',
-            query: {
-                'preflight': preflight,
-            },
-            formData: formData,
-            mediaType: 'multipart/form-data',
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

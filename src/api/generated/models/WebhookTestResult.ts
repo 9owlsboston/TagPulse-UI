@@ -2,10 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type DeviceCertResponse = {
-    attached_at: string;
-    device_id: string;
-    subject: (string | null);
-    thumbprint: string;
+export type WebhookTestResult = {
+    error?: (string | null);
+    response_time_ms: number;
+    status_code: (number | null);
 };
 

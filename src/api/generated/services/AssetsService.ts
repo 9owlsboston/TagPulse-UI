@@ -19,25 +19,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class AssetsService {
     /**
-     * Create Asset
-     * @param requestBody
-     * @returns AssetResponse Successful Response
-     * @throws ApiError
-     */
-    public static createAssetAssetsPost(
-        requestBody: AssetCreate,
-    ): CancelablePromise<AssetResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/assets',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * List Assets
      * @param assetType
      * @param status
@@ -70,6 +51,25 @@ export class AssetsService {
         });
     }
     /**
+     * Create Asset
+     * @param requestBody
+     * @returns AssetResponse Successful Response
+     * @throws ApiError
+     */
+    public static createAssetAssetsPost(
+        requestBody: AssetCreate,
+    ): CancelablePromise<AssetResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/assets',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * List Assets Current Locations
      * Bulk current-location feed for the Assets list page.
      *
@@ -91,6 +91,27 @@ export class AssetsService {
             query: {
                 'limit': limit,
                 'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Retire Asset
+     * Soft-delete: marks status='retired'.
+     * @param assetId
+     * @returns void
+     * @throws ApiError
+     */
+    public static retireAssetAssetsAssetIdDelete(
+        assetId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/assets/{asset_id}',
+            path: {
+                'asset_id': assetId,
             },
             errors: {
                 422: `Validation Error`,
@@ -142,20 +163,24 @@ export class AssetsService {
         });
     }
     /**
-     * Retire Asset
-     * Soft-delete: marks status='retired'.
+     * List Bindings
      * @param assetId
-     * @returns void
+     * @param activeOnly
+     * @returns AssetTagBindingResponse Successful Response
      * @throws ApiError
      */
-    public static retireAssetAssetsAssetIdDelete(
+    public static listBindingsAssetsAssetIdBindingsGet(
         assetId: string,
-    ): CancelablePromise<void> {
+        activeOnly: boolean = false,
+    ): CancelablePromise<Array<AssetTagBindingResponse>> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/assets/{asset_id}',
+            method: 'GET',
+            url: '/assets/{asset_id}/bindings',
             path: {
                 'asset_id': assetId,
+            },
+            query: {
+                'active_only': activeOnly,
             },
             errors: {
                 422: `Validation Error`,
@@ -187,31 +212,6 @@ export class AssetsService {
         });
     }
     /**
-     * List Bindings
-     * @param assetId
-     * @param activeOnly
-     * @returns AssetTagBindingResponse Successful Response
-     * @throws ApiError
-     */
-    public static listBindingsAssetsAssetIdBindingsGet(
-        assetId: string,
-        activeOnly: boolean = false,
-    ): CancelablePromise<Array<AssetTagBindingResponse>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/assets/{asset_id}/bindings',
-            path: {
-                'asset_id': assetId,
-            },
-            query: {
-                'active_only': activeOnly,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Unbind Tag
      * @param assetId
      * @param bindingValue
@@ -235,68 +235,18 @@ export class AssetsService {
         });
     }
     /**
-     * Load Asset
-     * Attach `asset_id` to `body.parent_asset_id` (carrier). Idempotent.
+     * Get Asset Current Location
+     * Latest known position for the asset, sourced from RFID or external feeds.
      * @param assetId
-     * @param requestBody
-     * @returns AssetResponse Successful Response
+     * @returns AssetCurrentLocation Successful Response
      * @throws ApiError
      */
-    public static loadAssetAssetsAssetIdLoadPost(
+    public static getAssetCurrentLocationAssetsAssetIdCurrentLocationGet(
         assetId: string,
-        requestBody: AssetLoadRequest,
-    ): CancelablePromise<AssetResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/assets/{asset_id}/load',
-            path: {
-                'asset_id': assetId,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Unload Asset
-     * Detach `asset_id` from its current carrier. Idempotent.
-     * @param assetId
-     * @param requestBody
-     * @returns AssetResponse Successful Response
-     * @throws ApiError
-     */
-    public static unloadAssetAssetsAssetIdUnloadPost(
-        assetId: string,
-        requestBody: AssetUnloadRequest,
-    ): CancelablePromise<AssetResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/assets/{asset_id}/unload',
-            path: {
-                'asset_id': assetId,
-            },
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Get Manifest
-     * Return the recursive containment tree rooted at `asset_id`.
-     * @param assetId
-     * @returns ManifestResponse Successful Response
-     * @throws ApiError
-     */
-    public static getManifestAssetsAssetIdManifestGet(
-        assetId: string,
-    ): CancelablePromise<ManifestResponse> {
+    ): CancelablePromise<AssetCurrentLocation> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/assets/{asset_id}/manifest',
+            url: '/assets/{asset_id}/current-location',
             path: {
                 'asset_id': assetId,
             },
@@ -359,18 +309,43 @@ export class AssetsService {
         });
     }
     /**
-     * Get Asset Current Location
-     * Latest known position for the asset, sourced from RFID or external feeds.
+     * Load Asset
+     * Attach `asset_id` to `body.parent_asset_id` (carrier). Idempotent.
      * @param assetId
-     * @returns AssetCurrentLocation Successful Response
+     * @param requestBody
+     * @returns AssetResponse Successful Response
      * @throws ApiError
      */
-    public static getAssetCurrentLocationAssetsAssetIdCurrentLocationGet(
+    public static loadAssetAssetsAssetIdLoadPost(
         assetId: string,
-    ): CancelablePromise<AssetCurrentLocation> {
+        requestBody: AssetLoadRequest,
+    ): CancelablePromise<AssetResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/assets/{asset_id}/load',
+            path: {
+                'asset_id': assetId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Manifest
+     * Return the recursive containment tree rooted at `asset_id`.
+     * @param assetId
+     * @returns ManifestResponse Successful Response
+     * @throws ApiError
+     */
+    public static getManifestAssetsAssetIdManifestGet(
+        assetId: string,
+    ): CancelablePromise<ManifestResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/assets/{asset_id}/current-location',
+            url: '/assets/{asset_id}/manifest',
             path: {
                 'asset_id': assetId,
             },
@@ -406,6 +381,31 @@ export class AssetsService {
                 'until': until,
                 'limit': limit,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Unload Asset
+     * Detach `asset_id` from its current carrier. Idempotent.
+     * @param assetId
+     * @param requestBody
+     * @returns AssetResponse Successful Response
+     * @throws ApiError
+     */
+    public static unloadAssetAssetsAssetIdUnloadPost(
+        assetId: string,
+        requestBody: AssetUnloadRequest,
+    ): CancelablePromise<AssetResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/assets/{asset_id}/unload',
+            path: {
+                'asset_id': assetId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

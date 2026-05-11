@@ -6,12 +6,12 @@
  * Device health snapshot.
  */
 export type DeviceHealthSummary = {
-    device_id: string;
-    name: string;
-    status: string;
     connection_state: string;
-    last_seen: (string | null);
-    reads_last_hour: number;
+    device_id: string;
     error_rate: number;
+    last_seen: (string | null);
+    name: string;
+    reads_last_hour: number;
+    status: string;
 };
 

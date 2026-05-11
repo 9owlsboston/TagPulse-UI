@@ -6,7 +6,7 @@
  * Login with email and API key.
  */
 export type LoginRequest = {
-    email: string;
     api_key: string;
+    email: string;
 };
 
