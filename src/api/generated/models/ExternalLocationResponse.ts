@@ -6,16 +6,16 @@
  * Persisted external_locations row.
  */
 export type ExternalLocationResponse = {
-    id: string;
-    tenant_id: string;
+    accuracy_meters: (number | null);
     asset_id: string;
-    recorded_at: string;
+    heading_deg: (number | null);
+    id: string;
     latitude: number;
     longitude: number;
-    source: string;
-    accuracy_meters: (number | null);
-    speed_kph: (number | null);
-    heading_deg: (number | null);
     metadata?: (Record<string, any> | null);
+    recorded_at: string;
+    source: string;
+    speed_kph: (number | null);
+    tenant_id: string;
 };
 

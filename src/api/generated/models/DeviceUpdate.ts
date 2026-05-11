@@ -6,11 +6,11 @@
  * Partial update for an existing device — all fields optional.
  */
 export type DeviceUpdate = {
-    name?: (string | null);
-    device_type?: (string | null);
-    status?: (string | null);
-    metadata?: (Record<string, any> | null);
     configuration?: (Record<string, any> | null);
+    device_type?: (string | null);
     firmware_version?: (string | null);
+    metadata?: (Record<string, any> | null);
+    name?: (string | null);
+    status?: (string | null);
 };
 

@@ -6,15 +6,15 @@
  * User returned from the API.
  */
 export type UserResponse = {
-    id: string;
-    tenant_id: string;
+    api_key_created_at?: (string | null);
+    api_key_prefix: (string | null);
+    created_at: string;
     email: string;
+    id: string;
+    last_login: (string | null);
     name: string;
     role: string;
     status: string;
-    api_key_prefix: (string | null);
-    api_key_created_at?: (string | null);
-    created_at: string;
-    last_login: (string | null);
+    tenant_id: string;
 };
 

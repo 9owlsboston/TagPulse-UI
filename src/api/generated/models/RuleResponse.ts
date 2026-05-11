@@ -6,17 +6,17 @@
  * Rule returned from the API.
  */
 export type RuleResponse = {
-    id: string;
-    tenant_id: string;
-    name: string;
-    description: (string | null);
-    condition_type: string;
-    condition_config: Record<string, any>;
-    action_type: string;
     action_config: Record<string, any>;
-    scope_device_id: (string | null);
-    enabled: boolean;
+    action_type: string;
+    condition_config: Record<string, any>;
+    condition_type: string;
     created_at: string;
+    description: (string | null);
+    enabled: boolean;
+    id: string;
+    name: string;
+    scope_device_id: (string | null);
+    tenant_id: string;
     updated_at: string;
 };
 

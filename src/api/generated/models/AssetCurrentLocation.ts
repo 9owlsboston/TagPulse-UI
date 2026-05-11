@@ -11,12 +11,12 @@
  * fix). Whichever side is newer wins.
  */
 export type AssetCurrentLocation = {
-    asset_id: string;
-    recorded_at: string;
-    latitude: number;
-    longitude: number;
     accuracy_meters: (number | null);
+    asset_id: string;
     device_id: (string | null);
     latest_position_source: string;
+    latitude: number;
+    longitude: number;
+    recorded_at: string;
 };
 

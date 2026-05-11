@@ -6,6 +6,7 @@ import type { DeliveryResponse } from '../models/DeliveryResponse';
 import type { IntegrationCreate } from '../models/IntegrationCreate';
 import type { IntegrationResponse } from '../models/IntegrationResponse';
 import type { IntegrationUpdate } from '../models/IntegrationUpdate';
+import type { WebhookTestResult } from '../models/WebhookTestResult';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -37,6 +38,48 @@ export class IntegrationsService {
             url: '/integrations',
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Stream Events
+     * SSE endpoint — streams real-time events filtered by tenant and event type.
+     * @param events
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static streamEventsIntegrationsStreamGet(
+        events: string = 'tag_read.created,alert.triggered',
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/integrations/stream',
+            query: {
+                'events': events,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Integration
+     * Delete an integration target.
+     * @param integrationId
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteIntegrationIntegrationsIntegrationIdDelete(
+        integrationId: string,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/integrations/{integration_id}',
+            path: {
+                'integration_id': integrationId,
+            },
             errors: {
                 422: `Validation Error`,
             },
@@ -89,27 +132,6 @@ export class IntegrationsService {
         });
     }
     /**
-     * Delete Integration
-     * Delete an integration target.
-     * @param integrationId
-     * @returns void
-     * @throws ApiError
-     */
-    public static deleteIntegrationIntegrationsIntegrationIdDelete(
-        integrationId: string,
-    ): CancelablePromise<void> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/integrations/{integration_id}',
-            path: {
-                'integration_id': integrationId,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * List Deliveries
      * List delivery history for an integration target.
      * @param integrationId
@@ -139,20 +161,20 @@ export class IntegrationsService {
         });
     }
     /**
-     * Stream Events
-     * SSE endpoint — streams real-time events filtered by tenant and event type.
-     * @param events
-     * @returns any Successful Response
+     * Test Integration
+     * Send a test payload to a webhook integration (Sprint 27 C1).
+     * @param integrationId
+     * @returns WebhookTestResult Successful Response
      * @throws ApiError
      */
-    public static streamEventsIntegrationsStreamGet(
-        events: string = 'tag_read.created,alert.triggered',
-    ): CancelablePromise<any> {
+    public static testIntegrationIntegrationsIntegrationIdTestPost(
+        integrationId: string,
+    ): CancelablePromise<WebhookTestResult> {
         return __request(OpenAPI, {
-            method: 'GET',
-            url: '/integrations/stream',
-            query: {
-                'events': events,
+            method: 'POST',
+            url: '/integrations/{integration_id}/test',
+            path: {
+                'integration_id': integrationId,
             },
             errors: {
                 422: `Validation Error`,

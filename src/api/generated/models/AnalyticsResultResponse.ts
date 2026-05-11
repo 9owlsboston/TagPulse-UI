@@ -6,11 +6,11 @@
  * A single analytics result.
  */
 export type AnalyticsResultResponse = {
-    id: string;
-    module_name: string;
+    computed_at: string;
     device_id: string;
+    id: string;
     metric_name: string;
     metric_value: number;
-    computed_at: string;
+    module_name: string;
 };
 

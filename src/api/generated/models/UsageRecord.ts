@@ -6,10 +6,10 @@
  * A single usage record for a tenant.
  */
 export type UsageRecord = {
-    tenant_id: string;
-    usage_date: string;
     dimension: string;
     quantity: number;
+    tenant_id: string;
     unit: string;
+    usage_date: string;
 };
 

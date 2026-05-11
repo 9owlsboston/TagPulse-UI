@@ -11,30 +11,30 @@
  * :doc:`docs/design/rfid-tag-data-model` §D4.
  */
 export type TelemetryReadingResponse = {
-    id: string;
-    subject_kind: TelemetryReadingResponse.subject_kind;
-    subject_id: string;
     device_id: (string | null);
-    timestamp: string;
+    id: string;
+    metadata?: (Record<string, any> | null);
     metric_name: string;
     metric_value: number;
-    unit: (string | null);
     source: TelemetryReadingResponse.source;
-    metadata?: (Record<string, any> | null);
+    subject_id: string;
+    subject_kind: TelemetryReadingResponse.subject_kind;
+    timestamp: string;
+    unit: (string | null);
 };
 export namespace TelemetryReadingResponse {
+    export enum source {
+        DEVICE = 'device',
+        TAG = 'tag',
+        EXTERNAL = 'external',
+        DERIVED = 'derived',
+    }
     export enum subject_kind {
         DEVICE = 'device',
         ASSET = 'asset',
         LOT = 'lot',
         STOCK_ITEM = 'stock_item',
         ZONE = 'zone',
-    }
-    export enum source {
-        DEVICE = 'device',
-        TAG = 'tag',
-        EXTERNAL = 'external',
-        DERIVED = 'derived',
     }
 }
 

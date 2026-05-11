@@ -11,14 +11,14 @@
  * arbitrary intervals.
  */
 export type TelemetryAggregateBucket = {
-    subject_kind: TelemetryAggregateBucket.subject_kind;
-    subject_id: string;
-    metric_name: string;
-    bucket: string;
     avg_value: number;
-    min_value: number;
+    bucket: string;
     max_value: number;
+    metric_name: string;
+    min_value: number;
     sample_count: number;
+    subject_id: string;
+    subject_kind: TelemetryAggregateBucket.subject_kind;
 };
 export namespace TelemetryAggregateBucket {
     export enum subject_kind {

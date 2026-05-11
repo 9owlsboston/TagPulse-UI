@@ -7,11 +7,11 @@ import type { MetricDefinition } from './MetricDefinition';
  * Telemetry model definition returned from the API.
  */
 export type TelemetryModelResponse = {
-    id: string;
-    subject_kind?: TelemetryModelResponse.subject_kind;
-    device_type?: (string | null);
-    metrics: Array<MetricDefinition>;
     created_at: string;
+    device_type?: (string | null);
+    id: string;
+    metrics: Array<MetricDefinition>;
+    subject_kind?: TelemetryModelResponse.subject_kind;
     updated_at: string;
 };
 export namespace TelemetryModelResponse {

@@ -9,13 +9,13 @@ import type { Location } from './Location';
  */
 export type TagReadCreate = {
     device_id: string;
+    identity?: (Identity | null);
+    location?: (Location | null);
+    reader_antenna?: (number | null);
+    sensor_data?: (Record<string, any> | null);
+    signal_strength?: (number | null);
+    tag_data?: (Record<string, any> | null);
     tag_id?: (string | null);
     timestamp: string;
-    signal_strength?: (number | null);
-    sensor_data?: (Record<string, any> | null);
-    location?: (Location | null);
-    identity?: (Identity | null);
-    tag_data?: (Record<string, any> | null);
-    reader_antenna?: (number | null);
 };
 

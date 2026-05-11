@@ -6,8 +6,8 @@
  * User info returned in login response.
  */
 export type LoginUserInfo = {
-    id: string;
     email: string;
+    id: string;
     name: string;
     role: string;
     tenant_id: string;

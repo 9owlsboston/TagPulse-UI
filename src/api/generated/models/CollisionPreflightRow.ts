@@ -3,8 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export type CollisionPreflightRow = {
-    row: number;
     binding_value: string;
     other_tenant_collisions: number;
+    row: number;
 };
 

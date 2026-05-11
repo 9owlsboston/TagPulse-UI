@@ -11,9 +11,9 @@ import type { MetricDefinition } from './MetricDefinition';
  * enforces the same rule via ``ck_telemetry_models_device_type_required``.
  */
 export type TelemetryModelCreate = {
-    subject_kind?: TelemetryModelCreate.subject_kind;
     device_type?: (string | null);
     metrics: Array<MetricDefinition>;
+    subject_kind?: TelemetryModelCreate.subject_kind;
 };
 export namespace TelemetryModelCreate {
     export enum subject_kind {

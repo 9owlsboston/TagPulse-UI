@@ -4,7 +4,7 @@
 /* eslint-disable */
 import type { CollisionPreflightRow } from './CollisionPreflightRow';
 export type CollisionPreflight = {
-    rows_total: number;
     collisions: Array<CollisionPreflightRow>;
+    rows_total: number;
 };
 

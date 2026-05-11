@@ -6,10 +6,10 @@
  * Register a new device (reader).
  */
 export type DeviceCreate = {
-    name: string;
-    device_type?: string;
-    metadata?: (Record<string, any> | null);
     configuration?: (Record<string, any> | null);
+    device_type?: string;
     firmware_version?: (string | null);
+    metadata?: (Record<string, any> | null);
+    name: string;
 };
 

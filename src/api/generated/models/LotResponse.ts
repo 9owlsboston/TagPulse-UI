@@ -4,14 +4,14 @@
 /* eslint-disable */
 import type { LatestTelemetryEntry } from './LatestTelemetryEntry';
 export type LotResponse = {
+    created_at: string;
+    expires_at: (string | null);
     id: string;
-    tenant_id: string;
-    product_id: string;
+    latest_telemetry?: (Array<LatestTelemetryEntry> | null);
     lot_code: string;
     manufactured_at: (string | null);
-    expires_at: (string | null);
     metadata?: (Record<string, any> | null);
-    created_at: string;
-    latest_telemetry?: (Array<LatestTelemetryEntry> | null);
+    product_id: string;
+    tenant_id: string;
 };
 

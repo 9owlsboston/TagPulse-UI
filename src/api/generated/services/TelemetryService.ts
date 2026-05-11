@@ -13,26 +13,6 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class TelemetryService {
     /**
-     * Ingest Telemetry
-     * Ingest a batch of telemetry readings via HTTP push.
-     * @param requestBody
-     * @returns number Successful Response
-     * @throws ApiError
-     */
-    public static ingestTelemetryTelemetryPost(
-        requestBody: TelemetryBatch,
-    ): CancelablePromise<Record<string, number>> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/telemetry',
-            body: requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * List Telemetry
      * Query persisted telemetry readings with filters.
      * @param deviceId
@@ -59,6 +39,62 @@ export class TelemetryService {
                 'start': start,
                 'end': end,
                 'limit': limit,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Ingest Telemetry
+     * Ingest a batch of telemetry readings via HTTP push.
+     * @param requestBody
+     * @returns number Successful Response
+     * @throws ApiError
+     */
+    public static ingestTelemetryTelemetryPost(
+        requestBody: TelemetryBatch,
+    ): CancelablePromise<Record<string, number>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/telemetry',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * List Telemetry Aggregates
+     * Time-bucketed avg/min/max/count for a single subject + metric.
+     * @param subjectKind
+     * @param subjectId
+     * @param metricName
+     * @param bucketSeconds Bucket width in seconds. 60 / 3600 hit the continuous aggregates; other values are computed live via time_bucket() over the raw hypertable.
+     * @param start
+     * @param end
+     * @returns TelemetryAggregateBucket Successful Response
+     * @throws ApiError
+     */
+    public static listTelemetryAggregatesTelemetryAggregatesGet(
+        subjectKind: 'device' | 'asset' | 'lot' | 'stock_item' | 'zone',
+        subjectId: string,
+        metricName: string,
+        bucketSeconds: number,
+        start: string,
+        end: string,
+    ): CancelablePromise<Array<TelemetryAggregateBucket>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/telemetry/aggregates',
+            query: {
+                'subject_kind': subjectKind,
+                'subject_id': subjectId,
+                'metric_name': metricName,
+                'bucket_seconds': bucketSeconds,
+                'start': start,
+                'end': end,
             },
             errors: {
                 422: `Validation Error`,
@@ -129,42 +165,6 @@ export class TelemetryService {
                 'start': start,
                 'end': end,
                 'limit': limit,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * List Telemetry Aggregates
-     * Time-bucketed avg/min/max/count for a single subject + metric.
-     * @param subjectKind
-     * @param subjectId
-     * @param metricName
-     * @param bucketSeconds Bucket width in seconds. 60 / 3600 hit the continuous aggregates; other values are computed live via time_bucket() over the raw hypertable.
-     * @param start
-     * @param end
-     * @returns TelemetryAggregateBucket Successful Response
-     * @throws ApiError
-     */
-    public static listTelemetryAggregatesTelemetryAggregatesGet(
-        subjectKind: 'device' | 'asset' | 'lot' | 'stock_item' | 'zone',
-        subjectId: string,
-        metricName: string,
-        bucketSeconds: number,
-        start: string,
-        end: string,
-    ): CancelablePromise<Array<TelemetryAggregateBucket>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/telemetry/aggregates',
-            query: {
-                'subject_kind': subjectKind,
-                'subject_id': subjectId,
-                'metric_name': metricName,
-                'bucket_seconds': bucketSeconds,
-                'start': start,
-                'end': end,
             },
             errors: {
                 422: `Validation Error`,
