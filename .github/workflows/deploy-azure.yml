@@ -75,8 +75,8 @@ jobs:
     # slot automatically based on the PR event type; we just hand it the
     # built bundle. Bound to the `dev` GitHub Environment so it can read
     # the deploy-token secret that scripts/ui-cicd-setup.sh dev uploads.
-    # Until that script has been run for the first time, the secret is
-    # empty and the action skips gracefully via skip_deploy_on_missing_secrets.
+    # Until that script has been run, the secret is empty and the action
+    # short-circuits on its own (no input flag needed).
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     environment: dev
@@ -109,7 +109,6 @@ jobs:
           api_location: ""
           output_location: ""
           skip_app_build: true
-          skip_deploy_on_missing_secrets: true
           production_branch: main
 
   deploy:
