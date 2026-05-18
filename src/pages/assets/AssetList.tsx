@@ -77,11 +77,12 @@ export function AssetList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  // Sprint 37 row 3.3a — list-page Category filter. Backend GET /assets
-  // doesn't expose a category_id query param today, so this is client-side
-  // narrowing on the current page (parity with the last-seen RangePicker
-  // + the never-seen Checkbox above). Backend filter is tracked as a
-  // follow-up row in docs/design/reference-design-remediation.md.
+  // Sprint 38 row 3.3a — list-page Category filter. Backend `GET /assets`
+  // gained a `?category_id=` query param in Sprint 37 (#43, `2f732f1`),
+  // so this is now server-side: the value threads straight through
+  // `useAssets()` and is part of the react-query cache key, so toggling
+  // between Categories no longer fetches the unfiltered page and narrows
+  // in JS.
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [lastSeenRange, setLastSeenRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [neverSeenOnly, setNeverSeenOnly] = useState(false);
@@ -90,6 +91,7 @@ export function AssetList() {
   const { data, isLoading } = useAssets({
     q: search || undefined,
     status: status || undefined,
+    category_id: categoryId || undefined,
     labels: labelFilter,
   });
   const { data: locations } = useAssetsCurrentLocations();
@@ -134,12 +136,12 @@ export function AssetList() {
   }, [rows]);
 
   // Client-side narrow on top of the server-fetched page: applies the
-  // last-seen range, the "never seen" toggle, and the Category filter.
+  // last-seen range and the "never seen" toggle. Category filter is
+  // server-side (see `useAssets({ category_id })` above).
   const filteredRows = useMemo(() => {
     const from = lastSeenRange?.[0]?.valueOf();
     const to = lastSeenRange?.[1]?.valueOf();
     return rows.filter((r) => {
-      if (categoryId && r.category_id !== categoryId) return false;
       const loc = locationByAssetId.get(r.id);
       if (neverSeenOnly) return !loc;
       if (from || to) {
@@ -150,7 +152,7 @@ export function AssetList() {
       }
       return true;
     });
-  }, [rows, locationByAssetId, lastSeenRange, neverSeenOnly, categoryId]);
+  }, [rows, locationByAssetId, lastSeenRange, neverSeenOnly]);
 
   // ── Row-flash on new fix ──────────────────────────────────────────────
   // Track the previous `recorded_at` per asset; when it advances, flash the

@@ -22,6 +22,7 @@ export class AssetsService {
      * List Assets
      * @param assetType
      * @param status
+     * @param categoryId Sprint 37 — server-side filter on the ``assets.category_id`` FK (ADR 019). Combines with ``asset_type``/``status``/``q``/``labels[…]`` via AND.
      * @param q
      * @param limit
      * @param offset
@@ -31,6 +32,7 @@ export class AssetsService {
     public static listAssetsAssetsGet(
         assetType?: (string | null),
         status?: (string | null),
+        categoryId?: (string | null),
         q?: (string | null),
         limit: number = 100,
         offset?: number,
@@ -41,6 +43,7 @@ export class AssetsService {
             query: {
                 'asset_type': assetType,
                 'status': status,
+                'category_id': categoryId,
                 'q': q,
                 'limit': limit,
                 'offset': offset,

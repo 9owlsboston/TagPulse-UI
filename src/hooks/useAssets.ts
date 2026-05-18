@@ -26,6 +26,7 @@ import { encodeLabelFilter, isEmptyLabelFilter, type LabelFilter } from '@/lib/l
 export function useAssets(params?: {
   asset_type?: string;
   status?: string;
+  category_id?: string;
   q?: string;
   limit?: number;
   offset?: number;
@@ -40,6 +41,7 @@ export function useAssets(params?: {
         const extra: string[] = [];
         if (params?.asset_type) extra.push(`asset_type=${encodeURIComponent(params.asset_type)}`);
         if (params?.status) extra.push(`status=${encodeURIComponent(params.status)}`);
+        if (params?.category_id) extra.push(`category_id=${encodeURIComponent(params.category_id)}`);
         if (params?.q) extra.push(`q=${encodeURIComponent(params.q)}`);
         extra.push(`limit=${params?.limit ?? 100}`);
         extra.push(`offset=${params?.offset ?? 0}`);
@@ -49,6 +51,7 @@ export function useAssets(params?: {
       return AssetsService.listAssetsAssetsGet(
         params?.asset_type ?? undefined,
         params?.status ?? undefined,
+        params?.category_id ?? undefined,
         params?.q ?? undefined,
         params?.limit ?? 100,
         params?.offset ?? 0,

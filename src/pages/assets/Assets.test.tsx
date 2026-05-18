@@ -59,6 +59,45 @@ vi.mock('@/hooks/useDevices', () => ({
   }),
 }));
 
+// Sprint 38 — list-page Category filter is server-side, so populate the
+// catalog mock here so the <CategorySelect/> in the AssetList header has
+// options to choose from. Without this mock the dropdown opens empty.
+const categoriesReturn = vi.hoisted(() => ({
+  data: [
+    {
+      id: 'cat-pallet',
+      tenant_id: 't',
+      name: 'Pallet',
+      sku_upc: null,
+      description: null,
+      category_type: 'rti_container',
+      required_tags: 1,
+      created_at: '',
+      updated_at: '',
+    },
+    {
+      id: 'cat-drum',
+      tenant_id: 't',
+      name: 'Drum',
+      sku_upc: null,
+      description: null,
+      category_type: 'liquid_container',
+      required_tags: 1,
+      created_at: '',
+      updated_at: '',
+    },
+  ],
+  isLoading: false,
+}));
+
+vi.mock('@/hooks/useCategories', () => ({
+  useCategories: () => categoriesReturn,
+  useCategory: () => ({ data: undefined }),
+  useCreateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
 vi.mock('@/lib/auth', () => ({
   useAuth: () => ({ role: 'admin', tenantId: 't' }),
 }));
@@ -316,6 +355,37 @@ describe('Assets pages — label filter integration', () => {
     expect(useSitesMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ labels: {} }),
     );
+  });
+});
+
+// Sprint 38 row 3.3a — server-side `?category_id=` filter wiring.
+// Backend PR #43 (`2f732f1`) added the query param; the UI now passes
+// it straight through `useAssets()` instead of narrowing client-side.
+describe('AssetList — Category filter is server-side', () => {
+  it('initial render calls useAssets with category_id: undefined', () => {
+    render(wrap(<AssetList />));
+    expect(useAssetsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ category_id: undefined }),
+    );
+  });
+
+  it('picking a Category in the header re-calls useAssets with that uuid', async () => {
+    render(wrap(<AssetList />));
+
+    // Open the Category filter Select and pick the "Pallet" option.
+    const select = screen
+      .getByTestId('asset-list-category-filter')
+      .querySelector('.ant-select-selector') as HTMLElement;
+    fireEvent.mouseDown(select);
+
+    await waitFor(() => screen.getByText('Pallet'));
+    fireEvent.click(screen.getByText('Pallet'));
+
+    await waitFor(() => {
+      expect(useAssetsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category_id: 'cat-pallet' }),
+      );
+    });
   });
 });
 
