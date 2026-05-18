@@ -433,7 +433,7 @@ export function SitesZones() {
         onOk={() => siteForm.submit()}
         confirmLoading={createSite.isPending}
         width={680}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={siteForm}
@@ -533,7 +533,7 @@ export function SitesZones() {
         onOk={() => editSiteForm.submit()}
         confirmLoading={updateSite.isPending}
         width={680}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editSiteForm} layout="vertical" onFinish={onEditSite}>
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
@@ -572,7 +572,7 @@ export function SitesZones() {
         }}
         onOk={() => editZoneForm.submit()}
         confirmLoading={updateZone.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editZoneForm} layout="vertical" onFinish={onEditZone}>
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>

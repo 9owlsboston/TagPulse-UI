@@ -78,7 +78,7 @@ export function ProductList() {
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={createProduct.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<ProductCreate> form={form} layout="vertical" onFinish={onCreate} initialValues={{ unit: 'each' as ProductCreate['unit'] }}>
           <Form.Item name="sku" label="SKU" rules={[{ required: true, max: 64 }]}>

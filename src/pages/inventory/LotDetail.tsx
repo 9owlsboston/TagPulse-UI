@@ -217,7 +217,7 @@ export function LotDetail() {
         onOk={() => form.submit()}
         onCancel={() => setEditOpen(false)}
         confirmLoading={updateLot.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<LotEditFormValues> form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item name="lot_code" label="Lot code" rules={[{ required: true, max: 64 }]}>

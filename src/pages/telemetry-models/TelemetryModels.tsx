@@ -204,7 +204,7 @@ export function TelemetryModels() {
         }}
         onOk={() => editForm.submit()}
         confirmLoading={updateModel.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={720}
       >
         <Form form={editForm} layout="vertical" onFinish={onEdit}>

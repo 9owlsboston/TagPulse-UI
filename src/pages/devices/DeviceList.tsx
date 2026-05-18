@@ -208,7 +208,7 @@ export function DeviceList() {
         confirmLoading={reassignBusy}
         okButtonProps={{ disabled: !targetZoneId }}
         okText={`Move ${selectedIds.length} device(s)`}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           type="info"

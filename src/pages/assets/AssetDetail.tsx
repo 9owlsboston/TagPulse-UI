@@ -494,7 +494,7 @@ export function AssetDetail() {
         onCancel={() => setEditOpen(false)}
         onOk={() => editForm.submit()}
         confirmLoading={updateAsset.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={600}
       >
         <Form form={editForm} layout="vertical" onFinish={onEditAsset}>

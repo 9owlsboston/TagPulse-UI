@@ -201,7 +201,7 @@ export function StockLevels() {
         onOk={() => adjustForm.submit()}
         onCancel={() => setAdjustRow(null)}
         confirmLoading={createMovement.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<AdjustFormValues> form={adjustForm} layout="vertical" onFinish={onAdjust}>
           <Form.Item name="movement_type" label="Movement type" rules={[{ required: true }]}>

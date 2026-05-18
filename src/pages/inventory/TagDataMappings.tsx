@@ -154,7 +154,7 @@ export function TagDataMappings() {
         onOk={() => form.submit()}
         onCancel={() => setOpen(false)}
         confirmLoading={create.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<FormValues>
           form={form}
@@ -198,7 +198,7 @@ export function TagDataMappings() {
         onOk={() => editForm.submit()}
         onCancel={() => setEditRecord(null)}
         confirmLoading={updateMapping.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<EditFormValues> form={editForm} layout="vertical" onFinish={onEditFinish}>
           <Form.Item name="tag_data_key" label="Tag-data key" rules={[{ required: true, max: 64 }]}>

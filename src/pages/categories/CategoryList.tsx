@@ -253,7 +253,7 @@ export function CategoryList() {
         }}
         onOk={() => createForm.submit()}
         confirmLoading={createCategory.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={createForm}
@@ -308,7 +308,7 @@ export function CategoryList() {
         }}
         onOk={() => editForm.submit()}
         confirmLoading={updateCategory.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={editForm} layout="vertical" onFinish={onEdit}>
           <Form.Item
