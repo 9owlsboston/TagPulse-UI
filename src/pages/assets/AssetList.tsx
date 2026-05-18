@@ -26,6 +26,8 @@ import {
   attachPendingLabels,
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
+import { LabelFilterStrip } from '@/components/LabelFilterStrip';
+import type { LabelFilter } from '@/lib/labelFilter';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLocation';
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
@@ -83,9 +85,12 @@ export function AssetList() {
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [lastSeenRange, setLastSeenRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [neverSeenOnly, setNeverSeenOnly] = useState(false);
+  // Sprint 37 row 3.9b — label filter strip (backend deep-object query).
+  const [labelFilter, setLabelFilter] = useState<LabelFilter>({});
   const { data, isLoading } = useAssets({
     q: search || undefined,
     status: status || undefined,
+    labels: labelFilter,
   });
   const { data: locations } = useAssetsCurrentLocations();
   const { data: tenant } = useTenantConfig();
@@ -339,6 +344,13 @@ export function AssetList() {
             </Button>
           )}
         </Space>
+        <div style={{ marginBottom: 16 }}>
+          <LabelFilterStrip
+            entityType="asset"
+            value={labelFilter}
+            onChange={setLabelFilter}
+          />
+        </div>
         <Table<AssetResponse>
           rowKey="id"
           loading={isLoading}

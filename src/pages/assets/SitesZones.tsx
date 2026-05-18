@@ -42,6 +42,8 @@ import {
   attachPendingLabels,
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
+import { LabelFilterStrip } from '@/components/LabelFilterStrip';
+import type { LabelFilter } from '@/lib/labelFilter';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
@@ -54,8 +56,11 @@ const { Title, Text } = Typography;
 
 export function SitesZones() {
   const { modal, message } = App.useApp();
-  const { data: sites, isLoading: sitesLoading } = useSites();
-  const { data: zones, isLoading: zonesLoading } = useZones();
+  // Sprint 37 row 3.9b — site + zone label filter strips.
+  const [siteLabelFilter, setSiteLabelFilter] = useState<LabelFilter>({});
+  const [zoneLabelFilter, setZoneLabelFilter] = useState<LabelFilter>({});
+  const { data: sites, isLoading: sitesLoading } = useSites({ labels: siteLabelFilter });
+  const { data: zones, isLoading: zonesLoading } = useZones(undefined, { labels: zoneLabelFilter });
   const { data: devices } = useDevices();
   const createSite = useCreateSite();
   const createZone = useCreateZone();
@@ -433,6 +438,21 @@ export function SitesZones() {
       </div>
 
       <Card loading={sitesLoading || zonesLoading}>
+        {/* Sprint 37 row 3.9b — label filter strips. */}
+        <Space direction="vertical" size={4} style={{ width: '100%', marginBottom: 12 }}>
+          <LabelFilterStrip
+            entityType="site"
+            value={siteLabelFilter}
+            onChange={setSiteLabelFilter}
+            prefix={<Text type="secondary" style={{ fontSize: 12 }}>Site labels:</Text>}
+          />
+          <LabelFilterStrip
+            entityType="zone"
+            value={zoneLabelFilter}
+            onChange={setZoneLabelFilter}
+            prefix={<Text type="secondary" style={{ fontSize: 12 }}>Zone labels:</Text>}
+          />
+        </Space>
         <Tabs
           activeKey={activeTab}
           onChange={(k) => setActiveTab(k as 'site' | 'transporter')}

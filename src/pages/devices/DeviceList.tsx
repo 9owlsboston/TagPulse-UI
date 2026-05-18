@@ -17,6 +17,8 @@ import { useAuth } from '@/lib/auth';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useUpdateZone, useZones } from '@/hooks/useAssets';
+import { LabelFilterStrip } from '@/components/LabelFilterStrip';
+import type { LabelFilter } from '@/lib/labelFilter';
 import type { DeviceResponse } from '@/types';
 
 // Sprint 28 G5 — cap parallel bulk reassign per page (Sprint 27 C6 pattern).
@@ -72,7 +74,9 @@ export function DeviceList() {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [targetZoneId, setTargetZoneId] = useState<string | null>(null);
   const [reassignBusy, setReassignBusy] = useState(false);
-  const { data, isLoading } = useDevices({ status: status || undefined });
+  // Sprint 37 row 3.9b — device label filter strip.
+  const [labelFilter, setLabelFilter] = useState<LabelFilter>({});
+  const { data, isLoading } = useDevices({ status: status || undefined, labels: labelFilter });
   const { data: zones } = useZones();
   const updateZone = useUpdateZone();
   const canEdit = useCanPerform('editor');
@@ -182,6 +186,13 @@ export function DeviceList() {
           </Button>
         )}
       </Space>
+      <div style={{ marginBottom: 16 }}>
+        <LabelFilterStrip
+          entityType="device"
+          value={labelFilter}
+          onChange={setLabelFilter}
+        />
+      </div>
       <Table
         rowKey="id"
         columns={columns}
