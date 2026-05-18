@@ -62,7 +62,26 @@ export default defineConfig({
             return 'appinsights';
           }
           if (id.includes('node_modules/@ant-design/icons')) {
-            return 'antd-icons';
+            // **Critical**: must live in the same chunk as `antd-core`.
+            // `@ant-design/icons` does
+            //   import { blue } from '@ant-design/colors';
+            //   setTwoToneColor(blue.primary);
+            // at module-init time, and the `blue` palette comes from
+            // `@ant-design/colors` which lives inside antd-core. If
+            // icons are in a separate chunk, the cycle
+            //   antd-core → antd-icons → antd-core's `blue` (.primary)
+            // puts the export in the TDZ window when an antd-core
+            // component (e.g. anything that eagerly references an
+            // icon) triggers antd-icons evaluation first. Production
+            // symptom: `Uncaught TypeError: Cannot read properties of
+            // undefined (reading 'primary')` at
+            // `antd-icons-<hash>.js` (Sprint 36 Phase E hotfix #3).
+            // Bundling icons into antd-core keeps the palette binding
+            // intra-chunk so Rollup wraps both sides into the same
+            // IIFE and the TDZ window disappears. Tree-shaking of
+            // unused icons still works because each `@ant-design/icons/es/icons/<Name>`
+            // is its own ES module.
+            return 'antd-core';
           }
           // Split AntD components: every component that is meaningfully
           // sized (>~3 KB gz) gets its own chunk so it caches
