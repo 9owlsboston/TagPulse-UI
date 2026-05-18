@@ -48,6 +48,7 @@ const CategoryList = lazy(() => import('@/pages/categories/CategoryList').then((
 const MapPage = lazy(() => import('@/pages/map/MapPage').then((m) => ({ default: m.MapPage })));
 const TenantSettings = lazy(() => import('@/pages/admin/TenantSettings').then((m) => ({ default: m.TenantSettings })));
 const Branding = lazy(() => import('@/pages/admin/Branding').then((m) => ({ default: m.Branding })));
+const LabelManagement = lazy(() => import('@/pages/admin/LabelManagement').then((m) => ({ default: m.LabelManagement })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -142,6 +143,7 @@ export function AppRoutes() {
               <Route path="/inventory/csv-import" element={<CsvImport />} />
               <Route path="/admin/tenant" element={<TenantSettings />} />
               <Route path="/admin/branding" element={<Branding />} />
+              <Route path="/admin/labels" element={<LabelManagement />} />
               <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
               <Route path="/admin/usage" element={<UsageDashboard />} />
               <Route path="/admin/users" element={<UserList />} />

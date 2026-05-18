@@ -143,6 +143,18 @@
             "title": "Asset Type",
             "type": "string"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
           "external_ref": {
             "anyOf": [
               {
@@ -417,6 +429,18 @@
             "title": "Asset Type",
             "type": "string"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -650,6 +674,18 @@
             ],
             "title": "Asset Type"
           },
+          "category_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
           "external_ref": {
             "anyOf": [
               {
@@ -722,8 +758,8 @@
       "Body_import_lots_lots_import_post": {
         "properties": {
           "upload": {
+            "contentMediaType": "application/octet-stream",
             "description": "CSV: product_sku,lot_code,manufactured_at,expires_at",
-            "format": "binary",
             "title": "Upload",
             "type": "string"
           }
@@ -737,8 +773,8 @@
       "Body_import_products_products_import_post": {
         "properties": {
           "upload": {
+            "contentMediaType": "application/octet-stream",
             "description": "CSV: sku,gtin,name,category,unit",
-            "format": "binary",
             "title": "Upload",
             "type": "string"
           }
@@ -752,8 +788,8 @@
       "Body_import_stock_items_stock_items_import_post": {
         "properties": {
           "upload": {
+            "contentMediaType": "application/octet-stream",
             "description": "CSV: product_sku,lot_code,binding_value,binding_kind",
-            "format": "binary",
             "title": "Upload",
             "type": "string"
           }
@@ -762,6 +798,195 @@
           "upload"
         ],
         "title": "Body_import_stock_items_stock_items_import_post",
+        "type": "object"
+      },
+      "CategoryCreate": {
+        "description": "Create a category.",
+        "properties": {
+          "category_type": {
+            "enum": [
+              "liquid_container",
+              "reference_tag",
+              "rti_container",
+              "object"
+            ],
+            "title": "Category Type",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "required_tags": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Required Tags",
+            "type": "integer"
+          },
+          "sku_upc": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku Upc"
+          }
+        },
+        "required": [
+          "name",
+          "category_type"
+        ],
+        "title": "CategoryCreate",
+        "type": "object"
+      },
+      "CategoryResponse": {
+        "description": "Persisted category row.",
+        "properties": {
+          "category_type": {
+            "enum": [
+              "liquid_container",
+              "reference_tag",
+              "rti_container",
+              "object"
+            ],
+            "title": "Category Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "required_tags": {
+            "title": "Required Tags",
+            "type": "integer"
+          },
+          "sku_upc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku Upc"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "name",
+          "sku_upc",
+          "description",
+          "category_type",
+          "required_tags",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CategoryResponse",
+        "type": "object"
+      },
+      "CategoryUpdate": {
+        "description": "Patch a category.\n\n``category_type`` is intentionally absent \u2014 it is immutable after\ncreate per ADR 019. Attempts to send it must be rejected by the\nAPI layer (Pydantic will silently drop it without ``model_extra``\nenabled, so we surface a 400 there instead).",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "required_tags": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Tags"
+          },
+          "sku_upc": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku Upc"
+          }
+        },
+        "title": "CategoryUpdate",
         "type": "object"
       },
       "CollisionPreflight": {
@@ -1933,6 +2158,267 @@
         "title": "IntegrationUpdate",
         "type": "object"
       },
+      "LabelAssociationCreate": {
+        "description": "Associate a labeled value to an entity.\n\nPer ADR 020 \u00a7\"API path deviation\", the caller identifies the\nlabel by ``key`` (scoped to the URL's entity_type); the\nrepository looks up the catalog row. A 404 is returned if no\nmatching catalog row exists \u2014 there is no auto-create.",
+        "properties": {
+          "key": {
+            "maxLength": 24,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9_.+$]{3,24}$",
+            "title": "Key",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._-]{1,64}$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "LabelAssociationCreate",
+        "type": "object"
+      },
+      "LabelAssociationResponse": {
+        "description": "A label-value pair associated to a specific entity.\n\nJoins the ``entity_labels`` row with its parent ``labels`` row so\nthe client gets the displayable ``key`` / ``color`` along with the\npolymorphic ``entity_id`` and the stored ``value``.",
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "entity_id": {
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "enum": [
+              "asset",
+              "site",
+              "zone",
+              "device",
+              "category"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label_id": {
+            "format": "uuid",
+            "title": "Label Id",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label_id",
+          "entity_id",
+          "entity_type",
+          "key",
+          "value",
+          "color",
+          "created_by",
+          "created_at"
+        ],
+        "title": "LabelAssociationResponse",
+        "type": "object"
+      },
+      "LabelCreate": {
+        "description": "Create a label catalog row.",
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "entity_type": {
+            "enum": [
+              "asset",
+              "site",
+              "zone",
+              "device",
+              "category"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "key": {
+            "maxLength": 24,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9_.+$]{3,24}$",
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_type",
+          "key"
+        ],
+        "title": "LabelCreate",
+        "type": "object"
+      },
+      "LabelResponse": {
+        "description": "Persisted label catalog row.",
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "entity_type": {
+            "enum": [
+              "asset",
+              "site",
+              "zone",
+              "device",
+              "category"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "entity_type",
+          "key",
+          "color",
+          "created_by",
+          "updated_by",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LabelResponse",
+        "type": "object"
+      },
+      "LabelUpdate": {
+        "description": "Patch a label catalog row.\n\n``entity_type`` is intentionally absent \u2014 it is immutable after\ncreate per ADR 020. The router separately rejects any smuggled\nattempt with a 400. Pydantic drops unknown fields by default so\na benign omission is silent; the explicit router guard surfaces\nthe policy.",
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "maxLength": 24,
+                "minLength": 3,
+                "pattern": "^[A-Za-z0-9_.+$]{3,24}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          }
+        },
+        "title": "LabelUpdate",
+        "type": "object"
+      },
       "LatestTelemetryEntry": {
         "description": "Most-recent reading for a single metric on a subject.\n\nEmbedded on ``GET /assets/{id}`` and ``GET /lots/{id}`` (capped at\nthe 5 most-recently-written metrics per subject) so callers do not\nhave to issue a follow-up ``/telemetry/readings?...&limit=1`` for\neach metric they want to display.",
         "properties": {
@@ -2766,6 +3252,58 @@
         "title": "ProvisionStatusResponse",
         "type": "object"
       },
+      "PublicBranding": {
+        "description": "Login-page-facing branding payload. Includes ``name`` so the\nlogin UI can fall back gracefully when ``display_name`` is unset.",
+        "properties": {
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "PublicBranding",
+        "type": "object"
+      },
       "ReadsPerHour": {
         "description": "Aggregation: tag read count per hour bucket.",
         "properties": {
@@ -3096,11 +3634,70 @@
             ],
             "title": "Address"
           },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "default_timezone": {
             "default": "UTC",
             "maxLength": 64,
             "title": "Default Timezone",
             "type": "string"
+          },
+          "kind": {
+            "default": "site",
+            "enum": [
+              "site",
+              "transporter"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": -90.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": -180.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "metadata": {
             "anyOf": [
@@ -3119,6 +3716,54 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "street_line1": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line1"
+          },
+          "street_line2": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line2"
           }
         },
         "required": [
@@ -3141,6 +3786,28 @@
             ],
             "title": "Address"
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -3154,6 +3821,36 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "site",
+              "transporter"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "metadata": {
             "anyOf": [
@@ -3171,6 +3868,50 @@
             "title": "Name",
             "type": "string"
           },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "street_line1": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line1"
+          },
+          "street_line2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line2"
+          },
           "tenant_id": {
             "format": "uuid",
             "title": "Tenant Id",
@@ -3186,7 +3927,16 @@
           "id",
           "tenant_id",
           "name",
+          "kind",
           "address",
+          "street_line1",
+          "street_line2",
+          "city",
+          "region",
+          "postal_code",
+          "country",
+          "latitude",
+          "longitude",
           "default_timezone",
           "created_at",
           "updated_at"
@@ -3195,7 +3945,7 @@
         "type": "object"
       },
       "SiteUpdate": {
-        "description": "Patch a site.",
+        "description": "Patch a site.\n\nAll fields optional. ``kind`` is mutable (a transporter that becomes\npermanently parked can be reclassified as a site, and vice-versa).\n\nGeolocation paired-validation only fires when *both* fields appear\nin the patch payload \u2014 the underlying DB CHECK enforces the\ninvariant at write time for partial updates.\n\nFields backed by NOT-NULL DB columns (``name``, ``kind``,\n``default_timezone``) are ``Optional`` only for *omission* from the\npatch payload. Explicit ``null`` for any of them is rejected at\n422 so the DB never sees the NULL and returns 500.",
         "properties": {
           "address": {
             "anyOf": [
@@ -3208,6 +3958,30 @@
             ],
             "title": "Address"
           },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "default_timezone": {
             "anyOf": [
               {
@@ -3219,6 +3993,47 @@
               }
             ],
             "title": "Default Timezone"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "site",
+                  "transporter"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": -90.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": -180.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "metadata": {
             "anyOf": [
@@ -3244,6 +4059,54 @@
               }
             ],
             "title": "Name"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "street_line1": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line1"
+          },
+          "street_line2": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street Line2"
           }
         },
         "title": "SiteUpdate",
@@ -4762,6 +5625,93 @@
         "title": "TelemetryResponse",
         "type": "object"
       },
+      "TenantBranding": {
+        "description": "Per-tenant branding overrides. ``None`` on any field means\n\"no override; UI uses the system default\".",
+        "properties": {
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Primary brand colour as #RRGGBB hex.",
+            "title": "Brand Color"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Friendly name shown in the Sider/login in place of tenants.name.",
+            "title": "Display Name"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "HTTPS URL to the logo image hosted by the operator.",
+            "title": "Logo Url"
+          }
+        },
+        "title": "TenantBranding",
+        "type": "object"
+      },
+      "TenantBrandingUpdate": {
+        "description": "Admin payload. PATCH semantics: missing fields keep their\ncurrent value, explicit ``null`` clears the override.",
+        "properties": {
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          }
+        },
+        "title": "TenantBrandingUpdate",
+        "type": "object"
+      },
       "TenantConfig": {
         "description": "Read-only view of tenant-scoped feature flags.",
         "properties": {
@@ -5030,7 +5980,7 @@
           },
           "role": {
             "default": "viewer",
-            "pattern": "^(admin|editor|viewer)$",
+            "pattern": "^(admin|editor|viewer|installer)$",
             "title": "Role",
             "type": "string"
           }
@@ -5145,7 +6095,7 @@
           "role": {
             "anyOf": [
               {
-                "pattern": "^(admin|editor|viewer)$",
+                "pattern": "^(admin|editor|viewer|installer)$",
                 "type": "string"
               },
               {
@@ -5172,6 +6122,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -5610,9 +6567,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Audit Logs",
@@ -5679,9 +6633,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Dead Letters",
@@ -5724,9 +6675,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Abandon Dead Letter",
@@ -5767,9 +6715,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -5822,9 +6767,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -5904,9 +6846,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Get Usage",
@@ -5982,9 +6921,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6103,9 +7039,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Alerts",
@@ -6146,9 +7079,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6267,9 +7197,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Get Read Frequency",
@@ -6383,9 +7310,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Assets",
@@ -6428,9 +7352,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6499,9 +7420,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Assets Current Locations",
@@ -6542,9 +7460,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6591,9 +7506,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6650,9 +7562,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6717,9 +7626,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Bindings",
@@ -6776,9 +7682,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Bind Tag",
@@ -6829,9 +7732,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Unbind Tag",
@@ -6879,9 +7779,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -6941,9 +7838,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7021,9 +7915,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List External Positions",
@@ -7083,9 +7974,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Load Asset",
@@ -7133,9 +8021,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7223,9 +8108,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Get Asset Path",
@@ -7285,9 +8167,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Unload Asset",
@@ -7335,6 +8214,322 @@
         "summary": "Login",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/branding/{slug}": {
+      "get": {
+        "description": "Public branding lookup for the login page (no auth).\n\nReturns the tenant's display name + logo URL + brand colour so the\nlogin UI can skin itself before the user has credentials. 404 if\nthe slug is unknown.",
+        "operationId": "get_public_branding_branding__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBranding"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Public Branding",
+        "tags": [
+          "tenant"
+        ]
+      }
+    },
+    "/categories": {
+      "get": {
+        "description": "List the calling tenant's categories.",
+        "operationId": "list_categories_categories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  },
+                  "title": "Response List Categories Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Categories",
+        "tags": [
+          "categories"
+        ]
+      },
+      "post": {
+        "description": "Create a new category (editor / admin). ``category_type`` is set here and\ncannot be changed later.",
+        "operationId": "create_category_categories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Create Category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/categories/{category_id}": {
+      "delete": {
+        "description": "Delete a category. Admin only. 409 if any asset still\nreferences it; the payload includes the count so the UI can show\na guarded confirmation flow.",
+        "operationId": "delete_category_categories__category_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Delete Category",
+        "tags": [
+          "categories"
+        ]
+      },
+      "get": {
+        "description": "Get one category by id.",
+        "operationId": "get_category_categories__category_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Category",
+        "tags": [
+          "categories"
+        ]
+      },
+      "patch": {
+        "description": "Partial update. ``category_type`` is immutable \u2014 any attempt to\nchange it is rejected with 400.",
+        "operationId": "update_category_categories__category_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Update Category",
+        "tags": [
+          "categories"
         ]
       }
     },
@@ -7390,9 +8585,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Device Health",
@@ -7440,9 +8632,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7543,9 +8732,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Devices",
@@ -7589,9 +8775,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7641,9 +8824,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7703,9 +8883,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Update Device",
@@ -7746,9 +8923,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7810,9 +8984,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Attach Device Cert",
@@ -7862,9 +9033,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Decommission Device",
@@ -7905,9 +9073,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -7957,9 +9122,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8178,9 +9340,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Integrations",
@@ -8224,9 +9383,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8276,9 +9432,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Stream Events",
@@ -8319,9 +9472,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8369,9 +9519,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8429,9 +9576,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8510,9 +9654,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Deliveries",
@@ -8562,14 +9703,291 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Test Integration",
         "tags": [
           "integrations"
+        ]
+      }
+    },
+    "/labels": {
+      "get": {
+        "description": "List the calling tenant's label catalog rows.",
+        "operationId": "list_labels_labels_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "entity_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "asset",
+                    "site",
+                    "zone",
+                    "device",
+                    "category"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LabelResponse"
+                  },
+                  "title": "Response List Labels Labels Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Labels",
+        "tags": [
+          "labels"
+        ]
+      },
+      "post": {
+        "description": "Create a new label catalog row. ``entity_type`` is fixed here\nand cannot be changed later.",
+        "operationId": "create_label_labels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Create Label",
+        "tags": [
+          "labels"
+        ]
+      }
+    },
+    "/labels/{label_id}": {
+      "delete": {
+        "description": "Delete a label. Admin only. 409 if any entity still references\nit; payload includes ``association_count`` so the UI can render\na guarded confirmation flow (\"This label is in use on N items.\nDetach them first.\").",
+        "operationId": "delete_label_labels__label_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "label_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Label Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Delete Label",
+        "tags": [
+          "labels"
+        ]
+      },
+      "get": {
+        "description": "Get one label by id.",
+        "operationId": "get_label_labels__label_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "label_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Label Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Label",
+        "tags": [
+          "labels"
+        ]
+      },
+      "patch": {
+        "description": "Partial update. ``entity_type`` is immutable per ADR 020.\n\nPydantic drops unknown fields by default; the explicit check\nagainst the raw payload defends against future schema changes\nthat might inadvertently re-add the field.",
+        "operationId": "update_label_labels__label_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "label_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Label Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Update Label",
+        "tags": [
+          "labels"
         ]
       }
     },
@@ -8648,9 +10066,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List All Lots",
@@ -8697,9 +10112,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Import Lots",
@@ -8739,9 +10151,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8789,9 +10198,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8848,9 +10254,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -8970,9 +10373,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Products",
@@ -9015,9 +10415,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9066,9 +10463,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Import Products",
@@ -9108,9 +10502,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9157,9 +10548,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9216,9 +10604,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9313,9 +10698,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Lots",
@@ -9372,9 +10754,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Lot",
@@ -9405,9 +10784,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9457,9 +10833,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9515,9 +10888,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Rules",
@@ -9563,9 +10933,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Rule",
@@ -9606,9 +10973,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9656,9 +11020,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9716,9 +11077,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9786,9 +11144,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Sites",
@@ -9833,9 +11188,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Site",
@@ -9875,9 +11227,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9924,9 +11273,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -9983,9 +11329,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10120,9 +11463,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Stock Items",
@@ -10165,9 +11505,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10238,9 +11575,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Import Stock Items",
@@ -10292,9 +11626,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Delete Stock Item",
@@ -10339,9 +11670,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10398,9 +11726,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10477,9 +11802,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10632,9 +11954,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Stock Movements",
@@ -10678,9 +11997,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10758,9 +12074,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Tag Data Mappings",
@@ -10805,9 +12118,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Tag Data Mapping",
@@ -10847,9 +12157,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -10906,9 +12213,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11080,9 +12384,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Query Tag Reads",
@@ -11126,9 +12427,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11184,9 +12482,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11281,9 +12576,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11390,9 +12682,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11517,9 +12806,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Telemetry",
@@ -11569,9 +12855,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Ingest Telemetry",
@@ -11601,9 +12884,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11651,62 +12931,9 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Telemetry Model",
-        "tags": [
-          "telemetry-models"
-        ]
-      }
-    },
-    "/telemetry-models/{device_type}": {
-      "get": {
-        "deprecated": true,
-        "description": "Removed in Sprint 21 (ADR-015 \u00a76).\n\nThe Sprint 19 301 redirect to ``/telemetry-models/device/{device_type}``\nhas been removed after one full retention cycle. Callers must address\nthe subject-scoped path directly. Returns 410 Gone with a Location-style\nhint so any forgotten clients still get a clear migration message.",
-        "operationId": "get_telemetry_model_legacy_telemetry_models__device_type__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "device_type",
-            "required": true,
-            "schema": {
-              "title": "Device Type",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "summary": "Get Telemetry Model Legacy",
         "tags": [
           "telemetry-models"
         ]
@@ -11744,9 +12971,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11806,9 +13030,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Update Telemetry Model",
@@ -11864,9 +13085,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -11980,9 +13198,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Telemetry Aggregates",
@@ -12082,9 +13297,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12218,9 +13430,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Telemetry Readings",
@@ -12270,9 +13479,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12340,14 +13546,83 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Recent Reads",
         "tags": [
           "query"
+        ]
+      }
+    },
+    "/tenant/branding": {
+      "get": {
+        "description": "Return the calling tenant's branding overrides (any role).",
+        "operationId": "get_tenant_branding_tenant_branding_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantBranding"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Tenant Branding",
+        "tags": [
+          "tenant"
+        ]
+      },
+      "patch": {
+        "description": "Update tenant branding (admin only). PATCH semantics; audited.\n\nOnly fields **present** in the request body are written. An\nexplicit ``null`` clears that field's override.",
+        "operationId": "update_tenant_branding_tenant_branding_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantBrandingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantBranding"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Update Tenant Branding",
+        "tags": [
+          "tenant"
         ]
       }
     },
@@ -12368,9 +13643,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12418,9 +13690,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Update Tenant Config",
@@ -12446,9 +13715,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12496,9 +13762,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Update Map Config",
@@ -12528,9 +13791,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12576,9 +13836,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12640,9 +13897,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Update User",
@@ -12683,9 +13937,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12733,9 +13984,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12820,9 +14068,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Zones",
@@ -12867,9 +14112,6 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "Create Zone",
@@ -12909,9 +14151,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -12958,9 +14197,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -13017,9 +14253,6 @@
           }
         },
         "security": [
-          {
-            "APIKeyHeader": []
-          },
           {
             "APIKeyHeader": []
           }
@@ -13098,14 +14331,200 @@
         "security": [
           {
             "APIKeyHeader": []
-          },
-          {
-            "APIKeyHeader": []
           }
         ],
         "summary": "List Assets In Zone",
         "tags": [
           "sites-zones"
+        ]
+      }
+    },
+    "/{entity_segment}/{entity_id}/labels": {
+      "get": {
+        "description": "List all label-value pairs attached to one entity.",
+        "operationId": "list_entity_labels__entity_segment___entity_id__labels_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entity_segment",
+            "required": true,
+            "schema": {
+              "title": "Entity Segment",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entity_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entity Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LabelAssociationResponse"
+                  },
+                  "title": "Response List Entity Labels  Entity Segment   Entity Id  Labels Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Entity Labels",
+        "tags": [
+          "labels"
+        ]
+      },
+      "post": {
+        "description": "Attach a label-value pair to an entity. The label is identified\nby ``key`` (scoped to the URL's entity_type); a 404 is returned\nif no matching catalog row exists. 409 on cap (30) or duplicate\nassociation.",
+        "operationId": "associate_label__entity_segment___entity_id__labels_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entity_segment",
+            "required": true,
+            "schema": {
+              "title": "Entity Segment",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entity_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entity Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelAssociationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelAssociationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Associate Label",
+        "tags": [
+          "labels"
+        ]
+      }
+    },
+    "/{entity_segment}/{entity_id}/labels/{label_id}": {
+      "delete": {
+        "description": "Remove a label-value pair from an entity.",
+        "operationId": "disassociate_label__entity_segment___entity_id__labels__label_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entity_segment",
+            "required": true,
+            "schema": {
+              "title": "Entity Segment",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entity_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Entity Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "label_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Label Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Disassociate Label",
+        "tags": [
+          "labels"
         ]
       }
     }

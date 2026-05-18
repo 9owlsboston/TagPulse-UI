@@ -139,6 +139,7 @@ export default defineConfig({
       '/branding': 'http://localhost:8000',
       '/assets': 'http://localhost:8000',
       '/categories': 'http://localhost:8000',
+      '/labels': 'http://localhost:8000',
       '/sites': 'http://localhost:8000',
       '/zones': 'http://localhost:8000',
       '/products': 'http://localhost:8000',

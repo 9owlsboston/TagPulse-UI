@@ -32,6 +32,7 @@ import { useDevices } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
+import { LabelChips } from '@/components/LabelChips';
 import type { AssetTagBindingResponse } from '@/api/generated/models/AssetTagBindingResponse';
 import { AssetTagBindingCreate } from '@/api/generated/models/AssetTagBindingCreate';
 import type { AssetUpdate } from '@/api/generated/models/AssetUpdate';
@@ -248,6 +249,14 @@ export function AssetDetail() {
               </pre>
             </Descriptions.Item>
           </Descriptions>
+
+          {/* Sprint 36 row 3.9 — labels chips. Strip lives directly under
+              the Overview descriptions so it sits next to the metadata
+              JSON it complements (catalogued key/value pairs vs. free-form
+              JSON). Editor+ can add/remove via the popover. */}
+          <div style={{ marginTop: 16 }}>
+            {id && <LabelChips entityType="asset" entityId={id} />}
+          </div>
 
           <Title level={5} style={{ marginTop: 24 }}>Current Location</Title>
           <Card size="small">
