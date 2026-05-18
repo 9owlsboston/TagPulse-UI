@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Button, Form, Input, Card, Typography, Tabs, Alert } from 'antd';
 import { KeyOutlined, IdcardOutlined } from '@ant-design/icons';
+import { usePublicBranding } from '@/hooks/useTenantBranding';
+import { useThemeMode } from '@/theme/ThemeProvider';
 
 const { Title, Text } = Typography;
 
@@ -9,6 +11,22 @@ export function TenantGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loginWithApiKey, loginWithTenantId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sprint 33 QW6 — when the login URL carries `?tenant=<slug>`, fetch
+  // public branding and re-skin the login card (logo, display name, brand
+  // colour). The brand colour is pushed into ThemeProvider so AntD's
+  // primary buttons match. `slug` is read once on mount; URL changes
+  // after navigation don't matter (login is the entry point).
+  const slug = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('tenant');
+  }, []);
+  const { data: publicBranding } = usePublicBranding(slug);
+  const { setBrandColor } = useThemeMode();
+  useEffect(() => {
+    if (!publicBranding) return;
+    setBrandColor(publicBranding.brand_color ?? null);
+  }, [publicBranding, setBrandColor]);
 
   if (isAuthenticated) {
     return <>{children}</>;
@@ -38,10 +56,33 @@ export function TenantGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const heading =
+    publicBranding?.display_name?.trim() || publicBranding?.name || 'TagPulse';
+  const logoUrl = publicBranding?.logo_url?.trim();
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <Card style={{ width: 420 }}>
-        <Title level={3}>TagPulse</Title>
+      <Card style={{ width: 420 }} data-testid="login-card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt=""
+              style={{ height: 36, maxWidth: 80, objectFit: 'contain' }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+          <Title level={3} style={{ margin: 0 }}>
+            {heading}
+          </Title>
+        </div>
+        {publicBranding?.name && publicBranding.display_name && (
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            {publicBranding.name}
+          </Text>
+        )}
         {error && <Alert message={error} type="error" showIcon closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />}
         <Tabs
           defaultActiveKey="apikey"

@@ -8,6 +8,7 @@ import { ApiHealthGate } from '@/components/ApiHealthGate';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteTracker } from '@/components/RouteTracker';
 import { handleGlobal401 } from '@/lib/auth';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 import { Dashboard } from '@/pages/Dashboard';
 import { DeviceList } from '@/pages/devices/DeviceList';
 import { DeviceDetail } from '@/pages/devices/DeviceDetail';
@@ -40,6 +41,7 @@ import { SitesZones } from '@/pages/assets/SitesZones';
 import { CategoryList } from '@/pages/categories/CategoryList';
 import { MapPage } from '@/pages/map/MapPage';
 import { TenantSettings } from '@/pages/admin/TenantSettings';
+import { Branding } from '@/pages/admin/Branding';
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -63,13 +65,14 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AntApp>
-          <ApiHealthGate>
-            <AuthProvider>
-              <BrowserRouter>
-                <RouteTracker />
-                <TenantGuard>
-            <Routes>
+        <ThemeProvider>
+          <AntApp>
+            <ApiHealthGate>
+              <AuthProvider>
+                <BrowserRouter>
+                  <RouteTracker />
+                  <TenantGuard>
+              <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/devices" element={<DeviceList />} />
@@ -97,6 +100,7 @@ export function App() {
                 <Route path="/inventory/stock-movements" element={<StockMovements />} />
                 <Route path="/inventory/csv-import" element={<CsvImport />} />
                 <Route path="/admin/tenant" element={<TenantSettings />} />
+                <Route path="/admin/branding" element={<Branding />} />
                 <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
                 <Route path="/admin/usage" element={<UsageDashboard />} />
                 <Route path="/admin/users" element={<UserList />} />
@@ -110,7 +114,8 @@ export function App() {
               </BrowserRouter>
             </AuthProvider>
           </ApiHealthGate>
-        </AntApp>
+          </AntApp>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
