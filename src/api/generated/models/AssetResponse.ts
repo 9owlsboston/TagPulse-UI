@@ -8,6 +8,7 @@ import type { LatestTelemetryEntry } from './LatestTelemetryEntry';
  */
 export type AssetResponse = {
     asset_type: string;
+    category_id?: (string | null);
     created_at: string;
     external_ref: (string | null);
     id: string;

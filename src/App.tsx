@@ -37,6 +37,7 @@ import LotDetail from '@/pages/inventory/LotDetail';
 import { AssetList } from '@/pages/assets/AssetList';
 import { AssetDetail } from '@/pages/assets/AssetDetail';
 import { SitesZones } from '@/pages/assets/SitesZones';
+import { CategoryList } from '@/pages/categories/CategoryList';
 import { MapPage } from '@/pages/map/MapPage';
 import { TenantSettings } from '@/pages/admin/TenantSettings';
 
@@ -85,6 +86,7 @@ export function App() {
                 <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
                 <Route path="/assets" element={<AssetList />} />
                 <Route path="/assets/:id" element={<AssetDetail />} />
+                <Route path="/categories" element={<CategoryList />} />
                 <Route path="/sites" element={<SitesZones />} />
                 <Route path="/map" element={<MapPage />} />
                 <Route path="/inventory/products" element={<ProductList />} />

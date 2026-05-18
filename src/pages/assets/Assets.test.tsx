@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -44,7 +44,35 @@ vi.mock('@/hooks/useAssets', () => ({
         id: 's1',
         tenant_id: 't',
         name: 'Warehouse A',
+        kind: 'site',
         address: '123 Main',
+        street_line1: null,
+        street_line2: null,
+        city: 'Boston',
+        region: 'MA',
+        postal_code: '02108',
+        country: 'US',
+        latitude: 42.3601,
+        longitude: -71.0589,
+        default_timezone: 'UTC',
+        metadata: null,
+        created_at: '',
+        updated_at: '',
+      },
+      {
+        id: 's2',
+        tenant_id: 't',
+        name: 'Truck 17',
+        kind: 'transporter',
+        address: null,
+        street_line1: null,
+        street_line2: null,
+        city: null,
+        region: null,
+        postal_code: null,
+        country: null,
+        latitude: null,
+        longitude: null,
         default_timezone: 'UTC',
         metadata: null,
         created_at: '',
@@ -112,10 +140,25 @@ describe('Assets pages — smoke', () => {
 
   it('SitesZones renders site, zone and reader chip', () => {
     render(wrap(<SitesZones />));
-    expect(screen.getByText('Sites & Zones')).toBeInTheDocument();
+    expect(screen.getByText('Locations')).toBeInTheDocument();
     expect(screen.getByText('Warehouse A')).toBeInTheDocument();
     expect(screen.getByText('Cold Storage')).toBeInTheDocument();
     expect(screen.getByText(/Reader-1/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new site/i })).toBeInTheDocument();
+  });
+
+  it('SitesZones renders both Sites and Transporters tabs with counts', () => {
+    render(wrap(<SitesZones />));
+    // Both tab labels render with a count tag — the tabs are a Sprint 34
+    // gap 3.2 hard requirement (Site/Transporter discriminator UX).
+    expect(screen.getByRole('tab', { name: /sites/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /transporters/i })).toBeInTheDocument();
+  });
+
+  it('SitesZones — switching to Transporters tab swaps the create button label', () => {
+    render(wrap(<SitesZones />));
+    expect(screen.getByRole('button', { name: /new site/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /transporters/i }));
+    expect(screen.getByRole('button', { name: /new transporter/i })).toBeInTheDocument();
   });
 });

@@ -6,6 +6,6 @@ export type Body_import_products_products_import_post = {
     /**
      * CSV: sku,gtin,name,category,unit
      */
-    upload: Blob;
+    upload: string;
 };
 

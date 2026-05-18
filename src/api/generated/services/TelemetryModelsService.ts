@@ -42,33 +42,6 @@ export class TelemetryModelsService {
         });
     }
     /**
-     * @deprecated
-     * Get Telemetry Model Legacy
-     * Removed in Sprint 21 (ADR-015 §6).
-     *
-     * The Sprint 19 301 redirect to ``/telemetry-models/device/{device_type}``
-     * has been removed after one full retention cycle. Callers must address
-     * the subject-scoped path directly. Returns 410 Gone with a Location-style
-     * hint so any forgotten clients still get a clear migration message.
-     * @param deviceType
-     * @returns any Successful Response
-     * @throws ApiError
-     */
-    public static getTelemetryModelLegacyTelemetryModelsDeviceTypeGet(
-        deviceType: string,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/telemetry-models/{device_type}',
-            path: {
-                'device_type': deviceType,
-            },
-            errors: {
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
      * Delete Telemetry Model
      * Delete a telemetry model definition.
      * @param modelId
