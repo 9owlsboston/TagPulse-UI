@@ -9,6 +9,25 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    // Sprint 35 / issue #22: split heavy single-use vendor libs into
+    // their own chunks so the initial bundle (shell + Dashboard) stays
+    // lean and vendor caches survive app-only deploys.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ['recharts'],
+          leaflet: ['leaflet', 'react-leaflet'],
+          antd: ['antd'],
+          'antd-icons': ['@ant-design/icons'],
+          appinsights: [
+            '@microsoft/applicationinsights-web',
+            '@microsoft/applicationinsights-react-js',
+          ],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
@@ -18,13 +37,16 @@ export default defineConfig({
       '/device-health': 'http://localhost:8000',
       '/devices': 'http://localhost:8000',
       '/rules': 'http://localhost:8000',
+      '/rule-templates': 'http://localhost:8000',
       '/alerts': 'http://localhost:8000',
       '/integrations': 'http://localhost:8000',
       '/analytics': 'http://localhost:8000',
       '/admin': 'http://localhost:8000',
       '/users': 'http://localhost:8000',
       '/tenant': 'http://localhost:8000',
+      '/branding': 'http://localhost:8000',
       '/assets': 'http://localhost:8000',
+      '/categories': 'http://localhost:8000',
       '/sites': 'http://localhost:8000',
       '/zones': 'http://localhost:8000',
       '/products': 'http://localhost:8000',

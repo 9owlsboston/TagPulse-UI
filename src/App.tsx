@@ -1,6 +1,7 @@
+import { Suspense, lazy } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { App as AntApp } from 'antd';
+import { App as AntApp, Spin } from 'antd';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';
@@ -9,39 +10,43 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteTracker } from '@/components/RouteTracker';
 import { handleGlobal401 } from '@/lib/auth';
 import { ThemeProvider } from '@/theme/ThemeProvider';
-import { Dashboard } from '@/pages/Dashboard';
-import { DeviceList } from '@/pages/devices/DeviceList';
-import { DeviceDetail } from '@/pages/devices/DeviceDetail';
-import { DeviceRegister } from '@/pages/devices/DeviceRegister';
-import { TelemetryDashboard } from '@/pages/telemetry/TelemetryDashboard';
-import { DataExplorer } from '@/pages/telemetry/DataExplorer';
-import { TelemetryModels } from '@/pages/telemetry-models/TelemetryModels';
-import { RuleList } from '@/pages/rules/RuleList';
-import { RuleEditor } from '@/pages/rules/RuleEditor';
-import { AlertHistory } from '@/pages/rules/AlertHistory';
-import { IntegrationList } from '@/pages/integrations/IntegrationList';
-import { DeliveryLog } from '@/pages/integrations/DeliveryLog';
-import { UsageDashboard } from '@/pages/admin/UsageDashboard';
-import { UserList } from '@/pages/admin/UserList';
-import { UserCreatePage } from '@/pages/admin/UserCreatePage';
-import { UserDetail } from '@/pages/admin/UserDetail';
-import { AuditLog } from '@/pages/admin/AuditLog';
-import { DeadLetters } from '@/pages/admin/DeadLetters';
-import { ProductList } from '@/pages/inventory/ProductList';
-import { ProductDetail } from '@/pages/inventory/ProductDetail';
-import { StockLevels } from '@/pages/inventory/StockLevels';
-import { StockMovements } from '@/pages/inventory/StockMovements';
-import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
-import { CsvImport } from '@/pages/inventory/CsvImport';
-import LotExpiryQueue from '@/pages/inventory/LotExpiryQueue';
-import LotDetail from '@/pages/inventory/LotDetail';
-import { AssetList } from '@/pages/assets/AssetList';
-import { AssetDetail } from '@/pages/assets/AssetDetail';
-import { SitesZones } from '@/pages/assets/SitesZones';
-import { CategoryList } from '@/pages/categories/CategoryList';
-import { MapPage } from '@/pages/map/MapPage';
-import { TenantSettings } from '@/pages/admin/TenantSettings';
-import { Branding } from '@/pages/admin/Branding';
+
+// Sprint 35 / issue #22: every page is lazy-loaded so the initial chunk
+// only ships the shell + Dashboard. Each `import()` becomes its own
+// Vite/Rollup chunk fetched on first navigation to that route.
+const Dashboard = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const DeviceList = lazy(() => import('@/pages/devices/DeviceList').then((m) => ({ default: m.DeviceList })));
+const DeviceDetail = lazy(() => import('@/pages/devices/DeviceDetail').then((m) => ({ default: m.DeviceDetail })));
+const DeviceRegister = lazy(() => import('@/pages/devices/DeviceRegister').then((m) => ({ default: m.DeviceRegister })));
+const TelemetryDashboard = lazy(() => import('@/pages/telemetry/TelemetryDashboard').then((m) => ({ default: m.TelemetryDashboard })));
+const DataExplorer = lazy(() => import('@/pages/telemetry/DataExplorer').then((m) => ({ default: m.DataExplorer })));
+const TelemetryModels = lazy(() => import('@/pages/telemetry-models/TelemetryModels').then((m) => ({ default: m.TelemetryModels })));
+const RuleList = lazy(() => import('@/pages/rules/RuleList').then((m) => ({ default: m.RuleList })));
+const RuleEditor = lazy(() => import('@/pages/rules/RuleEditor').then((m) => ({ default: m.RuleEditor })));
+const AlertHistory = lazy(() => import('@/pages/rules/AlertHistory').then((m) => ({ default: m.AlertHistory })));
+const IntegrationList = lazy(() => import('@/pages/integrations/IntegrationList').then((m) => ({ default: m.IntegrationList })));
+const DeliveryLog = lazy(() => import('@/pages/integrations/DeliveryLog').then((m) => ({ default: m.DeliveryLog })));
+const UsageDashboard = lazy(() => import('@/pages/admin/UsageDashboard').then((m) => ({ default: m.UsageDashboard })));
+const UserList = lazy(() => import('@/pages/admin/UserList').then((m) => ({ default: m.UserList })));
+const UserCreatePage = lazy(() => import('@/pages/admin/UserCreatePage').then((m) => ({ default: m.UserCreatePage })));
+const UserDetail = lazy(() => import('@/pages/admin/UserDetail').then((m) => ({ default: m.UserDetail })));
+const AuditLog = lazy(() => import('@/pages/admin/AuditLog').then((m) => ({ default: m.AuditLog })));
+const DeadLetters = lazy(() => import('@/pages/admin/DeadLetters').then((m) => ({ default: m.DeadLetters })));
+const ProductList = lazy(() => import('@/pages/inventory/ProductList').then((m) => ({ default: m.ProductList })));
+const ProductDetail = lazy(() => import('@/pages/inventory/ProductDetail').then((m) => ({ default: m.ProductDetail })));
+const StockLevels = lazy(() => import('@/pages/inventory/StockLevels').then((m) => ({ default: m.StockLevels })));
+const StockMovements = lazy(() => import('@/pages/inventory/StockMovements').then((m) => ({ default: m.StockMovements })));
+const TagDataMappings = lazy(() => import('@/pages/inventory/TagDataMappings').then((m) => ({ default: m.TagDataMappings })));
+const CsvImport = lazy(() => import('@/pages/inventory/CsvImport').then((m) => ({ default: m.CsvImport })));
+const LotExpiryQueue = lazy(() => import('@/pages/inventory/LotExpiryQueue'));
+const LotDetail = lazy(() => import('@/pages/inventory/LotDetail'));
+const AssetList = lazy(() => import('@/pages/assets/AssetList').then((m) => ({ default: m.AssetList })));
+const AssetDetail = lazy(() => import('@/pages/assets/AssetDetail').then((m) => ({ default: m.AssetDetail })));
+const SitesZones = lazy(() => import('@/pages/assets/SitesZones').then((m) => ({ default: m.SitesZones })));
+const CategoryList = lazy(() => import('@/pages/categories/CategoryList').then((m) => ({ default: m.CategoryList })));
+const MapPage = lazy(() => import('@/pages/map/MapPage').then((m) => ({ default: m.MapPage })));
+const TenantSettings = lazy(() => import('@/pages/admin/TenantSettings').then((m) => ({ default: m.TenantSettings })));
+const Branding = lazy(() => import('@/pages/admin/Branding').then((m) => ({ default: m.Branding })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -72,44 +77,59 @@ export function App() {
                 <BrowserRouter>
                   <RouteTracker />
                   <TenantGuard>
-                    <Routes>
-                      <Route element={<Layout />}>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/devices" element={<DeviceList />} />
-                        <Route path="/devices/register" element={<DeviceRegister />} />
-                        <Route path="/devices/:id" element={<DeviceDetail />} />
-                        <Route path="/telemetry" element={<TelemetryDashboard />} />
-                        <Route path="/telemetry/explore" element={<DataExplorer />} />
-                        <Route path="/telemetry-models" element={<TelemetryModels />} />
-                        <Route path="/rules" element={<RuleList />} />
-                        <Route path="/rules/new" element={<RuleEditor />} />
-                        <Route path="/rules/:id/edit" element={<RuleEditor />} />
-                        <Route path="/alerts" element={<AlertHistory />} />
-                        <Route path="/integrations" element={<IntegrationList />} />
-                        <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
-                        <Route path="/assets" element={<AssetList />} />
-                        <Route path="/assets/:id" element={<AssetDetail />} />
-                        <Route path="/categories" element={<CategoryList />} />
-                        <Route path="/sites" element={<SitesZones />} />
-                        <Route path="/map" element={<MapPage />} />
-                        <Route path="/inventory/products" element={<ProductList />} />
-                        <Route path="/inventory/products/:id" element={<ProductDetail />} />
-                        <Route path="/inventory/lots" element={<LotExpiryQueue />} />
-                        <Route path="/inventory/lots/:id" element={<LotDetail />} />
-                        <Route path="/inventory/stock-levels" element={<StockLevels />} />
-                        <Route path="/inventory/stock-movements" element={<StockMovements />} />
-                        <Route path="/inventory/csv-import" element={<CsvImport />} />
-                        <Route path="/admin/tenant" element={<TenantSettings />} />
-                        <Route path="/admin/branding" element={<Branding />} />
-                        <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
-                        <Route path="/admin/usage" element={<UsageDashboard />} />
-                        <Route path="/admin/users" element={<UserList />} />
-                        <Route path="/admin/users/new" element={<UserCreatePage />} />
-                        <Route path="/admin/users/:id" element={<UserDetail />} />
-                        <Route path="/admin/audit-logs" element={<AuditLog />} />
-                        <Route path="/admin/dead-letters" element={<DeadLetters />} />
-                      </Route>
-                    </Routes>
+                    <Suspense
+                      fallback={
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: 240,
+                          }}
+                        >
+                          <Spin size="large" />
+                        </div>
+                      }
+                    >
+                      <Routes>
+                        <Route element={<Layout />}>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/devices" element={<DeviceList />} />
+                          <Route path="/devices/register" element={<DeviceRegister />} />
+                          <Route path="/devices/:id" element={<DeviceDetail />} />
+                          <Route path="/telemetry" element={<TelemetryDashboard />} />
+                          <Route path="/telemetry/explore" element={<DataExplorer />} />
+                          <Route path="/telemetry-models" element={<TelemetryModels />} />
+                          <Route path="/rules" element={<RuleList />} />
+                          <Route path="/rules/new" element={<RuleEditor />} />
+                          <Route path="/rules/:id/edit" element={<RuleEditor />} />
+                          <Route path="/alerts" element={<AlertHistory />} />
+                          <Route path="/integrations" element={<IntegrationList />} />
+                          <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
+                          <Route path="/assets" element={<AssetList />} />
+                          <Route path="/assets/:id" element={<AssetDetail />} />
+                          <Route path="/categories" element={<CategoryList />} />
+                          <Route path="/sites" element={<SitesZones />} />
+                          <Route path="/map" element={<MapPage />} />
+                          <Route path="/inventory/products" element={<ProductList />} />
+                          <Route path="/inventory/products/:id" element={<ProductDetail />} />
+                          <Route path="/inventory/lots" element={<LotExpiryQueue />} />
+                          <Route path="/inventory/lots/:id" element={<LotDetail />} />
+                          <Route path="/inventory/stock-levels" element={<StockLevels />} />
+                          <Route path="/inventory/stock-movements" element={<StockMovements />} />
+                          <Route path="/inventory/csv-import" element={<CsvImport />} />
+                          <Route path="/admin/tenant" element={<TenantSettings />} />
+                          <Route path="/admin/branding" element={<Branding />} />
+                          <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
+                          <Route path="/admin/usage" element={<UsageDashboard />} />
+                          <Route path="/admin/users" element={<UserList />} />
+                          <Route path="/admin/users/new" element={<UserCreatePage />} />
+                          <Route path="/admin/users/:id" element={<UserDetail />} />
+                          <Route path="/admin/audit-logs" element={<AuditLog />} />
+                          <Route path="/admin/dead-letters" element={<DeadLetters />} />
+                        </Route>
+                      </Routes>
+                    </Suspense>
                   </TenantGuard>
                 </BrowserRouter>
               </AuthProvider>
