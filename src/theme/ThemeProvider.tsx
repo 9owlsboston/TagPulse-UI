@@ -2,13 +2,14 @@
  * ThemeProvider — Sprint 33 QW1 + QW5 + QW6.
  *
  * Wraps the app in an AntD ConfigProvider that exposes:
- *   • A teal default `colorPrimary` (#0d9488) replacing the default AntD blue.
+ *   • A Tailwind blue-600 default `colorPrimary` (#2563eb), aligning
+ *     TagPulse with the reference design's primary accent.
  *   • A light/dark mode toggle (QW5) persisted in localStorage under
  *     `tagpulse.theme`. First visit honours the OS preference via
  *     `prefers-color-scheme`.
  *   • An override hook so per-tenant branding (QW6) can swap the brand
  *     colour at runtime without re-mounting the tree. Setting `null`
- *     reverts to the default teal.
+ *     reverts to the default blue.
  *
  * The provider also exposes a `useThemeMode()` hook returning the
  * current mode plus toggles for the Account dropdown (QW3).
@@ -27,7 +28,9 @@ import {
 export type ThemeMode = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'tagpulse.theme';
-export const DEFAULT_BRAND_COLOR = '#0d9488';
+// Tailwind blue-600 — the reference-design primary. Tenant branding
+// (QW6) can override this at runtime via `setBrandColor()`.
+export const DEFAULT_BRAND_COLOR = '#2563eb';
 
 interface ThemeContextValue {
   mode: ThemeMode;

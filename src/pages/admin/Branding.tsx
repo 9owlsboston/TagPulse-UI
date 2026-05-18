@@ -126,7 +126,7 @@ export function Branding() {
             rules={[
               {
                 pattern: /^(#[0-9a-fA-F]{6})?$/,
-                message: 'Must be a 6-digit hex like #0d9488',
+                message: `Must be a 6-digit hex like ${DEFAULT_BRAND_COLOR}`,
               },
             ]}
             extra={`Defaults to ${DEFAULT_BRAND_COLOR} when empty.`}

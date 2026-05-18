@@ -143,7 +143,7 @@ export function Layout() {
 
   // Sider chrome: branding display_name + optional logo (QW6) over
   // a tenant-name fallback. In light mode the Sider is white with the
-  // brand teal as accents (QW1); in dark mode the classic dark Sider.
+  // brand blue as accents (QW1); in dark mode the classic dark Sider.
   const siderBg = mode === 'dark' ? '#001529' : '#ffffff';
   const siderTitleColor = mode === 'dark' ? '#fff' : 'rgba(0,0,0,0.85)';
   const siderFooterColor = mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';

@@ -26,7 +26,7 @@ describe('ThemeProvider', () => {
     window.localStorage.clear();
   });
 
-  it('defaults to light mode and the teal brand colour', () => {
+  it('defaults to light mode and the Tailwind blue-600 brand colour', () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
