@@ -83,62 +83,37 @@ export default defineConfig({
             // is its own ES module.
             return 'antd-core';
           }
-          // Split AntD components: every component that is meaningfully
-          // sized (>~3 KB gz) gets its own chunk so it caches
-          // independently (an AntD patch invalidates only changed
-          // chunks). Tiny common-case primitives stay in `antd-core`
-          // alongside the shared `_util` infrastructure.
-          //
-          // Source files were converted to direct `antd/es/<name>`
-          // imports in this sprint, so Rollup tree-shakes the
-          // cross-component dependencies that the AntD barrel used to
-          // drag in (e.g. Dashboard no longer pulls `Table` into its
-          // chunk just because it imported `Statistic`).
+          // Collapse ALL of `antd/es/*` into a single `antd-core`
+          // chunk. We previously split AntD by component (Sprint 36
+          // issue #24) to keep lazy chunks lean, but this created a
+          // class of ES-module-cycle / TDZ bugs that already triggered
+          // FOUR production hotfixes in a row (PRs #31 React, #32
+          // @rc-component, #33 @ant-design/icons, #34 antd-style /
+          // antd-form). The root cause is that AntD's own shared
+          // pieces — `_util/ContextIsolator`, `config-provider`,
+          // `locale`, `modal`, `theme` — import back from many
+          // component directories (`button`, `form`, `tour`,
+          // `date-picker`, `pagination`, `popconfirm`, `table`,
+          // `upload`, `watermark`, etc.). Any per-component chunk
+          // therefore forms a cycle with `antd-core`, and Rollup's
+          // evaluation order can put an exported binding in the TDZ
+          // window when a component's module-init code accesses it
+          // through the cycle. Symptoms have ranged from
+          // `Cannot set properties of undefined (setting 'Activity')`
+          // (React/antd-core) through `i is not a constructor`
+          // (Keyframes/antd-style) to `Cannot access 'it' before
+          // initialization` (`g` export/antd-form). The size cost of
+          // collapsing is small in practice because most of those
+          // per-component chunks were already in antd-core's *eager*
+          // import graph (via `_util/ContextIsolator.js → form`,
+          // `locale → date-picker/table/upload/...`,
+          // `modal → button/watermark`, etc.), so the browser was
+          // already fetching them on first paint. Tree-shaking still
+          // works inside the single chunk: any `antd/es/<name>` we
+          // never import is dead-code-eliminated. (Sprint 36 Phase E
+          // hotfix #4 — replaces the per-component split.)
           if (id.includes('node_modules/antd/es/')) {
-            const match = id.match(/node_modules\/antd\/es\/([^/]+)/);
-            if (!match) return 'antd-core';
-            const name = match[1];
-            const core = new Set([
-              '_util',
-              'index.js',
-              'locale',
-              'theme',
-              'config-provider',
-              'app',
-              'tag',
-              'space',
-              'grid',
-              'row',
-              'col',
-              'divider',
-              'flex',
-              'empty',
-              'skeleton',
-              'badge',
-              'avatar',
-              'switch',
-              'breadcrumb',
-              'anchor',
-              'affix',
-              'back-top',
-              'float-button',
-              'watermark',
-              'version',
-              'radio',
-              'checkbox',
-              'rate',
-              'qr-code',
-              'progress',
-              'segmented',
-              'time-picker',
-              'auto-complete',
-              'mentions',
-              'calendar',
-              'transfer',
-              'color-picker',
-            ]);
-            if (name.startsWith('_') || core.has(name)) return 'antd-core';
-            return `antd-${name}`;
+            return 'antd-core';
           }
           // Split each rc-* internal package into its own chunk so
           // Rollup only preloads the ones actually reachable from the

@@ -101,4 +101,42 @@ describe('vite production chunk separation', () => {
     );
     expect(branch?.[1]).toBe('antd-core');
   });
+
+  it('manualChunks collapses all of antd/es/* into antd-core (no per-component split)', () => {
+    // Sprint 36 Phase E hotfix #4 — two consecutive production
+    // failures exposed the structural cycle between antd-core and
+    // any per-component chunk:
+    //
+    //   antd-style-<hash>.js: Uncaught TypeError:
+    //   i is not a constructor          (Keyframes cycle)
+    //
+    //   antd-form-<hash>.js: ReferenceError:
+    //   Cannot access 'it' before initialization   (g export cycle)
+    //
+    // AntD's own shared pieces — `_util/ContextIsolator`,
+    // `config-provider`, `locale`, `modal`, `theme` — import from
+    // many component directories (`button`, `form`, `tour`,
+    // `date-picker`, `pagination`, `popconfirm`, `table`,
+    // `upload`, `watermark`, etc.). Every per-component chunk
+    // therefore forms a cycle with antd-core; whichever binding
+    // antd-core's eager init touches first puts the cyclic
+    // importer's bindings in the TDZ window. Three previous
+    // hotfixes (#31, #32, #33) plus this fourth one only
+    // addressed the specific cycle that happened to trip up that
+    // build's evaluation order. The robust fix is to route every
+    // `antd/es/*` file into a single `antd-core` chunk so all
+    // cycles become intra-chunk (Rollup wraps them in one IIFE).
+    //
+    // This test enforces the rule statically so a future split
+    // can't reintroduce the bug class.
+    const text = fs.readFileSync(VITE_CONFIG, 'utf8');
+    expect(text).toMatch(/node_modules\/antd\/es\//);
+    const branch = text.match(
+      /node_modules\/antd\/es\/[\s\S]{0,400}?return\s+'([^']+)'/,
+    );
+    expect(branch?.[1]).toBe('antd-core');
+    // And the legacy `antd-${name}` per-component fallback must
+    // not be present (regression guard).
+    expect(text).not.toMatch(/return\s+`antd-\$\{name\}`/);
+  });
 });
