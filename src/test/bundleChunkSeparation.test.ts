@@ -74,4 +74,31 @@ describe('vite production chunk separation', () => {
     );
     expect(branch?.[1]).toBe('antd-core');
   });
+
+  it('manualChunks routes @ant-design/icons into antd-core, not a separate chunk', () => {
+    // Sprint 36 Phase E hotfix #3 — production showed
+    //
+    //   antd-icons-<hash>.js:58:1301 Uncaught TypeError:
+    //   Cannot read properties of undefined (reading 'primary')
+    //
+    // because `@ant-design/icons` does
+    //   import { blue } from '@ant-design/colors';
+    //   setTwoToneColor(blue.primary);
+    // at module-init time. The `blue` palette comes from
+    // `@ant-design/colors`, which lives inside `antd-core`. When
+    // `antd-icons` was in its own chunk, the cycle
+    //   antd-core → antd-icons → antd-core's `blue` (.primary)
+    // put the export in the TDZ window on every page load and
+    // crashed the entry graph before React mounted.
+    //
+    // Fix: route `@ant-design/icons` into `antd-core` so the
+    // palette binding is intra-chunk. This test pins the rule so a
+    // future refactor can't quietly re-introduce the cycle.
+    const text = fs.readFileSync(VITE_CONFIG, 'utf8');
+    expect(text).toMatch(/node_modules\/@ant-design\/icons/);
+    const branch = text.match(
+      /node_modules\/@ant-design\/icons[\s\S]*?return\s+'([^']+)'/,
+    );
+    expect(branch?.[1]).toBe('antd-core');
+  });
 });
