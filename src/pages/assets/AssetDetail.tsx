@@ -33,6 +33,8 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import { LabelChips } from '@/components/LabelChips';
+import { CategorySelect } from '@/components/CategorySelect';
+import { useCategory } from '@/hooks/useCategories';
 import type { AssetTagBindingResponse } from '@/api/generated/models/AssetTagBindingResponse';
 import { AssetTagBindingCreate } from '@/api/generated/models/AssetTagBindingCreate';
 import type { AssetUpdate } from '@/api/generated/models/AssetUpdate';
@@ -59,6 +61,11 @@ export function AssetDetail() {
   const unbind = useUnbindTag(id ?? '');
   const updateAsset = useUpdateAsset();
   const canEdit = useCanPerform('editor');
+  // Sprint 37 row 3.3a — resolve the asset's category name + type for the
+  // Overview Descriptions row. Hook returns undefined while loading / when
+  // category_id is null, which the Descriptions row already handles via
+  // the optional-chain fallback below.
+  const { data: category } = useCategory(asset?.category_id ?? undefined);
   const [bindOpen, setBindOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [bindForm] = Form.useForm<AssetTagBindingCreate>();
@@ -133,14 +140,25 @@ export function AssetDetail() {
       }
     }
     try {
+      // Sprint 37 row 3.3a — category_id has 3 possible intents:
+      //   * field not touched     → omit from PATCH (server leaves as-is)
+      //   * field set to a uuid   → send the uuid
+      //   * field cleared via "x" → send explicit null (clear it)
+      // We use Form.isFieldTouched to distinguish "untouched" (which
+      // would otherwise look identical to "cleared" since AntD Select
+      // emits undefined for both).
+      const payload: AssetUpdate = {
+        name: values.name,
+        asset_type: values.asset_type,
+        external_ref: values.external_ref,
+        metadata: metadata as AssetUpdate['metadata'],
+      };
+      if (editForm.isFieldTouched('category_id')) {
+        payload.category_id = values.category_id ?? null;
+      }
       await updateAsset.mutateAsync({
         id: asset.id,
-        data: {
-          name: values.name,
-          asset_type: values.asset_type,
-          external_ref: values.external_ref,
-          metadata: metadata as AssetUpdate['metadata'],
-        },
+        data: payload,
       });
       message.success('Asset updated');
       setEditOpen(false);
@@ -230,6 +248,33 @@ export function AssetDetail() {
               <Tag color={STATUS_COLOR[asset.status] ?? 'default'}>{asset.status}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="External Ref">{asset.external_ref ?? '—'}</Descriptions.Item>
+            {/* Sprint 37 row 3.3a — Category. Resolved via useCategory() so
+                we get the canonical name + category_type even if the asset
+                row doesn't carry a nested object. — shown when set; spans
+                two columns so the Tag + type label have room. */}
+            {asset.category_id && (
+              <Descriptions.Item label="Category" span={2}>
+                {(() => {
+                  if (!category) return <span style={{ color: '#999' }}>{asset.category_id}</span>;
+                  const typeColor: Record<string, string> = {
+                    liquid_container: 'blue',
+                    reference_tag: 'purple',
+                    rti_container: 'cyan',
+                    object: 'gold',
+                  };
+                  return (
+                    <Space>
+                      <a onClick={() => navigate(`/categories?focus=${category.id}`)}>
+                        {category.name}
+                      </a>
+                      <Tag color={typeColor[category.category_type] ?? 'default'}>
+                        {category.category_type}
+                      </Tag>
+                    </Space>
+                  );
+                })()}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Created">
               {new Date(asset.created_at).toLocaleString()}
             </Descriptions.Item>
@@ -439,6 +484,7 @@ export function AssetDetail() {
                   name: asset.name,
                   asset_type: asset.asset_type,
                   external_ref: asset.external_ref,
+                  category_id: asset.category_id ?? undefined,
                   metadata_text: JSON.stringify(asset.metadata ?? {}, null, 2),
                 });
                 setEditOpen(true);
@@ -510,6 +556,15 @@ export function AssetDetail() {
           </Form.Item>
           <Form.Item label="Asset Type" name="asset_type">
             <Input placeholder="e.g. forklift, pallet" />
+          </Form.Item>
+          {/* Sprint 37 row 3.3a — Category picker on Edit. Cleared selection
+              sends explicit null to clear the FK (see onEditAsset above). */}
+          <Form.Item
+            label="Category"
+            name="category_id"
+            help="Pick from the curated catalog at /categories. Clear to remove."
+          >
+            <CategorySelect placeholder="Select a category (optional)" data-testid="asset-edit-category" />
           </Form.Item>
           <Form.Item label="External Reference" name="external_ref">
             <Input placeholder="External system identifier" />
