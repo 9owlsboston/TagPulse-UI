@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AntApp from 'antd/es/app';
@@ -11,6 +11,11 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteTracker } from '@/components/RouteTracker';
 import { handleGlobal401 } from '@/lib/auth';
 import { ThemeProvider } from '@/theme/ThemeProvider';
+// Sprint 38 / SWA stale-chunk fix: `lazyWithReload` triggers a hard reload
+// when a dynamically imported module fails (browser holds a stale
+// `index.html` that points at chunk hashes the new build no longer ships).
+// See `src/lib/lazyWithReload.ts` for the failure-mode write-up.
+import { lazyWithReload as lazy } from '@/lib/lazyWithReload';
 
 // Sprint 35 / issue #22: every page is lazy-loaded so the initial chunk
 // only ships the shell + Dashboard. Each `import()` becomes its own
