@@ -14,7 +14,8 @@
  * The provider also exposes a `useThemeMode()` hook returning the
  * current mode plus toggles for the Account dropdown (QW3).
  */
-import { ConfigProvider, theme } from 'antd';
+import ConfigProvider from 'antd/es/config-provider';
+import theme from 'antd/es/theme';
 import {
   createContext,
   useCallback,

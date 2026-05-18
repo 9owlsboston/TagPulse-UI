@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
-import { Typography, Table, Progress, Spin } from 'antd';
+import Typography from 'antd/es/typography';
+import Table from 'antd/es/table';
+import Progress from 'antd/es/progress';
+import Spin from 'antd/es/spin';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useUsage, useUsageSummary } from '@/hooks/useUsage';
 import type { UsageSummary } from '@/types';

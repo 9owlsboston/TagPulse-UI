@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Switch, Space, Modal, Form, Input, Select, InputNumber, Typography, App } from 'antd';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Button from 'antd/es/button';
+import Switch from 'antd/es/switch';
+import Space from 'antd/es/space';
+import Modal from 'antd/es/modal';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
+import InputNumber from 'antd/es/input-number';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
 import { PlusOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';

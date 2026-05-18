@@ -8,7 +8,10 @@
 // SPA-up-but-rendering-broken.
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Button, Result, Typography, message } from 'antd';
+import Button from 'antd/es/button';
+import Result from 'antd/es/result';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { trackException } from '@/lib/telemetry';
 

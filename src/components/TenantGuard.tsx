@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { Button, Form, Input, Card, Typography, Tabs, Alert } from 'antd';
+import Button from 'antd/es/button';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Card from 'antd/es/card';
+import Typography from 'antd/es/typography';
+import Tabs from 'antd/es/tabs';
+import Alert from 'antd/es/alert';
 import { KeyOutlined, IdcardOutlined } from '@ant-design/icons';
 import { usePublicBranding } from '@/hooks/useTenantBranding';
 import { useThemeMode } from '@/theme/ThemeProvider';

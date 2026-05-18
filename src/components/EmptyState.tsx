@@ -8,7 +8,7 @@
  *
  * Use anywhere a list/table renders zero rows.
  */
-import { Empty } from 'antd';
+import Empty from 'antd/es/empty';
 import type { ReactNode } from 'react';
 
 interface EmptyStateProps {

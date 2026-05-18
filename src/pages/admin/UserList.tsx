@@ -1,4 +1,9 @@
-import { Table, Tag, Button, Space, Typography, App } from 'antd';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Button from 'antd/es/button';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';

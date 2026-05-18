@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Typography, Table, Segmented, Tag, Spin, Empty, Tooltip } from 'antd';
+import Typography from 'antd/es/typography';
+import Table from 'antd/es/table';
+import Segmented from 'antd/es/segmented';
+import Tag from 'antd/es/tag';
+import Spin from 'antd/es/spin';
+import Empty from 'antd/es/empty';
+import Tooltip from 'antd/es/tooltip';
 import type { ColumnsType } from 'antd/es/table';
 import { useAuditLogs, DEVICE_SECURITY_ACTIONS } from '@/hooks/useAuditLogs';
 import type { AuditLogEntry } from '@/api/client';

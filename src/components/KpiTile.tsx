@@ -1,4 +1,5 @@
-import { Card, Statistic } from 'antd';
+import Card from 'antd/es/card';
+import Statistic from 'antd/es/statistic';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 

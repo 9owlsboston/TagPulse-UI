@@ -1,4 +1,6 @@
-import { DatePicker, Select, Space } from 'antd';
+import DatePicker from 'antd/es/date-picker';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 

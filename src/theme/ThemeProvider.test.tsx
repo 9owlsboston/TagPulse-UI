@@ -1,6 +1,6 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Button } from 'antd';
+import Button from 'antd/es/button';
 import { ThemeProvider, useThemeMode, THEME_STORAGE_KEY, DEFAULT_BRAND_COLOR } from '@/theme/ThemeProvider';
 
 function ThemeProbe() {

@@ -1,4 +1,10 @@
-import { Button, Form, Input, Select, Typography, Card, message } from 'antd';
+import Button from 'antd/es/button';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
+import Typography from 'antd/es/typography';
+import Card from 'antd/es/card';
+import message from 'antd/es/message';
 import { useNavigate } from 'react-router-dom';
 import { useCreateUser } from '@/hooks/useUsers';
 import type { UserCreate } from '@/types';

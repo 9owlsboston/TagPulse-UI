@@ -4,7 +4,13 @@
  * Lists dead-letter events with retry/abandon actions and bulk operations.
  */
 import { useState } from 'react';
-import { Button, Modal, Space, Table, Tag, Typography, App } from 'antd';
+import Button from 'antd/es/button';
+import Modal from 'antd/es/modal';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { deadLetterApi } from '@/api/client';

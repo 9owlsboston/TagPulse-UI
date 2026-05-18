@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  Checkbox,
-  DatePicker,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-} from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Checkbox from 'antd/es/checkbox';
+import DatePicker from 'antd/es/date-picker';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Modal from 'antd/es/modal';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Tooltip from 'antd/es/tooltip';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';

@@ -1,4 +1,6 @@
-import { Card, Tag, Typography } from 'antd';
+import Card from 'antd/es/card';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
 import type { DeviceHealthSummary } from '@/types';
 
 const { Text } = Typography;

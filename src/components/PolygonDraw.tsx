@@ -8,7 +8,9 @@
  */
 import { useState } from 'react';
 import { MapContainer, TileLayer, Polygon, CircleMarker, useMapEvents } from 'react-leaflet';
-import { Button, Space, Typography } from 'antd';
+import Button from 'antd/es/button';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
 import { DeleteOutlined, UndoOutlined } from '@ant-design/icons';
 import 'leaflet/dist/leaflet.css';
 

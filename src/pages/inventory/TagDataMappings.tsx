@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Modal from 'antd/es/modal';
+import Popconfirm from 'antd/es/popconfirm';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useCreateTagDataMapping, useDeleteTagDataMapping, useProducts, useTagDataMappings } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';

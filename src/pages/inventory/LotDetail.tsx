@@ -10,7 +10,21 @@
  */
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, DatePicker, Descriptions, Form, Input, Modal, Space, Spin, Tabs, Tag, Typography, Statistic, Alert, App } from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import DatePicker from 'antd/es/date-picker';
+import Descriptions from 'antd/es/descriptions';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Modal from 'antd/es/modal';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Tabs from 'antd/es/tabs';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import Statistic from 'antd/es/statistic';
+import Alert from 'antd/es/alert';
+import App from 'antd/es/app';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useLot, useProduct } from '@/hooks/useInventory';

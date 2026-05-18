@@ -8,7 +8,10 @@
  * Both props are optional: omit `timestamp` to show a "Not yet loaded"
  * placeholder; omit `onRefresh` to hide the refresh button.
  */
-import { Button, Space, Tooltip, Typography } from 'antd';
+import Button from 'antd/es/button';
+import Space from 'antd/es/space';
+import Tooltip from 'antd/es/tooltip';
+import Typography from 'antd/es/typography';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 

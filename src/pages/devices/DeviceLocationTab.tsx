@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
-import { Descriptions, Empty, Spin, Tag, Typography } from 'antd';
+import Descriptions from 'antd/es/descriptions';
+import Empty from 'antd/es/empty';
+import Spin from 'antd/es/spin';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
 import { MapContainer, TileLayer, Marker, Circle, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

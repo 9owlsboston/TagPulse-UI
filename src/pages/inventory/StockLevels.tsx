@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Space, Table, Typography, message } from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Empty from 'antd/es/empty';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import InputNumber from 'antd/es/input-number';
+import Modal from 'antd/es/modal';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { DownloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useStockLevels } from '@/hooks/useInventory';
 import { useProducts } from '@/hooks/useInventory';

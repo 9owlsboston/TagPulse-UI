@@ -1,22 +1,20 @@
 import { useMemo, useState } from 'react';
-import {
-  Button,
-  Card,
-  Col,
-  Collapse,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-  App,
-} from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Col from 'antd/es/col';
+import Collapse from 'antd/es/collapse';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import InputNumber from 'antd/es/input-number';
+import Modal from 'antd/es/modal';
+import Row from 'antd/es/row';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tabs from 'antd/es/tabs';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
 import {
   CarOutlined,
   DeleteOutlined,
