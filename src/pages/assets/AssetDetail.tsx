@@ -244,7 +244,10 @@ export function AssetDetail() {
         <>
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Name">{asset.name}</Descriptions.Item>
-            <Descriptions.Item label="Type">{asset.asset_type}</Descriptions.Item>
+            {/* Sprint 41 Phase F7 — the legacy 'Type' Descriptions row was
+                dropped here; Category (below) is the sole classifier. The
+                `asset_type` field still exists on the API response until
+                Sprint 41 Phase H removes it, but we no longer surface it. */}
             <Descriptions.Item label="Status">
               <Tag color={STATUS_COLOR[asset.status] ?? 'default'}>{asset.status}</Tag>
             </Descriptions.Item>
@@ -570,8 +573,13 @@ export function AssetDetail() {
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Asset Type" name="asset_type">
-            <Input placeholder="e.g. forklift, pallet" />
+          {/* Sprint 41 Phase F7 — the 'Asset Type' input was dropped here;
+              Category (below) is the sole classifier. The hidden field
+              below preserves the existing `asset.asset_type` value on
+              edit so PATCH /assets/{id} keeps the backend column populated
+              until Sprint 41 Phase H drops it. */}
+          <Form.Item name="asset_type" hidden>
+            <Input type="hidden" />
           </Form.Item>
           {/* Sprint 37 row 3.3a — Category picker on Edit. Cleared selection
               sends explicit null to clear the FK (see onEditAsset above). */}

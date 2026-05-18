@@ -126,7 +126,13 @@ export interface DeviceHealthSummary {
 
 // ── Rules ──
 
-export type ConditionType =
+// Sprint 41 Phase F — the union now includes the 13 (event_type, trigger)
+// pairs introduced by ADR 021 v2 "Configurable Signaling Events".
+// The backend regex (`src/tagpulse/models/rule_schemas.py`
+// `_RULE_CONDITION_PATTERN`) and the per-trigger config schemas are the
+// authoritative truth; this client-side mirror exists so the discriminated
+// union in `SignalingRuleModal` can reject invalid pairs before submit.
+export type LegacyConditionType =
   | 'threshold'
   | 'absence'
   | 'rate_change'
@@ -137,6 +143,31 @@ export type ConditionType =
   | 'zone.entered'
   | 'zone.exited'
   | 'zone.dwell_exceeded';
+
+export type SignalingEventType = 'location' | 'geolocation' | 'temperature' | 'geofencing';
+export type SignalingTrigger =
+  | 'on_change'
+  | 'periodic'
+  | 'on_inactivity'
+  | 'on_inference'
+  | 'on_entry'
+  | 'on_exit';
+
+/**
+ * Authoritative map of which `trigger` values are legal for each
+ * `event_type`. Kept in sync with backend
+ * `SIGNALING_VALID_PAIRS` in `src/tagpulse/models/rule_schemas.py`.
+ */
+export const SIGNALING_VALID_PAIRS: Readonly<Record<SignalingEventType, readonly SignalingTrigger[]>> = {
+  location: ['on_change', 'periodic', 'on_inactivity', 'on_inference'],
+  geolocation: ['on_change', 'periodic', 'on_inactivity'],
+  temperature: ['on_change', 'periodic', 'on_inactivity'],
+  geofencing: ['on_entry', 'on_exit'],
+} as const;
+
+export type SignalingConditionType = `signaling.${SignalingEventType}.${SignalingTrigger}`;
+
+export type ConditionType = LegacyConditionType | SignalingConditionType;
 export type ActionType = 'webhook' | 'email' | 'notification';
 
 export interface RuleCreate {
@@ -148,6 +179,15 @@ export interface RuleCreate {
   action_config: Record<string, unknown>;
   scope_device_id?: string;
   enabled?: boolean;
+  // Sprint 41 Phase A — signaling extensions. Present only when the rule
+  // is `kind: 'signaling'` (the backend infers `kind` from `event_type`
+  // being non-null on the request body).
+  event_type?: SignalingEventType | null;
+  trigger?: SignalingTrigger | null;
+  processor?: 'isolated_zones' | 'overlapping_zones' | null;
+  confidence_threshold?: number | string;
+  category_ids?: string[];
+  integration_ids?: string[] | null;
 }
 
 export interface RuleUpdate {

@@ -105,17 +105,20 @@ export class RulesService {
      * List Rules
      * List all rules for the tenant.
      * @param enabledOnly
+     * @param kind Sprint 41 Phase B1: filter by rule discriminator. 'signaling' = rules with event_type populated; 'legacy' = rules with event_type NULL. Omit for all rules (backwards-compatible).
      * @returns RuleResponse Successful Response
      * @throws ApiError
      */
     public static listRulesRulesGet(
         enabledOnly: boolean = false,
+        kind?: ('legacy' | 'signaling' | null),
     ): CancelablePromise<Array<RuleResponse>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/rules',
             query: {
                 'enabled_only': enabledOnly,
+                'kind': kind,
             },
             errors: {
                 422: `Validation Error`,
@@ -126,15 +129,20 @@ export class RulesService {
      * Create Rule
      * Create a new rule.
      * @param requestBody
+     * @param override Sprint 41 Phase B2: admin-only bypass of the per-scope active signaling-rule cap. Recorded in the audit log.
      * @returns RuleResponse Successful Response
      * @throws ApiError
      */
     public static createRuleRulesPost(
         requestBody: RuleCreate,
+        override: boolean = false,
     ): CancelablePromise<RuleResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/rules',
+            query: {
+                'override': override,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -189,18 +197,23 @@ export class RulesService {
      * Update a rule (partial update).
      * @param ruleId
      * @param requestBody
+     * @param override Sprint 41 Phase B2: admin-only bypass of the per-scope active signaling-rule cap. Recorded in the audit log.
      * @returns RuleResponse Successful Response
      * @throws ApiError
      */
     public static updateRuleRulesRuleIdPatch(
         ruleId: string,
         requestBody: RuleUpdate,
+        override: boolean = false,
     ): CancelablePromise<RuleResponse> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/rules/{rule_id}',
             path: {
                 'rule_id': ruleId,
+            },
+            query: {
+                'override': override,
             },
             body: requestBody,
             mediaType: 'application/json',

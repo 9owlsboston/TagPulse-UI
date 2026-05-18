@@ -13,6 +13,17 @@ vi.mock('@/hooks/useRules', () => ({
   }),
   useUpdateRule: () => ({ mutate: vi.fn() }),
   useDeleteRule: () => ({ mutate: vi.fn() }),
+  // Sprint 41 Phase F2 — RuleList now mounts SignalingRuleModal which
+  // pulls useCreateRule + useCategories + useIntegrations.
+  useCreateRule: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/hooks/useCategories', () => ({
+  useCategories: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('@/hooks/useIntegrations', () => ({
+  useIntegrations: () => ({ data: [], isLoading: false }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

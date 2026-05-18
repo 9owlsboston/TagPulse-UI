@@ -71,7 +71,7 @@ export type { PublicBranding } from './models/PublicBranding';
 export type { ReadsPerHour } from './models/ReadsPerHour';
 export type { RowError } from './models/RowError';
 export type { RuleCreate } from './models/RuleCreate';
-export type { RuleResponse } from './models/RuleResponse';
+export { RuleResponse } from './models/RuleResponse';
 export type { RuleUpdate } from './models/RuleUpdate';
 export { SiteCreate } from './models/SiteCreate';
 export { SiteResponse } from './models/SiteResponse';

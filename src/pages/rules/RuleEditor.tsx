@@ -15,13 +15,16 @@ import message from 'antd/es/message';
 import AutoComplete from 'antd/es/auto-complete';
 import Modal from 'antd/es/modal';
 import List from 'antd/es/list';
+import Tabs from 'antd/es/tabs';
 import Tag from 'antd/es/tag';
+import Alert from 'antd/es/alert';
 import { useCreateRule, useUpdateRule, useRule, useRuleTemplates, type RuleTemplate } from '@/hooks/useRules';
 import { useDevices } from '@/hooks/useDevices';
 import { useTelemetryModels } from '@/hooks/useTelemetryModels';
 import { useProducts } from '@/hooks/useInventory';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
+import { SignalingRuleModal } from '@/pages/rules/SignalingRuleModal';
 import { useQuery } from '@tanstack/react-query';
 import type { RuleCreate } from '@/types';
 
@@ -264,14 +267,19 @@ export function RuleEditor() {
 
   const values = form.getFieldsValue();
 
-  return (
-    <div>
-      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Title level={2} style={{ margin: 0 }}>{isEdit ? 'Edit Rule' : 'Create Rule'}</Title>
-        {!isEdit && (
-          <Button onClick={() => setGalleryOpen(true)}>Start from template</Button>
-        )}
-      </Space>
+  // Sprint 41 Phase F3 — wrap the existing 4-step wizard in a Tabs whose
+  // "Alert rule" tab points operators at the SignalingRuleModal (Phase F2)
+  // and whose "Legacy rule" tab keeps the wizard editable for the 10
+  // legacy condition_types. New rule creation defaults to the Alert rule
+  // tab (per ADR 021 §"UI"); editing an existing rule defaults to the
+  // Legacy rule tab because the wizard is the only editor that handles
+  // both legacy and signaling shapes today.
+  const defaultTab = isEdit ? 'legacy' : 'alert';
+  const [activeTab, setActiveTab] = useState<'alert' | 'legacy'>(defaultTab);
+  const [signalingModalOpen, setSignalingModalOpen] = useState(false);
+
+  const wizardPane = (
+    <>
       <Steps current={step} items={STEP_ITEMS} style={{ marginBottom: 24 }} />
       <Card style={{ maxWidth: 700 }}>
         <Form
@@ -559,6 +567,60 @@ export function RuleEditor() {
           </Space>
         </Form>
       </Card>
+    </>
+  );
+
+  const alertPane = (
+    <Card style={{ maxWidth: 700 }}>
+      <Alert
+        type="info"
+        showIcon
+        message="Alert rules are created from the modal."
+        description={
+          isEdit
+            ? 'This page is the legacy editor; alert rules opened here render in the "Legacy rule" tab so the existing wizard can edit them.'
+            : 'Pick an event type, trigger, scope, and connections, then create the rule. The legacy 4-step wizard is still available under the "Legacy rule" tab.'
+        }
+        style={{ marginBottom: 16 }}
+      />
+      <Space>
+        <Button
+          type="primary"
+          onClick={() => setSignalingModalOpen(true)}
+          data-testid="open-signaling-modal-button"
+          disabled={isEdit}
+        >
+          Open Add Alert Rule
+        </Button>
+        {!isEdit && (
+          <Button onClick={() => setActiveTab('legacy')}>Use legacy rule form instead</Button>
+        )}
+      </Space>
+    </Card>
+  );
+
+  return (
+    <div>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <Title level={2} style={{ margin: 0 }}>{isEdit ? 'Edit Rule' : 'Create Rule'}</Title>
+        {!isEdit && activeTab === 'legacy' && (
+          <Button onClick={() => setGalleryOpen(true)}>Start from template</Button>
+        )}
+      </Space>
+      <Tabs
+        activeKey={activeTab}
+        onChange={(k) => setActiveTab(k as 'alert' | 'legacy')}
+        items={[
+          { key: 'alert', label: 'Alert rule', children: alertPane },
+          { key: 'legacy', label: 'Legacy rule', children: wizardPane },
+        ]}
+      />
+
+      <SignalingRuleModal
+        open={signalingModalOpen}
+        onClose={() => setSignalingModalOpen(false)}
+        onCreated={() => navigate('/rules')}
+      />
 
       <Modal
         title="Rule template gallery"

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -23,6 +24,17 @@ vi.mock('@/hooks/useDevices', () => ({
   }),
 }));
 
+// Sprint 41 Phase F2 — SignalingRuleModal is rendered (closed) inside
+// RuleEditor's tab pane. Mock its data-fetching hooks so the component
+// mounts without hitting the network.
+vi.mock('@/hooks/useCategories', () => ({
+  useCategories: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('@/hooks/useIntegrations', () => ({
+  useIntegrations: () => ({ data: [], isLoading: false }),
+}));
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
@@ -38,16 +50,27 @@ describe('RuleEditor', () => {
     expect(screen.getByText('Create Rule')).toBeInTheDocument();
   });
 
-  it('renders step navigation', () => {
+  it('defaults to the Alert rule tab on new creation (Sprint 41 Phase F3)', () => {
     render(<RuleEditor />, { wrapper });
+    // The Alert rule pane surfaces a CTA that opens the SignalingRuleModal,
+    // so the data-testid is the clearest signal the tab is active.
+    expect(screen.getByTestId('open-signaling-modal-button')).toBeInTheDocument();
+  });
+
+  it('renders the legacy wizard step navigation under the Legacy rule tab', async () => {
+    const user = userEvent.setup();
+    render(<RuleEditor />, { wrapper });
+    await user.click(screen.getByRole('tab', { name: 'Legacy rule' }));
     expect(screen.getByText('Condition')).toBeInTheDocument();
     expect(screen.getByText('Action')).toBeInTheDocument();
     expect(screen.getByText('Scope')).toBeInTheDocument();
     expect(screen.getByText('Review')).toBeInTheDocument();
   });
 
-  it('renders Next button on first step', () => {
+  it('renders Next button on first step of the legacy wizard', async () => {
+    const user = userEvent.setup();
     render(<RuleEditor />, { wrapper });
+    await user.click(screen.getByRole('tab', { name: 'Legacy rule' }));
     expect(screen.getByText('Next')).toBeInTheDocument();
   });
 });

@@ -7,9 +7,11 @@ import Typography from 'antd/es/typography';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useRules, useUpdateRule, useDeleteRule } from '@/hooks/useRules';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
+import { SignalingRuleModal } from '@/pages/rules/SignalingRuleModal';
 import type { RuleResponse } from '@/types';
 
 const { Title } = Typography;
@@ -19,6 +21,10 @@ export function RuleList() {
   const { data, isLoading } = useRules();
   const updateRule = useUpdateRule();
   const deleteRule = useDeleteRule();
+  // Sprint 41 Phase F2 — primary create flow now opens the SignalingRuleModal;
+  // the legacy 4-step wizard at /rules/new is the secondary path under
+  // "Legacy rule" tab (F3) for the 10 pre-existing condition types.
+  const [signalingModalOpen, setSignalingModalOpen] = useState(false);
 
   const handleToggle = (id: string, enabled: boolean) => {
     updateRule.mutate({ id, data: { enabled } });
@@ -72,12 +78,26 @@ export function RuleList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Rules</Title>
         <RoleGuard roles={['admin', 'editor']}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/rules/new')}>
-            Create Rule
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setSignalingModalOpen(true)}
+              data-testid="add-alert-rule-button"
+            >
+              Add alert rule
+            </Button>
+            <Button onClick={() => navigate('/rules/new')} data-testid="add-legacy-rule-button">
+              Legacy rule
+            </Button>
+          </Space>
         </RoleGuard>
       </div>
       <Table rowKey="id" columns={columns} dataSource={data} loading={isLoading} pagination={{ pageSize: 20 }} />
+      <SignalingRuleModal
+        open={signalingModalOpen}
+        onClose={() => setSignalingModalOpen(false)}
+      />
     </div>
   );
 }
