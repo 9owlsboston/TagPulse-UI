@@ -40,3 +40,36 @@ jobs:
           # deploy-azure.yml from the GitHub Environment.
           VITE_API_BASE_URL: https://api.example.com
         run: npm run build
+
+      # Sprint 36 Phase E hotfix #4 — Boot-time bundle smoke gate.
+      # The PR review matrix (lint + typecheck + vitest + `vite build`)
+      # NEVER actually evaluates the built JS in a browser, so four
+      # consecutive Rollup ES-module-cycle / TDZ bugs (PRs #31, #32,
+      # #33, and the same-PR #4) reached Azure Static Web Apps and
+      # white-screened production before being caught. This step boots
+      # the freshly built `dist/` in headless Chromium (via Playwright)
+      # through an in-process node:http static server, navigates to
+      # `/`, waits for the bundle to settle, and fails the workflow on
+      # any pageerror, console.error, /assets/*.js request failure, or
+      # an empty `<div id="root">`. Because this job is the gate for
+      # both pull-request review and the deploy-azure.yml workflow
+      # (via `workflow_call`), no future bundle-level regression of
+      # the same family can reach SWA without an explicit override.
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          # Bump the cache key whenever the playwright devDep version
+          # changes (the install step below is a no-op if the cache
+          # already contains the matching chromium).
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
+      - name: Install Playwright Chromium (with system deps)
+        # `--with-deps` pulls the apt packages headless_shell needs on
+        # ubuntu-latest; harmless if the browser binary is already
+        # cached, fast path runs in seconds.
+        run: npx playwright install chromium --with-deps
+      - name: Smoke test (boot built bundle)
+        run: npm run smoke:bundle
