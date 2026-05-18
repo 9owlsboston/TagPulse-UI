@@ -17,8 +17,10 @@ import message from 'antd/es/message';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';
+import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
+import { CategorySelect } from '@/components/CategorySelect';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLocation';
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
@@ -68,6 +70,12 @@ export function AssetList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  // Sprint 37 row 3.3a — list-page Category filter. Backend GET /assets
+  // doesn't expose a category_id query param today, so this is client-side
+  // narrowing on the current page (parity with the last-seen RangePicker
+  // + the never-seen Checkbox above). Backend filter is tracked as a
+  // follow-up row in docs/design/reference-design-remediation.md.
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [lastSeenRange, setLastSeenRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [neverSeenOnly, setNeverSeenOnly] = useState(false);
   const { data, isLoading } = useAssets({
@@ -79,6 +87,17 @@ export function AssetList() {
   const showTemperature = (tenant?.telemetry_subject_kinds ?? []).includes('asset');
   const createAsset = useCreateAsset();
   const canEdit = useCanPerform('editor');
+  // Categories rarely change between mutations (60 s staleTime in the hook),
+  // so loading them once here powers both the table column rendering and
+  // the filter — no per-row N+1 fetches.
+  const { data: categories } = useCategories({ limit: 200 });
+  const categoryById = useMemo(() => {
+    const map = new Map<string, { name: string; category_type: string }>();
+    for (const c of categories ?? []) {
+      map.set(c.id, { name: c.name, category_type: c.category_type });
+    }
+    return map;
+  }, [categories]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm<AssetCreate>();
@@ -102,11 +121,12 @@ export function AssetList() {
   }, [rows]);
 
   // Client-side narrow on top of the server-fetched page: applies the
-  // last-seen range and the "never seen" toggle.
+  // last-seen range, the "never seen" toggle, and the Category filter.
   const filteredRows = useMemo(() => {
     const from = lastSeenRange?.[0]?.valueOf();
     const to = lastSeenRange?.[1]?.valueOf();
     return rows.filter((r) => {
+      if (categoryId && r.category_id !== categoryId) return false;
       const loc = locationByAssetId.get(r.id);
       if (neverSeenOnly) return !loc;
       if (from || to) {
@@ -117,7 +137,7 @@ export function AssetList() {
       }
       return true;
     });
-  }, [rows, locationByAssetId, lastSeenRange, neverSeenOnly]);
+  }, [rows, locationByAssetId, lastSeenRange, neverSeenOnly, categoryId]);
 
   // ── Row-flash on new fix ──────────────────────────────────────────────
   // Track the previous `recorded_at` per asset; when it advances, flash the
@@ -248,6 +268,14 @@ export function AssetList() {
               onChange={setStatus}
               style={{ width: 160 }}
             />
+            {/* Sprint 37 row 3.3a — list-page Category filter. */}
+            <CategorySelect
+              value={categoryId}
+              onChange={setCategoryId}
+              placeholder="Filter by category"
+              style={{ width: 220 }}
+              data-testid="asset-list-category-filter"
+            />
             <RangePicker
               showTime
               allowClear
@@ -301,6 +329,34 @@ export function AssetList() {
               dataIndex: 'asset_type',
               filters: typeFilters.length > 0 ? typeFilters : undefined,
               onFilter: (value, record) => record.asset_type === value,
+            },
+            // Sprint 37 row 3.3a — Category column. Renders the category
+            // name (resolved from the categories cache to avoid N+1) with
+            // a Tag coloured by category_type. Sortable by name.
+            {
+              title: 'Category',
+              key: 'category',
+              sorter: (a, b) => {
+                const an = a.category_id ? categoryById.get(a.category_id)?.name ?? '' : '';
+                const bn = b.category_id ? categoryById.get(b.category_id)?.name ?? '' : '';
+                return an.localeCompare(bn);
+              },
+              render: (_: unknown, row: AssetResponse) => {
+                if (!row.category_id) return <Typography.Text type="secondary">—</Typography.Text>;
+                const c = categoryById.get(row.category_id);
+                if (!c) return <Typography.Text type="secondary">{row.category_id.slice(0, 8)}…</Typography.Text>;
+                const typeColor: Record<string, string> = {
+                  liquid_container: 'blue',
+                  reference_tag: 'purple',
+                  rti_container: 'cyan',
+                  object: 'gold',
+                };
+                return (
+                  <Tooltip title={`Type: ${c.category_type}`}>
+                    <Tag color={typeColor[c.category_type] ?? 'default'}>{c.name}</Tag>
+                  </Tooltip>
+                );
+              },
             },
             {
               title: 'External Ref',
@@ -411,6 +467,15 @@ export function AssetList() {
           </Form.Item>
           <Form.Item label="Asset Type" name="asset_type" rules={[{ required: true }]}>
             <Input placeholder="pallet, tool, container, …" />
+          </Form.Item>
+          {/* Sprint 37 row 3.3a — Category picker on Create. Optional:
+              assets.category_id is nullable backend-side, so blank is OK. */}
+          <Form.Item
+            label="Category"
+            name="category_id"
+            help="Optional. Pick from the curated catalog at /categories."
+          >
+            <CategorySelect placeholder="Select a category (optional)" data-testid="asset-create-category" />
           </Form.Item>
           <Form.Item label="External Ref" name="external_ref">
             <Input placeholder="ERP/WMS code" />
