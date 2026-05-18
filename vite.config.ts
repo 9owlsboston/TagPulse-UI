@@ -132,7 +132,20 @@ export default defineConfig({
             return match[1];
           }
           if (id.includes('node_modules/@rc-component/')) {
-            return 'rc-component';
+            // **Critical**: must live in the same chunk as antd-core,
+            // not a separate `rc-component` chunk. AntD's `_util`,
+            // `select`, `dropdown`, `color-picker`, `qr-code`,
+            // `tour`, and `watermark` all import from
+            // `@rc-component/*`, and several `@rc-component/*`
+            // packages (notably `@rc-component/color-picker`'s
+            // `Color` class re-exported via `antd/es/color-picker`)
+            // import back from antd-core. Putting them in separate
+            // chunks creates an ES-module cycle that triggers a TDZ
+            // error at first paint: `Uncaught ReferenceError: Cannot
+            // access 'un' before initialization` (Sprint 36 Phase E
+            // hotfix #2 — same family of bug as the React/antd-core
+            // cycle fixed in PR #31).
+            return 'antd-core';
           }
           return undefined;
         },

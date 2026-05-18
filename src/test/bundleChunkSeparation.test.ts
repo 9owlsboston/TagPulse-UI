@@ -44,4 +44,34 @@ describe('vite production chunk separation', () => {
     );
     expect(text).toMatch(/return 'react-vendor'/);
   });
+
+  it('manualChunks routes @rc-component/* into antd-core, not a separate chunk', () => {
+    // Sprint 36 Phase E hotfix #2 — production showed
+    //
+    //   rc-component-<hash>.js: Uncaught ReferenceError:
+    //   Cannot access 'un' before initialization
+    //
+    // because `@rc-component/color-picker` (which lives in our
+    // `rc-component` chunk) imported the `FastColor` class from
+    // `antd-core` and then used it as `(function(r){...})(un)` at
+    // module-init time. antd-core in turn imported other things
+    // from `@rc-component/*` (trigger / mutate-observer / tour /
+    // qrcode), forming an ES-module cycle through `_util`,
+    // `select`, `dropdown`, `color-picker`, `qr-code`, `tour`, and
+    // `watermark`. The class binding therefore landed in the TDZ
+    // window on the importer side and crashed every page.
+    //
+    // The fix collapses `@rc-component/*` into the same chunk as
+    // antd-core so the binding is intra-chunk and Rollup can wrap
+    // it safely. This test pins the rule so a future split doesn't
+    // re-introduce the cycle.
+    const text = fs.readFileSync(VITE_CONFIG, 'utf8');
+    expect(text).toMatch(/node_modules\/@rc-component\//);
+    // The @rc-component branch must return 'antd-core' (not
+    // 'rc-component' or anything else).
+    const branch = text.match(
+      /node_modules\/@rc-component\/[\s\S]*?return\s+'([^']+)'/,
+    );
+    expect(branch?.[1]).toBe('antd-core');
+  });
 });
