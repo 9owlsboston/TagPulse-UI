@@ -20,6 +20,13 @@ import { CategoriesService } from '@/api/generated/services/CategoriesService';
 import type { CategoryCreate } from '@/api/generated/models/CategoryCreate';
 import type { CategoryUpdate } from '@/api/generated/models/CategoryUpdate';
 
+// Categories rarely change between mutations (admin/editor curates them at
+// setup time). Without a staleTime, every navigation to /categories triggers
+// a refetch — on the live SWA that's a visible 1-2 s round-trip on every
+// visit. Each mutation in this file already invalidates the cache, so a
+// 60-second staleTime is safe and matches the pattern used by useRuleTemplates.
+const CATEGORIES_STALE_TIME = 60_000;
+
 export function useCategories(params?: {
   category_type?: string;
   limit?: number;
@@ -33,6 +40,7 @@ export function useCategories(params?: {
         params?.limit ?? 100,
         params?.offset ?? 0,
       ),
+    staleTime: CATEGORIES_STALE_TIME,
   });
 }
 
@@ -41,6 +49,7 @@ export function useCategory(id: string | undefined) {
     queryKey: ['categories', id],
     queryFn: () => CategoriesService.getCategoryCategoriesCategoryIdGet(id!),
     enabled: Boolean(id),
+    staleTime: CATEGORIES_STALE_TIME,
   });
 }
 
