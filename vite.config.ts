@@ -27,6 +27,25 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Pin React + its runtime deps to a dedicated `react-vendor`
+          // chunk. **Critical**: without this rule, Rollup's automatic
+          // chunk placement can hoist React's prod-mode runtime into
+          // `antd-core` (because antd-core is the most-shared importer
+          // of `react`). That creates an ES-module cycle — antd-core
+          // imports antd-button/antd-modal/antd-message/etc., which
+          // re-import React from antd-core — and at evaluation time
+          // React's `q.Activity = …` initializer runs with `q` still
+          // undefined, crashing the entire app with
+          // `Uncaught TypeError: Cannot set properties of undefined
+          //  (setting 'Activity')` on **every** page (Sprint 36 Phase E
+          // hotfix). The match is anchored with a trailing slash so we
+          // don't accidentally swallow `react-router-dom`,
+          // `react-grid-layout`, `react-leaflet`, etc.
+          if (
+            /node_modules\/(react|react-dom|scheduler|react-is)\//.test(id)
+          ) {
+            return 'react-vendor';
+          }
           if (
             id.includes('node_modules/recharts') ||
             id.includes('node_modules/d3-')
