@@ -10,7 +10,16 @@
  *  • Map — admin-only inline editor for the tile provider blob (G7).
  */
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Form, Input, Select, Switch, Tabs, Typography, message } from 'antd';
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
+import Switch from 'antd/es/switch';
+import Tabs from 'antd/es/tabs';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { useTenantConfig, useUpdateTenantConfig } from '@/hooks/useTenantConfig';
 import { useMapConfig, useUpdateMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
 import { useCanPerform } from '@/components/useCanPerform';

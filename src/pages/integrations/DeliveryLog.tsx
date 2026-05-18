@@ -1,5 +1,8 @@
 import { useParams } from 'react-router-dom';
-import { Table, Tag, Typography, Spin } from 'antd';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import Spin from 'antd/es/spin';
 import type { ColumnsType } from 'antd/es/table';
 import { useDeliveries } from '@/hooks/useIntegrations';
 import type { DeliveryResponse } from '@/types';

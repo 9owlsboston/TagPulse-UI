@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Select, Typography, Button } from 'antd';
+import Select from 'antd/es/select';
+import Typography from 'antd/es/typography';
+import Button from 'antd/es/button';
 import { SearchOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';

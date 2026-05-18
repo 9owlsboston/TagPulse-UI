@@ -25,7 +25,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { App as AntApp } from 'antd';
+import AntApp from 'antd/es/app';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
 // AuthProvider: pass-through; useAuth: pretend an admin is logged in so

@@ -5,7 +5,12 @@
  * 7 days; the user can broaden the window or include un-expiring lots.
  */
 import { useMemo, useState } from 'react';
-import { Card, Table, Tag, Select, Space, Typography } from 'antd';
+import Card from 'antd/es/card';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useAllLots, useProducts } from '@/hooks/useInventory';

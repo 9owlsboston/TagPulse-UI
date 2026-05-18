@@ -1,7 +1,8 @@
 import { Suspense, lazy } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { App as AntApp, Spin } from 'antd';
+import AntApp from 'antd/es/app';
+import Spin from 'antd/es/spin';
 import { AuthProvider } from '@/lib/auth';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';

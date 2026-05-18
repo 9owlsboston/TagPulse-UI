@@ -1,4 +1,15 @@
-import { Table, Button, Modal, Form, Input, Typography, Space, App, InputNumber, Card, Select, Tag } from 'antd';
+import Table from 'antd/es/table';
+import Button from 'antd/es/button';
+import Modal from 'antd/es/modal';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Typography from 'antd/es/typography';
+import Space from 'antd/es/space';
+import App from 'antd/es/app';
+import InputNumber from 'antd/es/input-number';
+import Card from 'antd/es/card';
+import Select from 'antd/es/select';
+import Tag from 'antd/es/tag';
 import { PlusOutlined, MinusCircleOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';

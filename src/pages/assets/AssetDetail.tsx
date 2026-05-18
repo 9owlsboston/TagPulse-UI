@@ -1,21 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  Descriptions,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-  App,
-} from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Descriptions from 'antd/es/descriptions';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Modal from 'antd/es/modal';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Table from 'antd/es/table';
+import Tabs from 'antd/es/tabs';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
 import { PlusOutlined, EditOutlined } from '@ant-design/icons';
 import {
   useAsset,

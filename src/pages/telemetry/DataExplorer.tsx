@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Table, Select, Form, InputNumber, Button, Space, Typography, Segmented, Checkbox } from 'antd';
+import Table from 'antd/es/table';
+import Select from 'antd/es/select';
+import Form from 'antd/es/form';
+import InputNumber from 'antd/es/input-number';
+import Button from 'antd/es/button';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
+import Segmented from 'antd/es/segmented';
+import Checkbox from 'antd/es/checkbox';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';

@@ -10,7 +10,11 @@
 // failures (DB / MQTT / migrations) as a non-blocking degraded banner.
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Button, Result, Spin, Typography } from 'antd';
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
+import Result from 'antd/es/result';
+import Spin from 'antd/es/spin';
+import Typography from 'antd/es/typography';
 import { ReloadOutlined } from '@ant-design/icons';
 
 const LIVE_PATH = '/health/live';

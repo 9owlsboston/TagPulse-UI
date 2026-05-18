@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Table, Tag, Input, Select, Space, Typography, Button, Modal, Alert, App } from 'antd';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Input from 'antd/es/input';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
+import Button from 'antd/es/button';
+import Modal from 'antd/es/modal';
+import Alert from 'antd/es/alert';
+import App from 'antd/es/app';
 import { PlusOutlined, SwapOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';

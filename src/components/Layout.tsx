@@ -1,4 +1,6 @@
-import { Layout as AntLayout, Menu, Alert } from 'antd';
+import AntLayout from 'antd/es/layout';
+import Menu from 'antd/es/menu';
+import Alert from 'antd/es/alert';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -26,8 +28,7 @@ import { useTenantBranding } from '@/hooks/useTenantBranding';
 import { AccountDropdown } from '@/components/AccountDropdown';
 import { BrandSync } from '@/components/BrandSync';
 import { useThemeMode } from '@/theme/ThemeProvider';
-import { Typography } from 'antd';
-
+import Typography from 'antd/es/typography';
 const { Sider, Header, Content } = AntLayout;
 const { Text } = Typography;
 

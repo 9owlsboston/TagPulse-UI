@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Button } from 'antd';
+import Button from 'antd/es/button';
 import { EmptyState } from '@/components/EmptyState';
 
 describe('EmptyState', () => {

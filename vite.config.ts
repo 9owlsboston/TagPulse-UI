@@ -13,17 +13,109 @@ export default defineConfig({
     // Sprint 35 / issue #22: split heavy single-use vendor libs into
     // their own chunks so the initial bundle (shell + Dashboard) stays
     // lean and vendor caches survive app-only deploys.
+    //
+    // Sprint 36 / issue #24: replace the `antd: ['antd']` object form
+    // (which collapsed the entire AntD library into one 378 KB gz
+    // chunk loaded eagerly because at least one eager module imports
+    // from 'antd') with a function form that splits AntD by component
+    // and `rc-*` package. Heavy components (Table, DatePicker, Select,
+    // Tree, …) and their `rc-*` internals become their own chunks so
+    // Rollup only pulls them into the reachable graph of the lazy page
+    // chunks that actually use them. Small / always-eager components
+    // (Layout, Menu, Button, Typography, …) collapse into one shared
+    // `antd-core` chunk that everything reuses.
     rollupOptions: {
       output: {
-        manualChunks: {
-          recharts: ['recharts'],
-          leaflet: ['leaflet', 'react-leaflet'],
-          antd: ['antd'],
-          'antd-icons': ['@ant-design/icons'],
-          appinsights: [
-            '@microsoft/applicationinsights-web',
-            '@microsoft/applicationinsights-react-js',
-          ],
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/recharts') ||
+            id.includes('node_modules/d3-')
+          ) {
+            return 'recharts';
+          }
+          if (
+            id.includes('node_modules/leaflet') ||
+            id.includes('node_modules/react-leaflet')
+          ) {
+            return 'leaflet';
+          }
+          if (id.includes('node_modules/@microsoft/applicationinsights')) {
+            return 'appinsights';
+          }
+          if (id.includes('node_modules/@ant-design/icons')) {
+            return 'antd-icons';
+          }
+          // Split AntD components: every component that is meaningfully
+          // sized (>~3 KB gz) gets its own chunk so it caches
+          // independently (an AntD patch invalidates only changed
+          // chunks). Tiny common-case primitives stay in `antd-core`
+          // alongside the shared `_util` infrastructure.
+          //
+          // Source files were converted to direct `antd/es/<name>`
+          // imports in this sprint, so Rollup tree-shakes the
+          // cross-component dependencies that the AntD barrel used to
+          // drag in (e.g. Dashboard no longer pulls `Table` into its
+          // chunk just because it imported `Statistic`).
+          if (id.includes('node_modules/antd/es/')) {
+            const match = id.match(/node_modules\/antd\/es\/([^/]+)/);
+            if (!match) return 'antd-core';
+            const name = match[1];
+            const core = new Set([
+              '_util',
+              'index.js',
+              'locale',
+              'theme',
+              'config-provider',
+              'app',
+              'tag',
+              'space',
+              'grid',
+              'row',
+              'col',
+              'divider',
+              'flex',
+              'empty',
+              'skeleton',
+              'badge',
+              'avatar',
+              'switch',
+              'breadcrumb',
+              'anchor',
+              'affix',
+              'back-top',
+              'float-button',
+              'watermark',
+              'version',
+              'radio',
+              'checkbox',
+              'rate',
+              'qr-code',
+              'progress',
+              'segmented',
+              'time-picker',
+              'auto-complete',
+              'mentions',
+              'calendar',
+              'transfer',
+              'color-picker',
+            ]);
+            if (name.startsWith('_') || core.has(name)) return 'antd-core';
+            return `antd-${name}`;
+          }
+          // Split each rc-* internal package into its own chunk so
+          // Rollup only preloads the ones actually reachable from the
+          // eager entry graph. Page-specific ones (rc-table, rc-tree,
+          // rc-upload, rc-image, rc-rate, rc-slider, …) ride along
+          // with the lazy page chunks that need them.
+          if (id.includes('node_modules/rc-')) {
+            const match = id.match(/node_modules\/(rc-[^/]+)/);
+            if (!match) return 'rc-misc';
+            return match[1];
+          }
+          if (id.includes('node_modules/@rc-component/')) {
+            return 'rc-component';
+          }
+          return undefined;
         },
       },
     },

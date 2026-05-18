@@ -12,7 +12,12 @@
  * Unauthenticated state (the tenant-id viewer flow) renders a minimal
  * "Viewer" pill instead, since no user object is available.
  */
-import { Avatar, Dropdown, Space, Switch, Tag, Typography } from 'antd';
+import Avatar from 'antd/es/avatar';
+import Dropdown from 'antd/es/dropdown';
+import Space from 'antd/es/space';
+import Switch from 'antd/es/switch';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
 import {
   AuditOutlined,
   BarChartOutlined,

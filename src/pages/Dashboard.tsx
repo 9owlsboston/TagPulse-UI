@@ -1,5 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Col, Row, Typography, List, Tag, Spin, Statistic } from 'antd';
+import Col from 'antd/es/col';
+import Row from 'antd/es/row';
+import Typography from 'antd/es/typography';
+import List from 'antd/es/list';
+import Tag from 'antd/es/tag';
+import Spin from 'antd/es/spin';
+import Statistic from 'antd/es/statistic';
 import {
   HddOutlined,
   ReadOutlined,

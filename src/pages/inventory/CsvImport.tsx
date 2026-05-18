@@ -5,7 +5,15 @@
  * and Stock Items from CSV files.
  */
 import { useState } from 'react';
-import { Button, Card, Space, Table, Tabs, Typography, Upload, message, Alert } from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tabs from 'antd/es/tabs';
+import Typography from 'antd/es/typography';
+import Upload from 'antd/es/upload';
+import message from 'antd/es/message';
+import Alert from 'antd/es/alert';
 import { InboxOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { RoleGuard } from '@/components/RoleGuard';

@@ -8,7 +8,15 @@
  * Backend contract: `PATCH /tenant/branding` (TenantBrandingUpdate).
  * Each field is optional; an empty string clears the override.
  */
-import { Alert, Button, Card, Form, Input, Space, Spin, Typography, message } from 'antd';
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Typography from 'antd/es/typography';
+import message from 'antd/es/message';
 import { useEffect, useState } from 'react';
 import { useCanPerform } from '@/components/useCanPerform';
 import {

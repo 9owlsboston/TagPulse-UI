@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Empty, Select, Space, Spin, Tag, Tooltip as AntTooltip, Typography } from 'antd';
+import Empty from 'antd/es/empty';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Tag from 'antd/es/tag';
+import AntTooltip from 'antd/es/tooltip';
+import Typography from 'antd/es/typography';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useTelemetryModels } from '@/hooks/useTelemetryModels';

@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Card, DatePicker, Select, Space, Table, Tag, Typography } from 'antd';
+import Card from 'antd/es/card';
+import DatePicker from 'antd/es/date-picker';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Table from 'antd/es/table';
+import Tag from 'antd/es/tag';
+import Typography from 'antd/es/typography';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useProducts, useStockMovements } from '@/hooks/useInventory';

@@ -8,18 +8,16 @@
  * footer always renders the resolver's `attribution` string.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Card,
-  Checkbox,
-  Empty,
-  Modal,
-  Slider,
-  Space,
-  Spin,
-  Tag,
-  Tree,
-  Typography,
-} from 'antd';
+import Card from 'antd/es/card';
+import Checkbox from 'antd/es/checkbox';
+import Empty from 'antd/es/empty';
+import Modal from 'antd/es/modal';
+import Slider from 'antd/es/slider';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Tag from 'antd/es/tag';
+import Tree from 'antd/es/tree';
+import Typography from 'antd/es/typography';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';

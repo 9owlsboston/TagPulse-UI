@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, Descriptions, Tag, Select, Input, Space, Typography, App, Spin, Alert } from 'antd';
+import Button from 'antd/es/button';
+import Card from 'antd/es/card';
+import Descriptions from 'antd/es/descriptions';
+import Tag from 'antd/es/tag';
+import Select from 'antd/es/select';
+import Input from 'antd/es/input';
+import Space from 'antd/es/space';
+import Typography from 'antd/es/typography';
+import App from 'antd/es/app';
+import Spin from 'antd/es/spin';
+import Alert from 'antd/es/alert';
 import { KeyOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useUsers, useUpdateUser, useGenerateApiKey, useRevokeApiKey } from '@/hooks/useUsers';
 

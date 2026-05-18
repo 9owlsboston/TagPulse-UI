@@ -9,7 +9,12 @@
  * lookup keyed on the subject kind.
  */
 import { useMemo, useState } from 'react';
-import { Alert, Empty, Select, Space, Spin, Typography } from 'antd';
+import Alert from 'antd/es/alert';
+import Empty from 'antd/es/empty';
+import Select from 'antd/es/select';
+import Space from 'antd/es/space';
+import Spin from 'antd/es/spin';
+import Typography from 'antd/es/typography';
 import {
   CartesianGrid,
   Line,
