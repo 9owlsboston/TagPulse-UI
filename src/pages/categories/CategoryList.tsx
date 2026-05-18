@@ -36,6 +36,11 @@ import {
 import { useCanPerform } from '@/components/useCanPerform';
 import { RoleGuard } from '@/components/RoleGuard';
 import { LabelChips } from '@/components/LabelChips';
+import {
+  PendingLabelPicker,
+  attachPendingLabels,
+  type PendingLabel,
+} from '@/components/PendingLabelPicker';
 
 const { Title, Text } = Typography;
 
@@ -67,6 +72,8 @@ export function CategoryList() {
   const [editing, setEditing] = useState<CategoryResponse | null>(null);
   const [createForm] = Form.useForm<CategoryCreate>();
   const [editForm] = Form.useForm<CategoryUpdate>();
+  // Sprint 37 row 3.9d — client-side label queue for Create flow.
+  const [pendingLabels, setPendingLabels] = useState<PendingLabel[]>([]);
 
   const filterOptions = useMemo(
     () => [{ value: '', label: 'All types' }, ...TYPE_OPTIONS],
@@ -75,7 +82,7 @@ export function CategoryList() {
 
   const onCreate = async (values: CategoryCreate) => {
     try {
-      await createCategory.mutateAsync({
+      const created = await createCategory.mutateAsync({
         ...values,
         // Ant Design returns null for empty optionals, but the API rejects
         // explicit nulls for sku_upc/description on create — coerce to undefined.
@@ -83,8 +90,25 @@ export function CategoryList() {
         sku_upc: values.sku_upc || undefined,
       });
       message.success(`Category "${values.name}" created`);
+      // Sprint 37 row 3.9d — flush queued labels onto the new category.
+      if (pendingLabels.length > 0) {
+        const { ok, failed } = await attachPendingLabels(
+          'category',
+          created.id,
+          pendingLabels,
+        );
+        if (ok > 0) message.success(`Attached ${ok} label${ok === 1 ? '' : 's'}`);
+        for (const f of failed) {
+          message.error(
+            `Could not attach "${f.label.key}: ${f.label.value}" — ${
+              f.error instanceof Error ? f.error.message : 'unknown error'
+            }`,
+          );
+        }
+      }
       setCreateOpen(false);
       createForm.resetFields();
+      setPendingLabels([]);
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to create category');
     }
@@ -293,6 +317,18 @@ export function CategoryList() {
           </Form.Item>
           <Form.Item label="Description" name="description">
             <Input.TextArea rows={3} maxLength={500} />
+          </Form.Item>
+          {/* Sprint 37 row 3.9d — queued labels flushed after create. */}
+          <Form.Item
+            label="Labels"
+            help="Optional. Queued labels are attached after the category is created."
+          >
+            <PendingLabelPicker
+              entityType="category"
+              value={pendingLabels}
+              onChange={setPendingLabels}
+              disabled={createCategory.isPending}
+            />
           </Form.Item>
         </Form>
       </Modal>
