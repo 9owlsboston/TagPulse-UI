@@ -140,8 +140,10 @@ describe('SignalingRuleModal — valid (event_type, trigger) pairs', () => {
   // The per-test timeout is bumped well above the 5s default because
   // AntD's Modal + Select dropdown render + animation in jsdom is
   // measurably slow (each test does ~6 user interactions across two
-  // portal-rendered popups), and the slowest cases in the matrix sit
-  // near the default's edge.
+  // portal-rendered popups). The first 1–2 cases in a cold run also
+  // pay vite transform + module-init cost on top of the per-test work
+  // (observed ~18s on cold start vs ~3–9s once warm), so the budget
+  // here is set to 30s to absorb cold-start without false flakes.
   const eventTypes = Object.keys(SIGNALING_VALID_PAIRS) as SignalingEventType[];
   for (const eventType of eventTypes) {
     for (const trigger of SIGNALING_VALID_PAIRS[eventType]) {
@@ -157,7 +159,7 @@ describe('SignalingRuleModal — valid (event_type, trigger) pairs', () => {
             'https://example.com/hook',
           );
         },
-        15_000,
+        30_000,
       );
     }
   }

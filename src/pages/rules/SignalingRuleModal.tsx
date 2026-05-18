@@ -230,7 +230,7 @@ export function SignalingRuleModal({ open, onClose, onCreated }: SignalingRuleMo
       onCancel={handleCancel}
       confirmLoading={submitting}
       width={680}
-      destroyOnClose
+      destroyOnHidden
       data-testid="signaling-rule-modal"
     >
       <Form
