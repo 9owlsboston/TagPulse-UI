@@ -35,6 +35,7 @@ import {
 } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { RoleGuard } from '@/components/RoleGuard';
+import { LabelChips } from '@/components/LabelChips';
 
 const { Title, Text } = Typography;
 
@@ -332,6 +333,14 @@ export function CategoryList() {
             <Input.TextArea rows={3} maxLength={500} allowClear />
           </Form.Item>
         </Form>
+        {/* Sprint 37 row 3.9a — labels chips. Sits below the edit form
+            inside the same modal so the existing category's labels are
+            attachable/detachable from the same surface used to edit it. */}
+        {editing && (
+          <div style={{ marginTop: 16 }}>
+            <LabelChips entityType="category" entityId={editing.id} />
+          </div>
+        )}
       </Modal>
     </div>
   );

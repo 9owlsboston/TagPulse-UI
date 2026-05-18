@@ -36,6 +36,7 @@ import {
 import { useDevices } from '@/hooks/useDevices';
 import { useCanPerform } from '@/components/useCanPerform';
 import { RoleGuard } from '@/components/RoleGuard';
+import { LabelChips } from '@/components/LabelChips';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
@@ -558,6 +559,14 @@ export function SitesZones() {
           </Form.Item>
           <SiteAddressFields />
         </Form>
+        {/* Sprint 37 row 3.9a — labels chips. Sits below the edit form
+            inside the same modal so the existing entity's labels are
+            attachable/detachable from the same surface used to edit it. */}
+        {editingSite && (
+          <div style={{ marginTop: 16 }}>
+            <LabelChips entityType="site" entityId={editingSite.id} />
+          </div>
+        )}
       </Modal>
 
       {/* Sprint 28 G3 — edit zone modal. Polygon edit deferred per roadmap. */}
@@ -600,6 +609,14 @@ export function SitesZones() {
             </Text>
           )}
         </Form>
+        {/* Sprint 37 row 3.9a — labels chips. Same pattern as the Site
+            edit modal — chips live below the form so the existing zone's
+            labels are managed from the same surface used to edit it. */}
+        {editingZone && (
+          <div style={{ marginTop: 16 }}>
+            <LabelChips entityType="zone" entityId={editingZone.id} />
+          </div>
+        )}
       </Modal>
     </div>
   );

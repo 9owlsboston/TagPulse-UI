@@ -21,6 +21,7 @@ import { useDeviceHealth } from '@/hooks/useDeviceHealth';
 import { useZones } from '@/hooks/useAssets';
 import { DeviceTelemetryTab } from '@/pages/devices/DeviceTelemetryTab';
 import { DeviceLocationTab } from '@/pages/devices/DeviceLocationTab';
+import { LabelChips } from '@/components/LabelChips';
 import type { DeviceUpdate } from '@/types';
 
 const { Title, Text } = Typography;
@@ -163,6 +164,13 @@ export function DeviceDetail() {
               <pre style={{ margin: 0 }}>{JSON.stringify(device.metadata, null, 2)}</pre>
             </Descriptions.Item>
           </Descriptions>
+          {/* Sprint 37 row 3.9a — labels chips. Mirrors AssetDetail
+              placement: directly under the Overview Descriptions so the
+              catalogued key/value pairs sit next to the free-form
+              metadata JSON. Editor+ can add/remove via the popover. */}
+          <div style={{ marginTop: 16 }}>
+            <LabelChips entityType="device" entityId={device.id} />
+          </div>
           <Title level={5} style={{ marginTop: 24 }}>Last Read</Title>
           {lastRead ? (
             <Descriptions bordered column={2} size="small">
