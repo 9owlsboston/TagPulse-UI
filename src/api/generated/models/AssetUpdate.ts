@@ -7,6 +7,7 @@
  */
 export type AssetUpdate = {
     asset_type?: (string | null);
+    category_id?: (string | null);
     external_ref?: (string | null);
     metadata?: (Record<string, any> | null);
     name?: (string | null);

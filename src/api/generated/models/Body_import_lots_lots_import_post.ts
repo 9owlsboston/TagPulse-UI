@@ -6,6 +6,6 @@ export type Body_import_lots_lots_import_post = {
     /**
      * CSV: product_sku,lot_code,manufactured_at,expires_at
      */
-    upload: Blob;
+    upload: string;
 };
 

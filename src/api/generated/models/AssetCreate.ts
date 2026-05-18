@@ -7,6 +7,7 @@
  */
 export type AssetCreate = {
     asset_type: string;
+    category_id?: (string | null);
     external_ref?: (string | null);
     metadata?: (Record<string, any> | null);
     name: string;

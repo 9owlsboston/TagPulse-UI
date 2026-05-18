@@ -2,18 +2,28 @@ import { useMemo, useState } from 'react';
 import {
   Button,
   Card,
+  Col,
   Collapse,
   Form,
   Input,
+  InputNumber,
   Modal,
+  Row,
   Select,
   Space,
   Table,
+  Tabs,
   Tag,
   Typography,
   App,
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  CarOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   useAssetsInZone,
   useCreateSite,
@@ -31,7 +41,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
-import type { SiteCreate } from '@/api/generated/models/SiteCreate';
+import { SiteCreate } from '@/api/generated/models/SiteCreate';
 import type { SiteUpdate } from '@/api/generated/models/SiteUpdate';
 import type { ZoneUpdate } from '@/api/generated/models/ZoneUpdate';
 import { PolygonDraw } from '@/components/PolygonDraw';
@@ -51,7 +61,10 @@ export function SitesZones() {
   const deleteZone = useDeleteZone();
   const isAdmin = useCanPerform('admin');
 
-  const [siteModalOpen, setSiteModalOpen] = useState(false);
+  // Sprint 34 gap 3.2 — two-tab Sites / Transporters. The create modal
+  // shares one form; the kind is pre-set from whichever tab opened it.
+  const [activeTab, setActiveTab] = useState<'site' | 'transporter'>('site');
+  const [creatingKind, setCreatingKind] = useState<'site' | 'transporter' | null>(null);
   const [zoneModalSiteId, setZoneModalSiteId] = useState<string | null>(null);
   const [editingSite, setEditingSite] = useState<SiteResponse | null>(null);
   const [editingZone, setEditingZone] = useState<ZoneResponse | null>(null);
@@ -62,15 +75,17 @@ export function SitesZones() {
   const [editZoneForm] = Form.useForm<ZoneUpdate>();
   const zoneKind = Form.useWatch('kind', zoneForm);
 
-  const zonesBySite = useMemo(() => {
-    const map = new Map<string, ZoneResponse[]>();
-    for (const z of zones ?? []) {
-      const arr = map.get(z.site_id) ?? [];
-      arr.push(z);
-      map.set(z.site_id, arr);
+  const sitesByKind = useMemo(() => {
+    const buckets: Record<'site' | 'transporter', SiteResponse[]> = {
+      site: [],
+      transporter: [],
+    };
+    for (const s of sites ?? []) {
+      const k = s.kind === 'transporter' ? 'transporter' : 'site';
+      buckets[k].push(s);
     }
-    return map;
-  }, [zones]);
+    return buckets;
+  }, [sites]);
 
   const deviceOptions = useMemo(
     () =>
@@ -85,11 +100,57 @@ export function SitesZones() {
     [devices],
   );
 
+  /** Coerce empty form values + paired-lat-lon check before calling the API. */
+  const normalizeSitePayload = <T extends SiteCreate | SiteUpdate>(values: T): T => {
+    // Strip empty strings to undefined so we don't send "" to the server
+    // for optional fields. AntD's `Input` returns "" when cleared, but the
+    // backend treats "" and missing as the same thing.
+    const out = { ...values } as Record<string, unknown>;
+    const blankToUndefined = [
+      'address',
+      'street_line1',
+      'street_line2',
+      'city',
+      'region',
+      'postal_code',
+      'country',
+    ];
+    for (const k of blankToUndefined) {
+      if (out[k] === '' || out[k] === null) out[k] = undefined;
+    }
+    if (typeof out.country === 'string') out.country = out.country.toUpperCase();
+    return out as T;
+  };
+
+  /**
+   * The DB CHECK constraint requires `(lat IS NULL) = (lon IS NULL)` — i.e.
+   * either both are set or neither is. Surface that as a form-level error
+   * before the request hits the server.
+   */
+  const validateLatLonPaired = (values: { latitude?: number | null; longitude?: number | null }) => {
+    const hasLat = values.latitude !== undefined && values.latitude !== null;
+    const hasLon = values.longitude !== undefined && values.longitude !== null;
+    if (hasLat !== hasLon) {
+      message.error('Latitude and longitude must both be provided, or both be empty.');
+      return false;
+    }
+    return true;
+  };
+
   const onCreateSite = async (values: SiteCreate) => {
+    if (!validateLatLonPaired(values)) return;
     try {
-      await createSite.mutateAsync(values);
-      message.success(`Site "${values.name}" created`);
-      setSiteModalOpen(false);
+      const payload = normalizeSitePayload<SiteCreate>({
+        ...values,
+        kind:
+          creatingKind === 'transporter'
+            ? SiteCreate.kind.TRANSPORTER
+            : SiteCreate.kind.SITE,
+      });
+      await createSite.mutateAsync(payload);
+      const label = payload.kind === SiteCreate.kind.TRANSPORTER ? 'Transporter' : 'Site';
+      message.success(`${label} "${values.name}" created`);
+      setCreatingKind(null);
       siteForm.resetFields();
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to create site');
@@ -108,8 +169,9 @@ export function SitesZones() {
   };
 
   const handleDeleteSite = (site: SiteResponse) => {
+    const label = site.kind === 'transporter' ? 'transporter' : 'site';
     modal.confirm({
-      title: 'Delete Site',
+      title: `Delete ${label}`,
       content: `Delete "${site.name}"? Its zones will be deleted too.`,
       okType: 'danger',
       onOk: () => deleteSite.mutateAsync(site.id),
@@ -125,11 +187,21 @@ export function SitesZones() {
     });
   };
 
-  // Sprint 28 G3 — edit handlers.
+  // Sprint 28 G3 — edit handlers; Sprint 34 gap 3.2 — extended with
+  // kind, structured-address fields, and lat/lon.
   const openEditSite = (site: SiteResponse) => {
     editSiteForm.setFieldsValue({
       name: site.name,
+      kind: site.kind,
       address: site.address ?? null,
+      street_line1: site.street_line1 ?? null,
+      street_line2: site.street_line2 ?? null,
+      city: site.city ?? null,
+      region: site.region ?? null,
+      postal_code: site.postal_code ?? null,
+      country: site.country ?? null,
+      latitude: site.latitude ?? null,
+      longitude: site.longitude ?? null,
       default_timezone: site.default_timezone,
     });
     setEditingSite(site);
@@ -137,8 +209,10 @@ export function SitesZones() {
 
   const onEditSite = async (values: SiteUpdate) => {
     if (!editingSite) return;
+    if (!validateLatLonPaired(values)) return;
     try {
-      await updateSite.mutateAsync({ id: editingSite.id, data: values });
+      const payload = normalizeSitePayload<SiteUpdate>(values);
+      await updateSite.mutateAsync({ id: editingSite.id, data: payload });
       message.success(`Site "${values.name ?? editingSite.name}" updated`);
       setEditingSite(null);
       editSiteForm.resetFields();
@@ -167,6 +241,129 @@ export function SitesZones() {
     }
   };
 
+  /**
+   * Render the per-tab Collapse list. Pulled out so both tabs share the
+   * exact same row layout (icon + name + zones table + admin actions).
+   */
+  const renderSitesCollapse = (subset: SiteResponse[], emptyText: string) => {
+    if (subset.length === 0) {
+      return <Text type="secondary">{emptyText}</Text>;
+    }
+    return (
+      <Collapse
+        defaultActiveKey={subset.map((s) => s.id)}
+        items={subset.map((site) => {
+          const siteZones = (zones ?? []).filter((z) => z.site_id === site.id);
+          const isTransporter = site.kind === 'transporter';
+          const KindIcon = isTransporter ? CarOutlined : EnvironmentOutlined;
+          return {
+            key: site.id,
+            label: (
+              <Space>
+                <KindIcon
+                  style={{ color: isTransporter ? '#fa8c16' : '#1677ff' }}
+                  aria-label={isTransporter ? 'transporter' : 'site'}
+                />
+                <strong>{site.name}</strong>
+                <Text type="secondary">{formatSiteAddress(site)}</Text>
+                <Tag>{site.default_timezone}</Tag>
+                <Tag color="blue">{siteZones.length} zone(s)</Tag>
+              </Space>
+            ),
+            extra: isAdmin ? (
+              <Space onClick={(e) => e.stopPropagation()}>
+                <Button
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={() => setZoneModalSiteId(site.id)}
+                >
+                  Add Zone
+                </Button>
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => openEditSite(site)}
+                  aria-label={`Edit ${isTransporter ? 'transporter' : 'site'} ${site.name}`}
+                />
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteSite(site)}
+                  aria-label={`Delete ${isTransporter ? 'transporter' : 'site'} ${site.name}`}
+                />
+              </Space>
+            ) : null,
+            children: (
+              <Table<ZoneResponse>
+                rowKey="id"
+                dataSource={siteZones}
+                pagination={false}
+                size="small"
+                locale={{ emptyText: 'No zones in this site yet.' }}
+                columns={[
+                  { title: 'Name', dataIndex: 'name' },
+                  {
+                    title: 'Kind',
+                    dataIndex: 'kind',
+                    width: 130,
+                    render: (v: string) => <Tag>{v}</Tag>,
+                  },
+                  {
+                    title: 'Readers',
+                    dataIndex: 'fixed_reader_ids',
+                    render: (ids: string[] | null) =>
+                      ids && ids.length > 0 ? (
+                        <Space size={[4, 4]} wrap>
+                          {ids.map((id) => (
+                            <Tag key={id}>
+                              {deviceById.get(id)?.name ?? id.slice(0, 8)}
+                            </Tag>
+                          ))}
+                        </Space>
+                      ) : (
+                        <Text type="secondary">—</Text>
+                      ),
+                  },
+                  {
+                    title: '',
+                    width: 200,
+                    render: (_, row) => (
+                      <Space>
+                        <Button
+                          size="small"
+                          onClick={() => setOccupantsZone(row)}
+                        >
+                          Occupants
+                        </Button>
+                        {isAdmin ? (
+                          <>
+                            <Button
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={() => openEditZone(row)}
+                              aria-label={`Edit zone ${row.name}`}
+                            />
+                            <Button
+                              size="small"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleDeleteZone(row)}
+                            />
+                          </>
+                        ) : null}
+                      </Space>
+                    ),
+                  },
+                ]}
+              />
+            ),
+          };
+        })}
+      />
+    );
+  };
+
   return (
     <div>
       <div
@@ -177,147 +374,95 @@ export function SitesZones() {
           marginBottom: 16,
         }}
       >
-        <Title level={2} style={{ margin: 0 }}>Sites &amp; Zones</Title>
+        <Title level={2} style={{ margin: 0 }}>Locations</Title>
         <RoleGuard roles={['admin']}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setSiteModalOpen(true)}>
-            New Site
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreatingKind(activeTab)}
+          >
+            New {activeTab === 'transporter' ? 'Transporter' : 'Site'}
           </Button>
         </RoleGuard>
       </div>
 
       <Card loading={sitesLoading || zonesLoading}>
-        {(sites ?? []).length === 0 ? (
-          <Text type="secondary">No sites yet. Create one to start defining zones.</Text>
-        ) : (
-          <Collapse
-            defaultActiveKey={(sites ?? []).map((s) => s.id)}
-            items={(sites ?? []).map((site) => {
-              const siteZones = zonesBySite.get(site.id) ?? [];
-              return {
-                key: site.id,
-                label: (
-                  <Space>
-                    <strong>{site.name}</strong>
-                    <Text type="secondary">{site.address ?? '—'}</Text>
-                    <Tag>{site.default_timezone}</Tag>
-                    <Tag color="blue">{siteZones.length} zone(s)</Tag>
-                  </Space>
-                ),
-                extra: isAdmin ? (
-                  <Space onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="small"
-                      icon={<PlusOutlined />}
-                      onClick={() => setZoneModalSiteId(site.id)}
-                    >
-                      Add Zone
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={() => openEditSite(site)}
-                      aria-label={`Edit site ${site.name}`}
-                    />
-                    <Button
-                      size="small"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDeleteSite(site)}
-                    />
-                  </Space>
-                ) : null,
-                children: (
-                  <Table<ZoneResponse>
-                    rowKey="id"
-                    dataSource={siteZones}
-                    pagination={false}
-                    size="small"
-                    locale={{ emptyText: 'No zones in this site yet.' }}
-                    columns={[
-                      { title: 'Name', dataIndex: 'name' },
-                      {
-                        title: 'Kind',
-                        dataIndex: 'kind',
-                        width: 130,
-                        render: (v: string) => <Tag>{v}</Tag>,
-                      },
-                      {
-                        title: 'Readers',
-                        dataIndex: 'fixed_reader_ids',
-                        render: (ids: string[] | null) =>
-                          ids && ids.length > 0 ? (
-                            <Space size={[4, 4]} wrap>
-                              {ids.map((id) => (
-                                <Tag key={id}>
-                                  {deviceById.get(id)?.name ?? id.slice(0, 8)}
-                                </Tag>
-                              ))}
-                            </Space>
-                          ) : (
-                            <Text type="secondary">—</Text>
-                          ),
-                      },
-                      {
-                        title: '',
-                        width: 200,
-                        render: (_, row) => (
-                          <Space>
-                            <Button
-                              size="small"
-                              onClick={() => setOccupantsZone(row)}
-                            >
-                              Occupants
-                            </Button>
-                            {isAdmin ? (
-                              <>
-                                <Button
-                                  size="small"
-                                  icon={<EditOutlined />}
-                                  onClick={() => openEditZone(row)}
-                                  aria-label={`Edit zone ${row.name}`}
-                                />
-                                <Button
-                                  size="small"
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => handleDeleteZone(row)}
-                                />
-                              </>
-                            ) : null}
-                          </Space>
-                        ),
-                      },
-                    ]}
-                  />
-                ),
-              };
-            })}
-          />
-        )}
+        <Tabs
+          activeKey={activeTab}
+          onChange={(k) => setActiveTab(k as 'site' | 'transporter')}
+          items={[
+            {
+              key: 'site',
+              label: (
+                <Space>
+                  <EnvironmentOutlined />
+                  Sites
+                  <Tag>{sitesByKind.site.length}</Tag>
+                </Space>
+              ),
+              children: renderSitesCollapse(
+                sitesByKind.site,
+                'No sites yet. Create one to start defining zones.',
+              ),
+            },
+            {
+              key: 'transporter',
+              label: (
+                <Space>
+                  <CarOutlined />
+                  Transporters
+                  <Tag>{sitesByKind.transporter.length}</Tag>
+                </Space>
+              ),
+              children: renderSitesCollapse(
+                sitesByKind.transporter,
+                'No transporters yet. Create one to track a mobile container, truck, or trailer.',
+              ),
+            },
+          ]}
+        />
       </Card>
 
       <Modal
-        title="Create Site"
-        open={siteModalOpen}
-        onCancel={() => setSiteModalOpen(false)}
+        title={creatingKind === 'transporter' ? 'Create Transporter' : 'Create Site'}
+        open={creatingKind !== null}
+        onCancel={() => {
+          setCreatingKind(null);
+          siteForm.resetFields();
+        }}
         onOk={() => siteForm.submit()}
         confirmLoading={createSite.isPending}
+        width={680}
+        destroyOnClose
       >
         <Form
           form={siteForm}
           layout="vertical"
           onFinish={onCreateSite}
-          initialValues={{ default_timezone: 'UTC' }}
+          initialValues={{
+            default_timezone: 'UTC',
+            kind: creatingKind ?? SiteCreate.kind.SITE,
+          }}
         >
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Address" name="address">
-            <Input.TextArea rows={2} />
+          <Form.Item
+            label="Kind"
+            name="kind"
+            help="Sites are fixed locations; transporters are mobile (truck, trailer, container)."
+          >
+            <Select
+              options={[
+                { value: SiteCreate.kind.SITE, label: 'Site (fixed location)' },
+                { value: SiteCreate.kind.TRANSPORTER, label: 'Transporter (mobile)' },
+              ]}
+            />
           </Form.Item>
           <Form.Item label="Default Timezone" name="default_timezone">
             <Input placeholder="e.g. UTC, America/Los_Angeles" />
           </Form.Item>
+          <SiteAddressFields />
         </Form>
       </Modal>
 
@@ -372,9 +517,14 @@ export function SitesZones() {
         onClose={() => setOccupantsZone(null)}
       />
 
-      {/* Sprint 28 G3 — edit site modal. Closes the Boston DC timezone trigger. */}
+      {/* Sprint 28 G3 — edit modal. Sprint 34 gap 3.2 — extended with kind,
+          structured-address fields, and lat/lon. */}
       <Modal
-        title={editingSite ? `Edit Site — ${editingSite.name}` : 'Edit Site'}
+        title={
+          editingSite
+            ? `Edit ${editingSite.kind === 'transporter' ? 'Transporter' : 'Site'} — ${editingSite.name}`
+            : 'Edit'
+        }
         open={editingSite !== null}
         onCancel={() => {
           setEditingSite(null);
@@ -382,14 +532,24 @@ export function SitesZones() {
         }}
         onOk={() => editSiteForm.submit()}
         confirmLoading={updateSite.isPending}
+        width={680}
         destroyOnClose
       >
         <Form form={editSiteForm} layout="vertical" onFinish={onEditSite}>
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Address" name="address">
-            <Input.TextArea rows={2} />
+          <Form.Item
+            label="Kind"
+            name="kind"
+            help="Mutable — reclassify a transporter that becomes permanently parked, or vice-versa."
+          >
+            <Select
+              options={[
+                { value: 'site', label: 'Site (fixed location)' },
+                { value: 'transporter', label: 'Transporter (mobile)' },
+              ]}
+            />
           </Form.Item>
           <Form.Item
             label="Default Timezone"
@@ -398,6 +558,7 @@ export function SitesZones() {
           >
             <Input placeholder="e.g. UTC, America/Los_Angeles" />
           </Form.Item>
+          <SiteAddressFields />
         </Form>
       </Modal>
 
@@ -443,6 +604,97 @@ export function SitesZones() {
         </Form>
       </Modal>
     </div>
+  );
+}
+
+/**
+ * Format a one-line address summary for the Collapse panel header.
+ * Prefers structured fields (city, region, country) and falls back to the
+ * legacy free-form `address` field, then to an em-dash.
+ */
+function formatSiteAddress(site: SiteResponse): string {
+  const parts = [site.city, site.region, site.country].filter(
+    (v): v is string => Boolean(v),
+  );
+  if (parts.length > 0) return parts.join(', ');
+  return site.address ?? '—';
+}
+
+/**
+ * Shared structured-address + geolocation form section. Both the create
+ * and edit Site modals embed this so the field shapes stay aligned with
+ * the backend `SiteCreate` / `SiteUpdate` schemas.
+ *
+ * `country` is a 2-letter ISO-3166-1 alpha-2 code (uppercased on submit
+ * via `normalizeSitePayload`). `latitude` / `longitude` must be supplied
+ * as a pair (validated in `validateLatLonPaired`).
+ */
+function SiteAddressFields() {
+  return (
+    <>
+      <Form.Item label="Street line 1" name="street_line1">
+        <Input maxLength={200} />
+      </Form.Item>
+      <Form.Item label="Street line 2" name="street_line2">
+        <Input maxLength={200} />
+      </Form.Item>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label="City" name="city">
+            <Input maxLength={100} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Region / state / province" name="region">
+            <Input maxLength={100} />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label="Postal code" name="postal_code">
+            <Input maxLength={20} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label="Country"
+            name="country"
+            help="ISO-3166-1 alpha-2 (e.g. US, GB, DE)."
+            normalize={(v: string | undefined) => (v ? v.toUpperCase() : v)}
+          >
+            <Input maxLength={2} placeholder="US" />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={12}>
+        <Col span={12}>
+          <Form.Item label="Latitude" name="latitude" help="−90 to 90 (decimal degrees).">
+            <InputNumber
+              min={-90}
+              max={90}
+              step={0.0001}
+              style={{ width: '100%' }}
+              placeholder="e.g. 47.6062"
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item label="Longitude" name="longitude" help="−180 to 180 (decimal degrees).">
+            <InputNumber
+              min={-180}
+              max={180}
+              step={0.0001}
+              style={{ width: '100%' }}
+              placeholder="e.g. -122.3321"
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Form.Item label="Notes (free-form address)" name="address">
+        <Input.TextArea rows={2} />
+      </Form.Item>
+    </>
   );
 }
 
