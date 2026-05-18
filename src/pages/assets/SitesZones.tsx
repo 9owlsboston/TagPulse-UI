@@ -37,6 +37,11 @@ import { useDevices } from '@/hooks/useDevices';
 import { useCanPerform } from '@/components/useCanPerform';
 import { RoleGuard } from '@/components/RoleGuard';
 import { LabelChips } from '@/components/LabelChips';
+import {
+  PendingLabelPicker,
+  attachPendingLabels,
+  type PendingLabel,
+} from '@/components/PendingLabelPicker';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
@@ -68,6 +73,11 @@ export function SitesZones() {
   const [editingSite, setEditingSite] = useState<SiteResponse | null>(null);
   const [editingZone, setEditingZone] = useState<ZoneResponse | null>(null);
   const [occupantsZone, setOccupantsZone] = useState<ZoneResponse | null>(null);
+  // Sprint 37 row 3.9d — client-side label queues for the Site and Zone
+  // Create modals. Flushed via attachPendingLabels() after the entity_id
+  // is known. Cleared on modal close.
+  const [pendingSiteLabels, setPendingSiteLabels] = useState<PendingLabel[]>([]);
+  const [pendingZoneLabels, setPendingZoneLabels] = useState<PendingLabel[]>([]);
   const [siteForm] = Form.useForm<SiteCreate>();
   const [zoneForm] = Form.useForm<ZoneCreate>();
   const [editSiteForm] = Form.useForm<SiteUpdate>();
@@ -146,11 +156,28 @@ export function SitesZones() {
             ? SiteCreate.kind.TRANSPORTER
             : SiteCreate.kind.SITE,
       });
-      await createSite.mutateAsync(payload);
+      const created = await createSite.mutateAsync(payload);
       const label = payload.kind === SiteCreate.kind.TRANSPORTER ? 'Transporter' : 'Site';
       message.success(`${label} "${values.name}" created`);
+      // Sprint 37 row 3.9d — flush queued labels onto the new site.
+      if (pendingSiteLabels.length > 0) {
+        const { ok, failed } = await attachPendingLabels(
+          'site',
+          created.id,
+          pendingSiteLabels,
+        );
+        if (ok > 0) message.success(`Attached ${ok} label${ok === 1 ? '' : 's'}`);
+        for (const f of failed) {
+          message.error(
+            `Could not attach "${f.label.key}: ${f.label.value}" — ${
+              f.error instanceof Error ? f.error.message : 'unknown error'
+            }`,
+          );
+        }
+      }
       setCreatingKind(null);
       siteForm.resetFields();
+      setPendingSiteLabels([]);
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to create site');
     }
@@ -158,10 +185,30 @@ export function SitesZones() {
 
   const onCreateZone = async (values: ZoneCreate) => {
     try {
-      await createZone.mutateAsync({ ...values, site_id: zoneModalSiteId! });
+      const created = await createZone.mutateAsync({
+        ...values,
+        site_id: zoneModalSiteId!,
+      });
       message.success(`Zone "${values.name}" created`);
+      // Sprint 37 row 3.9d — flush queued labels onto the new zone.
+      if (pendingZoneLabels.length > 0) {
+        const { ok, failed } = await attachPendingLabels(
+          'zone',
+          created.id,
+          pendingZoneLabels,
+        );
+        if (ok > 0) message.success(`Attached ${ok} label${ok === 1 ? '' : 's'}`);
+        for (const f of failed) {
+          message.error(
+            `Could not attach "${f.label.key}: ${f.label.value}" — ${
+              f.error instanceof Error ? f.error.message : 'unknown error'
+            }`,
+          );
+        }
+      }
       setZoneModalSiteId(null);
       zoneForm.resetFields();
+      setPendingZoneLabels([]);
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to create zone');
     }
@@ -462,6 +509,18 @@ export function SitesZones() {
             <Input placeholder="e.g. UTC, America/Los_Angeles" />
           </Form.Item>
           <SiteAddressFields />
+          {/* Sprint 37 row 3.9d — queued labels flushed after create. */}
+          <Form.Item
+            label="Labels"
+            help="Optional. Queued labels are attached after the site is created."
+          >
+            <PendingLabelPicker
+              entityType="site"
+              value={pendingSiteLabels}
+              onChange={setPendingSiteLabels}
+              disabled={createSite.isPending}
+            />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -508,6 +567,18 @@ export function SitesZones() {
               <PolygonDraw />
             </Form.Item>
           )}
+          {/* Sprint 37 row 3.9d — queued labels flushed after create. */}
+          <Form.Item
+            label="Labels"
+            help="Optional. Queued labels are attached after the zone is created."
+          >
+            <PendingLabelPicker
+              entityType="zone"
+              value={pendingZoneLabels}
+              onChange={setPendingZoneLabels}
+              disabled={createZone.isPending}
+            />
+          </Form.Item>
         </Form>
       </Modal>
 

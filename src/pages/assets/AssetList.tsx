@@ -21,6 +21,11 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { CategorySelect } from '@/components/CategorySelect';
+import {
+  PendingLabelPicker,
+  attachPendingLabels,
+  type PendingLabel,
+} from '@/components/PendingLabelPicker';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLocation';
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
@@ -87,6 +92,9 @@ export function AssetList() {
   const showTemperature = (tenant?.telemetry_subject_kinds ?? []).includes('asset');
   const createAsset = useCreateAsset();
   const canEdit = useCanPerform('editor');
+  // Sprint 37 row 3.9d — labels queued client-side in the Create modal,
+  // flushed via attachPendingLabels() after the entity_id is known.
+  const [pendingLabels, setPendingLabels] = useState<PendingLabel[]>([]);
   // Categories rarely change between mutations (60 s staleTime in the hook),
   // so loading them once here powers both the table column rendering and
   // the filter — no per-row N+1 fetches.
@@ -218,8 +226,27 @@ export function AssetList() {
     try {
       const created = await createAsset.mutateAsync(values);
       message.success(`Asset "${created.name}" created`);
+      // Sprint 37 row 3.9d — flush the queued labels onto the new asset.
+      // Partial-failure path leaves the user on the detail page where
+      // <LabelChips/> can re-add the failed entries.
+      if (pendingLabels.length > 0) {
+        const { ok, failed } = await attachPendingLabels(
+          'asset',
+          created.id,
+          pendingLabels,
+        );
+        if (ok > 0) message.success(`Attached ${ok} label${ok === 1 ? '' : 's'}`);
+        for (const f of failed) {
+          message.error(
+            `Could not attach "${f.label.key}: ${f.label.value}" — ${
+              f.error instanceof Error ? f.error.message : 'unknown error'
+            }`,
+          );
+        }
+      }
       setModalOpen(false);
       form.resetFields();
+      setPendingLabels([]);
       navigate(`/assets/${created.id}`);
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to create asset');
@@ -487,6 +514,19 @@ export function AssetList() {
                 { value: AssetCreate.status.RETIRED, label: 'Retired' },
                 { value: AssetCreate.status.LOST, label: 'Lost' },
               ]}
+            />
+          </Form.Item>
+          {/* Sprint 37 row 3.9d — queue labels client-side; flushed
+              after the Create response in onCreate(). */}
+          <Form.Item
+            label="Labels"
+            help="Optional. Queued labels are attached after the asset is created."
+          >
+            <PendingLabelPicker
+              entityType="asset"
+              value={pendingLabels}
+              onChange={setPendingLabels}
+              disabled={createAsset.isPending}
             />
           </Form.Item>
         </Form>

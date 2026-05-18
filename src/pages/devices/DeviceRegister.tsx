@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
@@ -6,6 +7,11 @@ import Card from 'antd/es/card';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { useCreateDevice } from '@/hooks/useDevices';
+import {
+  PendingLabelPicker,
+  attachPendingLabels,
+  type PendingLabel,
+} from '@/components/PendingLabelPicker';
 import type { DeviceCreate } from '@/types';
 
 const { Title } = Typography;
@@ -15,6 +21,8 @@ export function DeviceRegister() {
   const navigate = useNavigate();
   const createDevice = useCreateDevice();
   const [form] = Form.useForm<DeviceCreate & { metadataJson?: string }>();
+  // Sprint 37 row 3.9d — client-side label queue.
+  const [pendingLabels, setPendingLabels] = useState<PendingLabel[]>([]);
 
   const handleFinish = async (values: DeviceCreate & { metadataJson?: string }) => {
     let metadata: Record<string, unknown> | undefined;
@@ -26,13 +34,29 @@ export function DeviceRegister() {
         return;
       }
     }
-    await createDevice.mutateAsync({
+    const created = await createDevice.mutateAsync({
       name: values.name,
       device_type: values.device_type,
       firmware_version: values.firmware_version,
       metadata,
     });
     message.success('Device registered');
+    // Sprint 37 row 3.9d — flush queued labels onto the new device.
+    if (pendingLabels.length > 0) {
+      const { ok, failed } = await attachPendingLabels(
+        'device',
+        created.id,
+        pendingLabels,
+      );
+      if (ok > 0) message.success(`Attached ${ok} label${ok === 1 ? '' : 's'}`);
+      for (const f of failed) {
+        message.error(
+          `Could not attach "${f.label.key}: ${f.label.value}" — ${
+            f.error instanceof Error ? f.error.message : 'unknown error'
+          }`,
+        );
+      }
+    }
     navigate('/devices');
   };
 
@@ -52,6 +76,18 @@ export function DeviceRegister() {
           </Form.Item>
           <Form.Item name="metadataJson" label="Metadata (JSON)">
             <TextArea rows={4} placeholder='{"location": "warehouse-a"}' />
+          </Form.Item>
+          {/* Sprint 37 row 3.9d — queued labels flushed after register. */}
+          <Form.Item
+            label="Labels"
+            help="Optional. Queued labels are attached after the device is registered."
+          >
+            <PendingLabelPicker
+              entityType="device"
+              value={pendingLabels}
+              onChange={setPendingLabels}
+              disabled={createDevice.isPending}
+            />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={createDevice.isPending}>
