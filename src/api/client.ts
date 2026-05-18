@@ -25,7 +25,7 @@ function clearExpiredSession(): void {
   window.location.reload();
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = (window as unknown as Record<string, unknown>).__TAGPULSE_TOKEN__ as string | undefined;
   const tenantId = (window as unknown as Record<string, unknown>).__TAGPULSE_TENANT_ID__ as string | undefined;
 

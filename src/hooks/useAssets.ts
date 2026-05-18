@@ -10,11 +10,16 @@ import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { QueryService } from '@/api/generated/services/QueryService';
 import type { AssetCreate } from '@/api/generated/models/AssetCreate';
 import type { AssetUpdate } from '@/api/generated/models/AssetUpdate';
+import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetTagBindingCreate } from '@/api/generated/models/AssetTagBindingCreate';
 import type { SiteCreate } from '@/api/generated/models/SiteCreate';
+import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import type { SiteUpdate } from '@/api/generated/models/SiteUpdate';
 import type { ZoneCreate } from '@/api/generated/models/ZoneCreate';
+import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { ZoneUpdate } from '@/api/generated/models/ZoneUpdate';
+import { request } from '@/api/client';
+import { encodeLabelFilter, isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 
 // ── Assets ──────────────────────────────────────────────────────────────────
 
@@ -24,17 +29,31 @@ export function useAssets(params?: {
   q?: string;
   limit?: number;
   offset?: number;
+  labels?: LabelFilter;
 }) {
   return useQuery({
     queryKey: ['assets', params],
-    queryFn: () =>
-      AssetsService.listAssetsAssetsGet(
+    queryFn: () => {
+      // When a label filter is set, the generated client can't model the
+      // deep-object query so fall back to the raw `request()` helper.
+      if (!isEmptyLabelFilter(params?.labels)) {
+        const extra: string[] = [];
+        if (params?.asset_type) extra.push(`asset_type=${encodeURIComponent(params.asset_type)}`);
+        if (params?.status) extra.push(`status=${encodeURIComponent(params.status)}`);
+        if (params?.q) extra.push(`q=${encodeURIComponent(params.q)}`);
+        extra.push(`limit=${params?.limit ?? 100}`);
+        extra.push(`offset=${params?.offset ?? 0}`);
+        extra.push(encodeLabelFilter(params?.labels));
+        return request<AssetResponse[]>(`/assets?${extra.filter(Boolean).join('&')}`);
+      }
+      return AssetsService.listAssetsAssetsGet(
         params?.asset_type ?? undefined,
         params?.status ?? undefined,
         params?.q ?? undefined,
         params?.limit ?? 100,
         params?.offset ?? 0,
-      ),
+      );
+    },
     // Asset rows themselves rarely change, but the list page also displays
     // live "Last seen" / "Location" columns sourced from
     // `useAssetsCurrentLocations`. Polling here keeps the binding-derived
@@ -182,10 +201,15 @@ export function useTagReadsForBinding(
 
 // ── Sites ───────────────────────────────────────────────────────────────────
 
-export function useSites() {
+export function useSites(params?: { labels?: LabelFilter }) {
   return useQuery({
-    queryKey: ['sites'],
-    queryFn: () => SitesZonesService.listSitesSitesGet(),
+    queryKey: ['sites', params ?? null],
+    queryFn: () => {
+      if (!isEmptyLabelFilter(params?.labels)) {
+        return request<SiteResponse[]>(`/sites?${encodeLabelFilter(params?.labels)}`);
+      }
+      return SitesZonesService.listSitesSitesGet();
+    },
   });
 }
 
@@ -227,10 +251,18 @@ export function useDeleteSite() {
 
 // ── Zones ───────────────────────────────────────────────────────────────────
 
-export function useZones(siteId?: string) {
+export function useZones(siteId?: string, params?: { labels?: LabelFilter }) {
   return useQuery({
-    queryKey: ['zones', { siteId }],
-    queryFn: () => SitesZonesService.listZonesZonesGet(siteId ?? undefined),
+    queryKey: ['zones', { siteId, labels: params?.labels ?? null }],
+    queryFn: () => {
+      if (!isEmptyLabelFilter(params?.labels)) {
+        const extra: string[] = [];
+        if (siteId) extra.push(`site_id=${encodeURIComponent(siteId)}`);
+        extra.push(encodeLabelFilter(params?.labels));
+        return request<ZoneResponse[]>(`/zones?${extra.filter(Boolean).join('&')}`);
+      }
+      return SitesZonesService.listZonesZonesGet(siteId ?? undefined);
+    },
   });
 }
 
