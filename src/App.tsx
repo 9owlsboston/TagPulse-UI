@@ -75,62 +75,7 @@ export function App() {
             <ApiHealthGate>
               <AuthProvider>
                 <BrowserRouter>
-                  <RouteTracker />
-                  <TenantGuard>
-                    <Suspense
-                      fallback={
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: 240,
-                          }}
-                        >
-                          <Spin size="large" />
-                        </div>
-                      }
-                    >
-                      <Routes>
-                        <Route element={<Layout />}>
-                          <Route path="/" element={<Dashboard />} />
-                          <Route path="/devices" element={<DeviceList />} />
-                          <Route path="/devices/register" element={<DeviceRegister />} />
-                          <Route path="/devices/:id" element={<DeviceDetail />} />
-                          <Route path="/telemetry" element={<TelemetryDashboard />} />
-                          <Route path="/telemetry/explore" element={<DataExplorer />} />
-                          <Route path="/telemetry-models" element={<TelemetryModels />} />
-                          <Route path="/rules" element={<RuleList />} />
-                          <Route path="/rules/new" element={<RuleEditor />} />
-                          <Route path="/rules/:id/edit" element={<RuleEditor />} />
-                          <Route path="/alerts" element={<AlertHistory />} />
-                          <Route path="/integrations" element={<IntegrationList />} />
-                          <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
-                          <Route path="/assets" element={<AssetList />} />
-                          <Route path="/assets/:id" element={<AssetDetail />} />
-                          <Route path="/categories" element={<CategoryList />} />
-                          <Route path="/sites" element={<SitesZones />} />
-                          <Route path="/map" element={<MapPage />} />
-                          <Route path="/inventory/products" element={<ProductList />} />
-                          <Route path="/inventory/products/:id" element={<ProductDetail />} />
-                          <Route path="/inventory/lots" element={<LotExpiryQueue />} />
-                          <Route path="/inventory/lots/:id" element={<LotDetail />} />
-                          <Route path="/inventory/stock-levels" element={<StockLevels />} />
-                          <Route path="/inventory/stock-movements" element={<StockMovements />} />
-                          <Route path="/inventory/csv-import" element={<CsvImport />} />
-                          <Route path="/admin/tenant" element={<TenantSettings />} />
-                          <Route path="/admin/branding" element={<Branding />} />
-                          <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
-                          <Route path="/admin/usage" element={<UsageDashboard />} />
-                          <Route path="/admin/users" element={<UserList />} />
-                          <Route path="/admin/users/new" element={<UserCreatePage />} />
-                          <Route path="/admin/users/:id" element={<UserDetail />} />
-                          <Route path="/admin/audit-logs" element={<AuditLog />} />
-                          <Route path="/admin/dead-letters" element={<DeadLetters />} />
-                        </Route>
-                      </Routes>
-                    </Suspense>
-                  </TenantGuard>
+                  <AppRoutes />
                 </BrowserRouter>
               </AuthProvider>
             </ApiHealthGate>
@@ -138,5 +83,75 @@ export function App() {
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
+  );
+}
+
+/**
+ * Inner route tree extracted from <App /> so tests can mount it inside a
+ * <MemoryRouter> without standing up the full provider stack. Keeps the
+ * exact lazy declarations + Suspense boundary used in production so
+ * App.test.tsx exercises both. Sprint 36 / #25.
+ */
+export function AppRoutes() {
+  return (
+    <>
+      <RouteTracker />
+      <TenantGuard>
+        <Suspense
+          fallback={
+            <div
+              data-testid="app-suspense-fallback"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 240,
+              }}
+            >
+              <Spin size="large" />
+            </div>
+          }
+        >
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/devices" element={<DeviceList />} />
+              <Route path="/devices/register" element={<DeviceRegister />} />
+              <Route path="/devices/:id" element={<DeviceDetail />} />
+              <Route path="/telemetry" element={<TelemetryDashboard />} />
+              <Route path="/telemetry/explore" element={<DataExplorer />} />
+              <Route path="/telemetry-models" element={<TelemetryModels />} />
+              <Route path="/rules" element={<RuleList />} />
+              <Route path="/rules/new" element={<RuleEditor />} />
+              <Route path="/rules/:id/edit" element={<RuleEditor />} />
+              <Route path="/alerts" element={<AlertHistory />} />
+              <Route path="/integrations" element={<IntegrationList />} />
+              <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
+              <Route path="/assets" element={<AssetList />} />
+              <Route path="/assets/:id" element={<AssetDetail />} />
+              <Route path="/categories" element={<CategoryList />} />
+              <Route path="/sites" element={<SitesZones />} />
+              <Route path="/map" element={<MapPage />} />
+              <Route path="/inventory/products" element={<ProductList />} />
+              <Route path="/inventory/products/:id" element={<ProductDetail />} />
+              <Route path="/inventory/lots" element={<LotExpiryQueue />} />
+              <Route path="/inventory/lots/:id" element={<LotDetail />} />
+              <Route path="/inventory/stock-levels" element={<StockLevels />} />
+              <Route path="/inventory/stock-movements" element={<StockMovements />} />
+              <Route path="/inventory/csv-import" element={<CsvImport />} />
+              <Route path="/admin/tenant" element={<TenantSettings />} />
+              <Route path="/admin/branding" element={<Branding />} />
+              <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
+              <Route path="/admin/usage" element={<UsageDashboard />} />
+              <Route path="/admin/users" element={<UserList />} />
+              <Route path="/admin/users/new" element={<UserCreatePage />} />
+              <Route path="/admin/users/:id" element={<UserDetail />} />
+              <Route path="/admin/audit-logs" element={<AuditLog />} />
+              <Route path="/admin/dead-letters" element={<DeadLetters />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </TenantGuard>
+    </>
   );
 }
