@@ -32,6 +32,7 @@ import { useDevices } from '@/hooks/useDevices';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
+import { AssetEventsTab } from '@/components/AssetEventsTab';
 import { LabelChips } from '@/components/LabelChips';
 import { CategorySelect } from '@/components/CategorySelect';
 import { useCategory } from '@/hooks/useCategories';
@@ -461,6 +462,21 @@ export function AssetDetail() {
           latest={asset.latest_telemetry}
         />
       ) : null,
+    },
+    {
+      // Sprint 38 row 3.9c — Events Log. Synthesised lifecycle stream
+      // (created / updated / retired + every bind/unbind + external
+      // position fixes) from data already fetched by the page. Raw RFID
+      // reader hops stay on the Recent Path tab.
+      key: 'events',
+      label: 'Events Log',
+      children: (
+        <AssetEventsTab
+          asset={asset}
+          bindings={allBindings}
+          externalPositions={externalPositions}
+        />
+      ),
     },
   ];
 
