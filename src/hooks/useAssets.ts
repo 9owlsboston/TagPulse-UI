@@ -251,9 +251,10 @@ export function useDeleteSite() {
 
 // ── Zones ───────────────────────────────────────────────────────────────────
 
-export function useZones(siteId?: string, params?: { labels?: LabelFilter }) {
+export function useZones(params?: { siteId?: string; labels?: LabelFilter }) {
+  const siteId = params?.siteId;
   return useQuery({
-    queryKey: ['zones', { siteId, labels: params?.labels ?? null }],
+    queryKey: ['zones', { siteId: siteId ?? null, labels: params?.labels ?? null }],
     queryFn: () => {
       if (!isEmptyLabelFilter(params?.labels)) {
         const extra: string[] = [];

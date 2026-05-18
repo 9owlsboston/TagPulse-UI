@@ -60,7 +60,7 @@ export function SitesZones() {
   const [siteLabelFilter, setSiteLabelFilter] = useState<LabelFilter>({});
   const [zoneLabelFilter, setZoneLabelFilter] = useState<LabelFilter>({});
   const { data: sites, isLoading: sitesLoading } = useSites({ labels: siteLabelFilter });
-  const { data: zones, isLoading: zonesLoading } = useZones(undefined, { labels: zoneLabelFilter });
+  const { data: zones, isLoading: zonesLoading } = useZones({ labels: zoneLabelFilter });
   const { data: devices } = useDevices();
   const createSite = useCreateSite();
   const createZone = useCreateZone();
