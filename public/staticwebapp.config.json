@@ -2,8 +2,25 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*.{css,js,ico,png,jpg,jpeg,svg,webp,woff,woff2,map}"]
+    "exclude": [
+      "/assets/*",
+      "/*.{js,css,ico,png,jpg,jpeg,svg,webp,woff,woff2,map,json,txt,xml}"
+    ]
   },
+  "routes": [
+    {
+      "route": "/",
+      "headers": {
+        "Cache-Control": "no-store, must-revalidate"
+      }
+    },
+    {
+      "route": "/index.html",
+      "headers": {
+        "Cache-Control": "no-store, must-revalidate"
+      }
+    }
+  ],
   "globalHeaders": {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "X-Frame-Options": "DENY",
@@ -15,11 +32,5 @@
   },
   "mimeTypes": {
     ".json": "application/json"
-  },
-  "responseOverrides": {
-    "404": {
-      "rewrite": "/index.html",
-      "statusCode": 200
-    }
   }
 }
