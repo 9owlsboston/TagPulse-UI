@@ -421,7 +421,7 @@ export function DeviceDetail() {
         onCancel={() => setEditOpen(false)}
         onOk={() => editForm.submit()}
         confirmLoading={updateDevice.isPending}
-        destroyOnClose
+        destroyOnHidden
         width={640}
       >
         <Form form={editForm} layout="vertical" onFinish={onEdit}>

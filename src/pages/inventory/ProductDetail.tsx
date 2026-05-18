@@ -202,7 +202,7 @@ export function ProductDetail() {
         onOk={() => form.submit()}
         onCancel={() => setLotModalOpen(false)}
         confirmLoading={createLot.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<LotFormValues> form={form} layout="vertical" onFinish={onCreateLot}>
           <Form.Item name="lot_code" label="Lot code" rules={[{ required: true, max: 64 }]}>
@@ -223,7 +223,7 @@ export function ProductDetail() {
         onOk={() => editForm.submit()}
         onCancel={() => setEditModalOpen(false)}
         confirmLoading={updateProduct.isPending}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form<ProductEditFormValues> form={editForm} layout="vertical" onFinish={onSaveProduct}>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>
