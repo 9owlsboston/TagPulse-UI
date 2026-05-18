@@ -43,7 +43,7 @@ React SPA admin dashboard for the TagPulse IoT platform. Provides device managem
 - Do not make raw fetch calls — use generated API client + TanStack Query
 - Do not install CSS frameworks — Ant Design handles all styling
 - Do not put business logic in components — extract to hooks or utilities
-- Do not commit generated API client files (`src/api/generated/`)
+- Do commit `src/api/generated/` (regenerated via `npm run generate-api` from `../TagPulse/openapi.json`; CI does not run codegen, so app code that imports from it requires the files to be in-tree). See `.gitignore` for the canonical note.
 
 ## Process & Artifacts
 - **Starting a new sprint:** run `scripts/start-sprint.sh <NN> <topic-slug> ["PR title"]`. This is the canonical workflow — it enforces branch naming (`sprint-NN/topic-slug`), creates the draft PR with the standard checklist, and verifies a clean tree. Do not branch + open PRs manually.

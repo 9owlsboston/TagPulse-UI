@@ -126,14 +126,10 @@ export function AssetList() {
     return map;
   }, [locations]);
 
-  // Asset-type column-header filter, auto-derived from current page.
-  const typeFilters = useMemo(() => {
-    const seen = new Set<string>();
-    for (const r of rows) if (r.asset_type) seen.add(r.asset_type);
-    return Array.from(seen)
-      .sort()
-      .map((v) => ({ text: v, value: v }));
-  }, [rows]);
+  // Sprint 41 Phase F7 — the legacy asset-type column-header filter was
+  // dropped here; Category (top-of-page filter + table column) is the sole
+  // classifier now. `assets.asset_type` itself is dropped in Sprint 41 Phase
+  // H (backend); this UI change goes out one sprint ahead.
 
   // Client-side narrow on top of the server-fetched page: applies the
   // last-seen range and the "never seen" toggle. Category filter is
@@ -365,12 +361,8 @@ export function AssetList() {
           style={{ cursor: 'pointer' }}
           columns={[
             { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-            {
-              title: 'Type',
-              dataIndex: 'asset_type',
-              filters: typeFilters.length > 0 ? typeFilters : undefined,
-              onFilter: (value, record) => record.asset_type === value,
-            },
+            // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
+            // the Category column below is the sole classifier surface.
             // Sprint 37 row 3.3a — Category column. Renders the category
             // name (resolved from the categories cache to avoid N+1) with
             // a Tag coloured by category_type. Sortable by name.
@@ -501,13 +493,20 @@ export function AssetList() {
           form={form}
           layout="vertical"
           onFinish={onCreate}
-          initialValues={{ status: AssetCreate.status.ACTIVE, asset_type: 'pallet' }}
+          initialValues={{ status: AssetCreate.status.ACTIVE, asset_type: 'asset' }}
         >
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="Asset Type" name="asset_type" rules={[{ required: true }]}>
-            <Input placeholder="pallet, tool, container, …" />
+          {/* Sprint 41 Phase F7 — the 'Asset Type' input was dropped here;
+              Category (below) is the sole classifier. `asset_type` is
+              still required by the backend `AssetCreate` schema until
+              Sprint 41 Phase H drops the column, so initialValues above
+              carries a constant 'asset' default the form submits
+              transparently. The hidden Form.Item below keeps the field
+              in the form's internal value map for that submit. */}
+          <Form.Item name="asset_type" hidden>
+            <Input type="hidden" />
           </Form.Item>
           {/* Sprint 37 row 3.3a — Category picker on Create. Optional:
               assets.category_id is nullable backend-side, so blank is OK. */}
