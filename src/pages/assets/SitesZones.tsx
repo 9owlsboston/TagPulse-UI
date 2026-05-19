@@ -20,6 +20,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   EnvironmentOutlined,
+  FilterOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import {
@@ -42,8 +43,8 @@ import {
   attachPendingLabels,
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
-import { LabelFilterStrip } from '@/components/LabelFilterStrip';
-import type { LabelFilter } from '@/lib/labelFilter';
+import { FilterPanel } from '@/components/FilterPanel';
+import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
@@ -56,9 +57,12 @@ const { Title, Text } = Typography;
 
 export function SitesZones() {
   const { modal, message } = App.useApp();
-  // Sprint 37 row 3.9b — site + zone label filter strips.
+  // Sprint 37 row 3.9b — site + zone label filters; Sprint 43 — moved
+  // into two stacked side <FilterPanel/>s under a single Filters toggle
+  // (categories card hidden for site/zone entity types).
   const [siteLabelFilter, setSiteLabelFilter] = useState<LabelFilter>({});
   const [zoneLabelFilter, setZoneLabelFilter] = useState<LabelFilter>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { data: sites, isLoading: sitesLoading } = useSites({ labels: siteLabelFilter });
   const { data: zones, isLoading: zonesLoading } = useZones({ labels: zoneLabelFilter });
   const { data: devices } = useDevices();
@@ -426,68 +430,100 @@ export function SitesZones() {
         }}
       >
         <Title level={2} style={{ margin: 0 }}>Locations</Title>
-        <RoleGuard roles={['admin']}>
+        <Space>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreatingKind(activeTab)}
+            icon={<FilterOutlined />}
+            onClick={() => setFiltersOpen((v) => !v)}
+            type={filtersOpen ? 'primary' : 'default'}
+            data-testid="sites-zones-filters-toggle"
           >
-            New {activeTab === 'transporter' ? 'Transporter' : 'Site'}
+            Filters
+            {(!isEmptyLabelFilter(siteLabelFilter) || !isEmptyLabelFilter(zoneLabelFilter)) && (
+              <Tag
+                color="blue"
+                style={{ marginLeft: 8 }}
+                data-testid="sites-zones-filters-applied-count"
+              >
+                {Object.keys(siteLabelFilter).length + Object.keys(zoneLabelFilter).length}
+              </Tag>
+            )}
           </Button>
-        </RoleGuard>
+          <RoleGuard roles={['admin']}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreatingKind(activeTab)}
+            >
+              New {activeTab === 'transporter' ? 'Transporter' : 'Site'}
+            </Button>
+          </RoleGuard>
+        </Space>
       </div>
 
-      <Card loading={sitesLoading || zonesLoading}>
-        {/* Sprint 37 row 3.9b — label filter strips. */}
-        <Space direction="vertical" size={4} style={{ width: '100%', marginBottom: 12 }}>
-          <LabelFilterStrip
-            entityType="site"
-            value={siteLabelFilter}
-            onChange={setSiteLabelFilter}
-            prefix={<Text type="secondary" style={{ fontSize: 12 }}>Site labels:</Text>}
-          />
-          <LabelFilterStrip
-            entityType="zone"
-            value={zoneLabelFilter}
-            onChange={setZoneLabelFilter}
-            prefix={<Text type="secondary" style={{ fontSize: 12 }}>Zone labels:</Text>}
-          />
-        </Space>
-        <Tabs
-          activeKey={activeTab}
-          onChange={(k) => setActiveTab(k as 'site' | 'transporter')}
-          items={[
-            {
-              key: 'site',
-              label: (
-                <Space>
-                  <EnvironmentOutlined />
-                  Sites
-                  <Tag>{sitesByKind.site.length}</Tag>
-                </Space>
-              ),
-              children: renderSitesCollapse(
-                sitesByKind.site,
-                'No sites yet. Create one to start defining zones.',
-              ),
-            },
-            {
-              key: 'transporter',
-              label: (
-                <Space>
-                  <CarOutlined />
-                  Transporters
-                  <Tag>{sitesByKind.transporter.length}</Tag>
-                </Space>
-              ),
-              children: renderSitesCollapse(
-                sitesByKind.transporter,
-                'No transporters yet. Create one to track a mobile container, truck, or trailer.',
-              ),
-            },
-          ]}
-        />
-      </Card>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Card loading={sitesLoading || zonesLoading}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={(k) => setActiveTab(k as 'site' | 'transporter')}
+              items={[
+                {
+                  key: 'site',
+                  label: (
+                    <Space>
+                      <EnvironmentOutlined />
+                      Sites
+                      <Tag>{sitesByKind.site.length}</Tag>
+                    </Space>
+                  ),
+                  children: renderSitesCollapse(
+                    sitesByKind.site,
+                    'No sites yet. Create one to start defining zones.',
+                  ),
+                },
+                {
+                  key: 'transporter',
+                  label: (
+                    <Space>
+                      <CarOutlined />
+                      Transporters
+                      <Tag>{sitesByKind.transporter.length}</Tag>
+                    </Space>
+                  ),
+                  children: renderSitesCollapse(
+                    sitesByKind.transporter,
+                    'No transporters yet. Create one to track a mobile container, truck, or trailer.',
+                  ),
+                },
+              ]}
+            />
+          </Card>
+        </div>
+        {filtersOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <FilterPanel
+              entityType="site"
+              showCategories={false}
+              value={{ categoryIds: [], labelFilter: siteLabelFilter }}
+              onApply={({ labelFilter: nextLabels }) => {
+                setSiteLabelFilter(nextLabels);
+              }}
+              onClose={() => setFiltersOpen(false)}
+              data-testid="sites-zones-site-filter-panel"
+            />
+            <FilterPanel
+              entityType="zone"
+              showCategories={false}
+              value={{ categoryIds: [], labelFilter: zoneLabelFilter }}
+              onApply={({ labelFilter: nextLabels }) => {
+                setZoneLabelFilter(nextLabels);
+              }}
+              onClose={() => setFiltersOpen(false)}
+              data-testid="sites-zones-zone-filter-panel"
+            />
+          </div>
+        )}
+      </div>
 
       <Modal
         title={creatingKind === 'transporter' ? 'Create Transporter' : 'Create Site'}
