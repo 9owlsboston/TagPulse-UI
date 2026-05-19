@@ -70,15 +70,20 @@ describe('DeviceList', () => {
     expect(screen.getByText('Reader-A')).toBeInTheDocument();
   });
 
-  // Sprint 38 / #40 — page-level integration coverage for the
-  // <LabelFilterStrip/> wiring introduced in Sprint 37 row 3.9b.
-  it('adding a label chip re-calls useDevices with labels param', async () => {
+  // Sprint 38 / #40 — page-level integration coverage for the label
+  // filter; Sprint 43 — the strip moved into the side <FilterPanel/>,
+  // so the test now opens the panel, adds the chip into pending state,
+  // and commits via Apply before asserting the next useDevices call.
+  it('adding a label chip via the filter panel re-calls useDevices with labels param', async () => {
     render(<DeviceList />, { wrapper });
 
     // Initial call: no labels.
     expect(useDevicesMock).toHaveBeenCalledWith(
       expect.objectContaining({ labels: {} }),
     );
+
+    fireEvent.click(screen.getByTestId('device-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('device-list-filter-panel'));
 
     fireEvent.click(screen.getByTestId('label-filter-add-tag'));
     await waitFor(() => screen.getByTestId('label-filter-popover'));
@@ -92,10 +97,24 @@ describe('DeviceList', () => {
 
     fireEvent.click(screen.getByTestId('label-filter-add-btn'));
 
+    // Deferred-apply UX: clicking Add wires the chip into pending state,
+    // but useDevices isn't re-called until Apply commits it up.
+    fireEvent.click(screen.getByTestId('device-list-filter-panel-apply'));
+
     await waitFor(() => {
       expect(useDevicesMock).toHaveBeenLastCalledWith(
         expect.objectContaining({ labels: { site: ['east'] } }),
       );
     });
+  });
+
+  // Sprint 43 — the device label filter card has no Categories section
+  // (showCategories={false}), since devices don't carry categories.
+  it('filter panel hides the Categories card for devices', async () => {
+    render(<DeviceList />, { wrapper });
+    fireEvent.click(screen.getByTestId('device-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('device-list-filter-panel'));
+    expect(screen.queryByTestId('device-list-filter-panel-categories')).toBeNull();
+    expect(screen.getByTestId('device-list-filter-panel-labels')).toBeInTheDocument();
   });
 });

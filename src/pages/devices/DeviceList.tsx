@@ -9,7 +9,7 @@ import Button from 'antd/es/button';
 import Modal from 'antd/es/modal';
 import Alert from 'antd/es/alert';
 import App from 'antd/es/app';
-import { PlusOutlined, SwapOutlined } from '@ant-design/icons';
+import { FilterOutlined, PlusOutlined, SwapOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useDevices } from '@/hooks/useDevices';
@@ -17,8 +17,8 @@ import { useAuth } from '@/lib/auth';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useUpdateZone, useZones } from '@/hooks/useAssets';
-import { LabelFilterStrip } from '@/components/LabelFilterStrip';
-import type { LabelFilter } from '@/lib/labelFilter';
+import { FilterPanel } from '@/components/FilterPanel';
+import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { DeviceResponse } from '@/types';
 
 // Sprint 28 G5 — cap parallel bulk reassign per page (Sprint 27 C6 pattern).
@@ -74,8 +74,10 @@ export function DeviceList() {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [targetZoneId, setTargetZoneId] = useState<string | null>(null);
   const [reassignBusy, setReassignBusy] = useState(false);
-  // Sprint 37 row 3.9b — device label filter strip.
+  // Sprint 37 row 3.9b — device label filter; Sprint 43 — relocated
+  // into the side <FilterPanel/> (categories card hidden for devices).
   const [labelFilter, setLabelFilter] = useState<LabelFilter>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { data, isLoading } = useDevices({ status: status || undefined, labels: labelFilter });
   const { data: zones } = useZones();
   const updateZone = useUpdateZone();
@@ -185,39 +187,61 @@ export function DeviceList() {
             Move to zone… ({selectedIds.length})
           </Button>
         )}
+        <Button
+          icon={<FilterOutlined />}
+          onClick={() => setFiltersOpen((v) => !v)}
+          type={filtersOpen ? 'primary' : 'default'}
+          data-testid="device-list-filters-toggle"
+        >
+          Filters
+          {!isEmptyLabelFilter(labelFilter) && (
+            <Tag color="blue" style={{ marginLeft: 8 }} data-testid="device-list-filters-applied-count">
+              {Object.keys(labelFilter).length}
+            </Tag>
+          )}
+        </Button>
       </Space>
-      <div style={{ marginBottom: 16 }}>
-        <LabelFilterStrip
-          entityType="device"
-          value={labelFilter}
-          onChange={setLabelFilter}
-        />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={filtered}
+            loading={isLoading}
+            pagination={{ pageSize: 20 }}
+            rowSelection={
+              canEdit
+                ? {
+                    selectedRowKeys: selectedIds,
+                    onChange: (keys) => setSelectedIds(keys as string[]),
+                    preserveSelectedRowKeys: false,
+                  }
+                : undefined
+            }
+            onRow={(record) => ({
+              onClick: (e) => {
+                // Don't navigate when the click is on the checkbox.
+                const target = e.target as HTMLElement;
+                if (target.closest('.ant-table-selection-column')) return;
+                navigate(`/devices/${record.id}`);
+              },
+            })}
+            style={{ cursor: 'pointer' }}
+          />
+        </div>
+        {filtersOpen && (
+          <FilterPanel
+            entityType="device"
+            showCategories={false}
+            value={{ categoryIds: [], labelFilter }}
+            onApply={({ labelFilter: nextLabels }) => {
+              setLabelFilter(nextLabels);
+            }}
+            onClose={() => setFiltersOpen(false)}
+            data-testid="device-list-filter-panel"
+          />
+        )}
       </div>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={filtered}
-        loading={isLoading}
-        pagination={{ pageSize: 20 }}
-        rowSelection={
-          canEdit
-            ? {
-                selectedRowKeys: selectedIds,
-                onChange: (keys) => setSelectedIds(keys as string[]),
-                preserveSelectedRowKeys: false,
-              }
-            : undefined
-        }
-        onRow={(record) => ({
-          onClick: (e) => {
-            // Don't navigate when the click is on the checkbox.
-            const target = e.target as HTMLElement;
-            if (target.closest('.ant-table-selection-column')) return;
-            navigate(`/devices/${record.id}`);
-          },
-        })}
-        style={{ cursor: 'pointer' }}
-      />
 
       {/* Sprint 28 G5 — bulk reassign modal. */}
       <Modal

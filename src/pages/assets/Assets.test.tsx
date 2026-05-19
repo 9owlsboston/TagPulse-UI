@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -261,11 +261,13 @@ describe('Assets pages — smoke', () => {
   });
 });
 
-// Sprint 38 / #40 / Sprint 42 — page-level integration coverage for the
-// label filter. AssetList moved its strip into the side <FilterPanel/>
-// in Sprint 42, so the AssetList test below opens the panel first and
-// then commits via Apply. SitesZones still uses the inline strips and
-// retains the existing behaviour.
+// Sprint 38 / #40 / Sprint 42 / Sprint 43 — page-level integration
+// coverage for the label filter. AssetList moved its strip into the
+// side <FilterPanel/> in Sprint 42; Sprint 43 did the same for
+// SitesZones (two stacked panels, site + zone, under one Filters
+// toggle). All three tests now open the panel first, add a chip into
+// pending state, and commit via Apply before asserting the next
+// useAssets / useSites / useZones call.
 describe('Assets pages — label filter integration', () => {
   it('AssetList: adding a label chip via the filter panel re-calls useAssets with labels param', async () => {
     render(wrap(<AssetList />));
@@ -301,17 +303,19 @@ describe('Assets pages — label filter integration', () => {
     });
   });
 
-  it('SitesZones: adding a chip to the SITE strip re-calls useSites with labels', async () => {
+  it('SitesZones: adding a chip to the SITE panel re-calls useSites with labels', async () => {
     render(wrap(<SitesZones />));
 
-    // Both strips render — site strip is the first.
     expect(useSitesMock).toHaveBeenCalledWith(
       expect.objectContaining({ labels: {} }),
     );
 
-    const addTags = screen.getAllByTestId('label-filter-add-tag');
-    expect(addTags.length).toBe(2);
-    fireEvent.click(addTags[0]!);
+    // Sprint 43 — open the side filter column; two stacked panels appear.
+    fireEvent.click(screen.getByTestId('sites-zones-filters-toggle'));
+    await waitFor(() => screen.getByTestId('sites-zones-site-filter-panel'));
+
+    const sitePanel = screen.getByTestId('sites-zones-site-filter-panel');
+    fireEvent.click(within(sitePanel).getByTestId('label-filter-add-tag'));
     await waitFor(() => screen.getByTestId('label-filter-popover'));
 
     const keyWrapper = screen.getByTestId('label-filter-key-input');
@@ -323,28 +327,32 @@ describe('Assets pages — label filter integration', () => {
 
     fireEvent.click(screen.getByTestId('label-filter-add-btn'));
 
+    // Deferred-apply: useSites isn't re-called until Apply commits it.
+    fireEvent.click(within(sitePanel).getByTestId('sites-zones-site-filter-panel-apply'));
+
     await waitFor(() => {
       expect(useSitesMock).toHaveBeenLastCalledWith(
         expect.objectContaining({ labels: { region: ['east'] } }),
       );
     });
-    // Zone hook still has its empty filter — the two strips are independent.
+    // Zone hook still has its empty filter — the two panels are independent.
     expect(useZonesMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ labels: {} }),
     );
   });
 
-  it('SitesZones: adding a chip to the ZONE strip re-calls useZones with labels', async () => {
+  it('SitesZones: adding a chip to the ZONE panel re-calls useZones with labels', async () => {
     render(wrap(<SitesZones />));
 
     expect(useZonesMock).toHaveBeenCalledWith(
       expect.objectContaining({ labels: {} }),
     );
 
-    const addTags = screen.getAllByTestId('label-filter-add-tag');
-    expect(addTags.length).toBe(2);
-    // Second strip = zone strip.
-    fireEvent.click(addTags[1]!);
+    fireEvent.click(screen.getByTestId('sites-zones-filters-toggle'));
+    await waitFor(() => screen.getByTestId('sites-zones-zone-filter-panel'));
+
+    const zonePanel = screen.getByTestId('sites-zones-zone-filter-panel');
+    fireEvent.click(within(zonePanel).getByTestId('label-filter-add-tag'));
     await waitFor(() => screen.getByTestId('label-filter-popover'));
 
     const keyWrapper = screen.getByTestId('label-filter-key-input');
@@ -355,6 +363,8 @@ describe('Assets pages — label filter integration', () => {
     fireEvent.change(valueInput, { target: { value: 'west' } });
 
     fireEvent.click(screen.getByTestId('label-filter-add-btn'));
+
+    fireEvent.click(within(zonePanel).getByTestId('sites-zones-zone-filter-panel-apply'));
 
     await waitFor(() => {
       expect(useZonesMock).toHaveBeenLastCalledWith(
