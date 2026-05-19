@@ -4,10 +4,13 @@
 /* eslint-disable */
 /**
  * Create an asset.
+ *
+ * Sprint 41 Phase H (ADR 019 close-out): ``category_id`` is now
+ * **required** — every asset must point at a Category. The legacy
+ * ``asset_type`` String field has been dropped.
  */
 export type AssetCreate = {
-    asset_type: string;
-    category_id?: (string | null);
+    category_id: string;
     external_ref?: (string | null);
     metadata?: (Record<string, any> | null);
     name: string;

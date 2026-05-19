@@ -14,7 +14,7 @@ import Tag from 'antd/es/tag';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
-import { PlusOutlined } from '@ant-design/icons';
+import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';
 import { useCategories } from '@/hooks/useCategories';
@@ -26,8 +26,9 @@ import {
   attachPendingLabels,
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
-import { LabelFilterStrip } from '@/components/LabelFilterStrip';
+import { FilterPanel } from '@/components/FilterPanel';
 import type { LabelFilter } from '@/lib/labelFilter';
+import { isEmptyLabelFilter } from '@/lib/labelFilter';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLocation';
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
@@ -77,21 +78,25 @@ export function AssetList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  // Sprint 38 row 3.3a — list-page Category filter. Backend `GET /assets`
-  // gained a `?category_id=` query param in Sprint 37 (#43, `2f732f1`),
-  // so this is now server-side: the value threads straight through
-  // `useAssets()` and is part of the react-query cache key, so toggling
-  // between Categories no longer fetches the unfiltered page and narrows
-  // in JS.
-  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  // Sprint 42 — list-page Category filter is now multi-select. The wire
+  // shape is `?category_ids=A&category_ids=B` (FastAPI default for
+  // `list[UUID]`); `useAssets` falls back to the raw `request()` helper
+  // for that path because the generated fetch client would otherwise
+  // serialise the array as a single CSV value. The Sprint 37 single-value
+  // `?category_id=` query param remains supported server-side for callers
+  // that still use it.
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lastSeenRange, setLastSeenRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [neverSeenOnly, setNeverSeenOnly] = useState(false);
-  // Sprint 37 row 3.9b — label filter strip (backend deep-object query).
+  // Sprint 37 row 3.9b / Sprint 42 — label filter, now wired through the
+  // FilterPanel side panel rather than the inline header strip.
   const [labelFilter, setLabelFilter] = useState<LabelFilter>({});
+  // Sprint 42 — side filter panel visibility.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { data, isLoading } = useAssets({
     q: search || undefined,
     status: status || undefined,
-    category_id: categoryId || undefined,
+    category_ids: categoryIds.length > 0 ? categoryIds : undefined,
     labels: labelFilter,
   });
   const { data: locations } = useAssetsCurrentLocations();
@@ -132,8 +137,9 @@ export function AssetList() {
   // H (backend); this UI change goes out one sprint ahead.
 
   // Client-side narrow on top of the server-fetched page: applies the
-  // last-seen range and the "never seen" toggle. Category filter is
-  // server-side (see `useAssets({ category_id })` above).
+  // last-seen range and the "never seen" toggle. Category and label
+  // filters are server-side (see `useAssets({ category_ids, labels })`
+  // above).
   const filteredRows = useMemo(() => {
     const from = lastSeenRange?.[0]?.valueOf();
     const to = lastSeenRange?.[1]?.valueOf();
@@ -298,14 +304,23 @@ export function AssetList() {
               onChange={setStatus}
               style={{ width: 160 }}
             />
-            {/* Sprint 37 row 3.3a — list-page Category filter. */}
-            <CategorySelect
-              value={categoryId}
-              onChange={setCategoryId}
-              placeholder="Filter by category"
-              style={{ width: 220 }}
-              data-testid="asset-list-category-filter"
-            />
+            {/* Sprint 42 — Categories + Labels filters live in the side
+                FilterPanel below. The toggle button shows an "n active"
+                badge so the user knows when filters are narrowing the
+                table even with the panel closed. */}
+            <Button
+              icon={<FilterOutlined />}
+              onClick={() => setFiltersOpen((v) => !v)}
+              type={filtersOpen ? 'primary' : 'default'}
+              data-testid="asset-list-filters-toggle"
+            >
+              Filters
+              {(categoryIds.length > 0 || !isEmptyLabelFilter(labelFilter)) && (
+                <Tag color="blue" style={{ marginLeft: 8 }} data-testid="asset-list-filters-applied-count">
+                  {categoryIds.length + Object.keys(labelFilter).length}
+                </Tag>
+              )}
+            </Button>
             <RangePicker
               showTime
               allowClear
@@ -342,14 +357,12 @@ export function AssetList() {
             </Button>
           )}
         </Space>
-        <div style={{ marginBottom: 16 }}>
-          <LabelFilterStrip
-            entityType="asset"
-            value={labelFilter}
-            onChange={setLabelFilter}
-          />
-        </div>
-        <Table<AssetResponse>
+        {/* Sprint 42 — the inline <LabelFilterStrip> moved into the side
+            FilterPanel below. The panel renders to the right of the table
+            via a flex row when open. */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Table<AssetResponse>
           rowKey="id"
           loading={isLoading}
           dataSource={filteredRows}
@@ -480,6 +493,20 @@ export function AssetList() {
               : []),
           ]}
         />
+          </div>
+          {filtersOpen && (
+            <FilterPanel
+              entityType="asset"
+              value={{ categoryIds, labelFilter }}
+              onApply={({ categoryIds: nextIds, labelFilter: nextLabels }) => {
+                setCategoryIds(nextIds);
+                setLabelFilter(nextLabels);
+              }}
+              onClose={() => setFiltersOpen(false)}
+              data-testid="asset-list-filter-panel"
+            />
+          )}
+        </div>
       </Card>
 
       <Modal
@@ -493,21 +520,14 @@ export function AssetList() {
           form={form}
           layout="vertical"
           onFinish={onCreate}
-          initialValues={{ status: AssetCreate.status.ACTIVE, asset_type: 'asset' }}
+          initialValues={{ status: AssetCreate.status.ACTIVE }}
         >
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          {/* Sprint 41 Phase F7 — the 'Asset Type' input was dropped here;
-              Category (below) is the sole classifier. `asset_type` is
-              still required by the backend `AssetCreate` schema until
-              Sprint 41 Phase H drops the column, so initialValues above
-              carries a constant 'asset' default the form submits
-              transparently. The hidden Form.Item below keeps the field
-              in the form's internal value map for that submit. */}
-          <Form.Item name="asset_type" hidden>
-            <Input type="hidden" />
-          </Form.Item>
+          {/* Sprint 41 Phase F7 / Phase H — the 'Asset Type' input was
+              dropped here; Category (below) is the sole classifier.
+              Sprint 41 Phase H removed the field from `AssetCreate`. */}
           {/* Sprint 37 row 3.3a — Category picker on Create. Optional:
               assets.category_id is nullable backend-side, so blank is OK. */}
           <Form.Item

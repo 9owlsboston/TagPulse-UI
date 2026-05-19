@@ -20,9 +20,9 @@ import { request as __request } from '../core/request';
 export class AssetsService {
     /**
      * List Assets
-     * @param assetType
      * @param status
-     * @param categoryId Sprint 37 — server-side filter on the ``assets.category_id`` FK (ADR 019). Combines with ``asset_type``/``status``/``q``/``labels[…]`` via AND.
+     * @param categoryId Sprint 37 — server-side filter on the ``assets.category_id`` FK (ADR 019). Combines with ``status``/``q``/``labels[…]`` via AND. Kept for backwards compatibility; prefer ``?category_ids=`` (Sprint 42 — multi-select). When both are supplied the union is used (OR across categories).
+     * @param categoryIds Sprint 42 — server-side multi-category filter on ``assets.category_id``. Pass multiple values as repeated query params (``?category_ids=A&category_ids=B``) for OR semantics across categories. Combines with ``status``/``q``/``labels[…]`` via AND. Supersedes singular ``?category_id=``; the union of both is used when supplied together.
      * @param q
      * @param limit
      * @param offset
@@ -30,9 +30,9 @@ export class AssetsService {
      * @throws ApiError
      */
     public static listAssetsAssetsGet(
-        assetType?: (string | null),
         status?: (string | null),
         categoryId?: (string | null),
+        categoryIds?: (Array<string> | null),
         q?: (string | null),
         limit: number = 100,
         offset?: number,
@@ -41,9 +41,9 @@ export class AssetsService {
             method: 'GET',
             url: '/assets',
             query: {
-                'asset_type': assetType,
                 'status': status,
                 'category_id': categoryId,
+                'category_ids': categoryIds,
                 'q': q,
                 'limit': limit,
                 'offset': offset,

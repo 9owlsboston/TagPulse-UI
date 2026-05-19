@@ -7,8 +7,7 @@ import type { LatestTelemetryEntry } from './LatestTelemetryEntry';
  * Persisted asset row.
  */
 export type AssetResponse = {
-    asset_type: string;
-    category_id?: (string | null);
+    category_id: (string | null);
     created_at: string;
     external_ref: (string | null);
     id: string;

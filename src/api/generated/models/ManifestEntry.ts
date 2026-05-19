@@ -7,7 +7,6 @@
  */
 export type ManifestEntry = {
     asset_id: string;
-    asset_type: string;
     children?: Array<ManifestEntry>;
     depth: number;
     name: string;

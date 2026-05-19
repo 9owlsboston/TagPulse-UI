@@ -413,7 +413,6 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: Ass
       <Marker position={[lat, lng]} icon={icon}>
         <Popup>
           <strong>{asset.name}</strong>
-          <div><Tag color={pathColor}>{asset.asset_type}</Tag></div>
           <div style={{ marginTop: 4 }}>
             <Link to={`/assets/${asset.id}`}>Open detail →</Link>
           </div>
@@ -460,7 +459,6 @@ function manifestToTreeData(entry: ManifestEntry): { title: React.ReactNode; key
     title: (
       <Space size="small">
         <Link to={`/assets/${entry.asset_id}`}>{entry.name}</Link>
-        <Tag>{entry.asset_type}</Tag>
       </Space>
     ),
     children: (entry.children ?? []).map(manifestToTreeData),
@@ -478,7 +476,6 @@ function ManifestPopout({ asset, onClose }: ManifestPopoutProps) {
         title: (
           <Space>
             <strong><Link to={`/assets/${data.asset_id}`}>{data.name}</Link></strong>
-            <Tag color="blue">{data.asset_type}</Tag>
           </Space>
         ),
         children: (data.children ?? []).map(manifestToTreeData),
