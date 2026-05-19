@@ -24,9 +24,11 @@ import { encodeLabelFilter, isEmptyLabelFilter, type LabelFilter } from '@/lib/l
 // ── Assets ──────────────────────────────────────────────────────────────────
 
 export function useAssets(params?: {
-  asset_type?: string;
   status?: string;
+  /** Legacy single-category filter (Sprint 37). Kept for source compat. */
   category_id?: string;
+  /** Sprint 42 — multi-category OR filter; emitted as repeated `?category_ids=`. */
+  category_ids?: string[];
   q?: string;
   limit?: number;
   offset?: number;
@@ -35,23 +37,33 @@ export function useAssets(params?: {
   return useQuery({
     queryKey: ['assets', params],
     queryFn: () => {
+      const categoryIds = params?.category_ids?.filter(Boolean) ?? [];
       // When a label filter is set, the generated client can't model the
       // deep-object query so fall back to the raw `request()` helper.
-      if (!isEmptyLabelFilter(params?.labels)) {
+      // We also use this path when category_ids is set, since the generated
+      // fetch client serialises `categoryIds` as a single CSV value rather
+      // than the FastAPI-default repeated `?category_ids=…&category_ids=…`.
+      const useRawRequest =
+        !isEmptyLabelFilter(params?.labels) || categoryIds.length > 0;
+      if (useRawRequest) {
         const extra: string[] = [];
-        if (params?.asset_type) extra.push(`asset_type=${encodeURIComponent(params.asset_type)}`);
         if (params?.status) extra.push(`status=${encodeURIComponent(params.status)}`);
         if (params?.category_id) extra.push(`category_id=${encodeURIComponent(params.category_id)}`);
+        for (const cid of categoryIds) {
+          extra.push(`category_ids=${encodeURIComponent(cid)}`);
+        }
         if (params?.q) extra.push(`q=${encodeURIComponent(params.q)}`);
         extra.push(`limit=${params?.limit ?? 100}`);
         extra.push(`offset=${params?.offset ?? 0}`);
-        extra.push(encodeLabelFilter(params?.labels));
+        if (!isEmptyLabelFilter(params?.labels)) {
+          extra.push(encodeLabelFilter(params?.labels));
+        }
         return request<AssetResponse[]>(`/assets?${extra.filter(Boolean).join('&')}`);
       }
       return AssetsService.listAssetsAssetsGet(
-        params?.asset_type ?? undefined,
         params?.status ?? undefined,
         params?.category_id ?? undefined,
+        undefined,
         params?.q ?? undefined,
         params?.limit ?? 100,
         params?.offset ?? 0,

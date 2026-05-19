@@ -134,7 +134,6 @@ const assetsReturn = {
       id: 'a1',
       tenant_id: 't',
       name: 'Pallet 7',
-      asset_type: 'pallet',
       external_ref: 'WMS-007',
       status: 'active',
       parent_asset_id: null,
@@ -262,15 +261,22 @@ describe('Assets pages — smoke', () => {
   });
 });
 
-// Sprint 38 / #40 — page-level integration coverage for the
-// <LabelFilterStrip/> wiring introduced in Sprint 37 row 3.9b.
+// Sprint 38 / #40 / Sprint 42 — page-level integration coverage for the
+// label filter. AssetList moved its strip into the side <FilterPanel/>
+// in Sprint 42, so the AssetList test below opens the panel first and
+// then commits via Apply. SitesZones still uses the inline strips and
+// retains the existing behaviour.
 describe('Assets pages — label filter integration', () => {
-  it('AssetList: adding a label chip re-calls useAssets with labels param', async () => {
+  it('AssetList: adding a label chip via the filter panel re-calls useAssets with labels param', async () => {
     render(wrap(<AssetList />));
 
     expect(useAssetsMock).toHaveBeenCalledWith(
       expect.objectContaining({ labels: {} }),
     );
+
+    // Sprint 42 — open the side filter panel; the label strip lives inside it.
+    fireEvent.click(screen.getByTestId('asset-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('asset-list-filter-panel'));
 
     fireEvent.click(screen.getByTestId('label-filter-add-tag'));
     await waitFor(() => screen.getByTestId('label-filter-popover'));
@@ -283,6 +289,10 @@ describe('Assets pages — label filter integration', () => {
     fireEvent.change(valueInput, { target: { value: 'east' } });
 
     fireEvent.click(screen.getByTestId('label-filter-add-btn'));
+
+    // Deferred-apply UX: clicking Add wires the chip into pending state,
+    // but useAssets isn't re-called until Apply commits it up.
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-apply'));
 
     await waitFor(() => {
       expect(useAssetsMock).toHaveBeenLastCalledWith(
@@ -358,34 +368,111 @@ describe('Assets pages — label filter integration', () => {
   });
 });
 
-// Sprint 38 row 3.3a — server-side `?category_id=` filter wiring.
-// Backend PR #43 (`2f732f1`) added the query param; the UI now passes
-// it straight through `useAssets()` instead of narrowing client-side.
-describe('AssetList — Category filter is server-side', () => {
-  it('initial render calls useAssets with category_id: undefined', () => {
+// Sprint 38 row 3.3a / Sprint 42 — server-side category filter wiring.
+// Sprint 37 added a single-value `?category_id=` query; Sprint 42
+// generalised it to multi-select via `?category_ids=A&category_ids=B`
+// and moved the UI into the side <FilterPanel/>. The hook now takes
+// `category_ids: string[]` instead of `category_id: string | undefined`.
+describe('AssetList — Category filter (FilterPanel, multi-select)', () => {
+  it('initial render calls useAssets with category_ids: undefined', () => {
     render(wrap(<AssetList />));
     expect(useAssetsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ category_id: undefined }),
+      expect.objectContaining({ category_ids: undefined }),
     );
   });
 
-  it('picking a Category in the header re-calls useAssets with that uuid', async () => {
+  it('picking one category in the FilterPanel commits ?category_ids=[id] on Apply', async () => {
     render(wrap(<AssetList />));
 
-    // Open the Category filter Select and pick the "Pallet" option.
-    const select = screen
-      .getByTestId('asset-list-category-filter')
-      .querySelector('.ant-select-selector') as HTMLElement;
-    fireEvent.mouseDown(select);
+    fireEvent.click(screen.getByTestId('asset-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('asset-list-filter-panel'));
 
-    await waitFor(() => screen.getByText('Pallet'));
-    fireEvent.click(screen.getByText('Pallet'));
+    fireEvent.click(
+      screen.getByTestId('asset-list-filter-panel-category-cat-pallet'),
+    );
+
+    // Deferred apply: the hook stays in its initial (undefined) state until
+    // the user commits via Apply.
+    expect(useAssetsMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ category_ids: ['cat-pallet'] }),
+    );
+
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-apply'));
 
     await waitFor(() => {
       expect(useAssetsMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({ category_id: 'cat-pallet' }),
+        expect.objectContaining({ category_ids: ['cat-pallet'] }),
       );
     });
+  });
+
+  it('checking two categories commits the full array on Apply (multi-select)', async () => {
+    render(wrap(<AssetList />));
+
+    fireEvent.click(screen.getByTestId('asset-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('asset-list-filter-panel'));
+
+    fireEvent.click(
+      screen.getByTestId('asset-list-filter-panel-category-cat-pallet'),
+    );
+    fireEvent.click(
+      screen.getByTestId('asset-list-filter-panel-category-cat-drum'),
+    );
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-apply'));
+
+    await waitFor(() => {
+      const lastCall = useAssetsMock.mock.calls.at(-1)?.[0] as
+        | { category_ids?: string[] }
+        | undefined;
+      expect(lastCall?.category_ids).toEqual(
+        expect.arrayContaining(['cat-pallet', 'cat-drum']),
+      );
+      expect(lastCall?.category_ids).toHaveLength(2);
+    });
+  });
+
+  it('Clear button wipes applied filters and re-calls useAssets with empty state', async () => {
+    render(wrap(<AssetList />));
+
+    // Apply a filter first.
+    fireEvent.click(screen.getByTestId('asset-list-filters-toggle'));
+    await waitFor(() => screen.getByTestId('asset-list-filter-panel'));
+    fireEvent.click(
+      screen.getByTestId('asset-list-filter-panel-category-cat-pallet'),
+    );
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-apply'));
+    await waitFor(() => {
+      expect(useAssetsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category_ids: ['cat-pallet'] }),
+      );
+    });
+
+    // Now clear.
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-clear'));
+
+    await waitFor(() => {
+      expect(useAssetsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ category_ids: undefined, labels: {} }),
+      );
+    });
+  });
+
+  it('toggling the Filters button shows and hides the panel', async () => {
+    render(wrap(<AssetList />));
+
+    // Closed by default.
+    expect(screen.queryByTestId('asset-list-filter-panel')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('asset-list-filters-toggle'));
+    await waitFor(() =>
+      expect(screen.getByTestId('asset-list-filter-panel')).toBeInTheDocument(),
+    );
+
+    // Close via the panel's close button.
+    fireEvent.click(screen.getByTestId('asset-list-filter-panel-close'));
+    await waitFor(() =>
+      expect(screen.queryByTestId('asset-list-filter-panel')).not.toBeInTheDocument(),
+    );
   });
 });
 

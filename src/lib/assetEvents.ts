@@ -74,7 +74,7 @@ export function buildAssetEvents(
     at: asset.created_at,
     kind: 'created',
     summary: 'Asset created',
-    details: { name: asset.name, asset_type: asset.asset_type },
+    details: { name: asset.name },
   });
 
   const createdMs = Date.parse(asset.created_at);

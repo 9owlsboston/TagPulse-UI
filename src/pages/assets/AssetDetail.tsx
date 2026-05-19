@@ -150,7 +150,6 @@ export function AssetDetail() {
       // emits undefined for both).
       const payload: AssetUpdate = {
         name: values.name,
-        asset_type: values.asset_type,
         external_ref: values.external_ref,
         metadata: metadata as AssetUpdate['metadata'],
       };
@@ -244,10 +243,9 @@ export function AssetDetail() {
         <>
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Name">{asset.name}</Descriptions.Item>
-            {/* Sprint 41 Phase F7 — the legacy 'Type' Descriptions row was
-                dropped here; Category (below) is the sole classifier. The
-                `asset_type` field still exists on the API response until
-                Sprint 41 Phase H removes it, but we no longer surface it. */}
+            {/* Sprint 41 Phase F7 / Phase H — the legacy 'Type' Descriptions
+                row was dropped here; Category (below) is the sole classifier.
+                Sprint 41 Phase H removed `asset_type` from the API response. */}
             <Descriptions.Item label="Status">
               <Tag color={STATUS_COLOR[asset.status] ?? 'default'}>{asset.status}</Tag>
             </Descriptions.Item>
@@ -501,7 +499,6 @@ export function AssetDetail() {
               onClick={() => {
                 editForm.setFieldsValue({
                   name: asset.name,
-                  asset_type: asset.asset_type,
                   external_ref: asset.external_ref,
                   category_id: asset.category_id ?? undefined,
                   metadata_text: JSON.stringify(asset.metadata ?? {}, null, 2),
@@ -573,14 +570,10 @@ export function AssetDetail() {
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          {/* Sprint 41 Phase F7 — the 'Asset Type' input was dropped here;
-              Category (below) is the sole classifier. The hidden field
-              below preserves the existing `asset.asset_type` value on
-              edit so PATCH /assets/{id} keeps the backend column populated
-              until Sprint 41 Phase H drops it. */}
-          <Form.Item name="asset_type" hidden>
-            <Input type="hidden" />
-          </Form.Item>
+          {/* Sprint 41 Phase F7 / Phase H — the 'Asset Type' input was
+              dropped here; Category (below) is the sole classifier.
+              Sprint 41 Phase H also removed the `asset_type` column from
+              the backend, so we no longer need a hidden form field. */}
           {/* Sprint 37 row 3.3a — Category picker on Edit. Cleared selection
               sends explicit null to clear the FK (see onEditAsset above). */}
           <Form.Item

@@ -830,12 +830,6 @@ function ZoneOccupantsModal({
         columns={[
           { title: 'Name', dataIndex: 'name' },
           {
-            title: 'Type',
-            dataIndex: 'asset_type',
-            width: 110,
-            render: (v: string) => <Tag>{v}</Tag>,
-          },
-          {
             title: 'Tag',
             dataIndex: 'binding_value',
             ellipsis: true,
