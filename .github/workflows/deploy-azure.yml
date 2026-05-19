@@ -75,9 +75,16 @@ jobs:
     # slot automatically based on the PR event type; we just hand it the
     # built bundle. Bound to the `dev` GitHub Environment so it can read
     # the deploy-token secret that scripts/ui-cicd-setup.sh dev uploads.
-    # Until that script has been run, the secret is empty and the action
-    # short-circuits on its own (no input flag needed).
-    if: github.event_name == 'pull_request'
+    #
+    # The `github.actor != 'dependabot[bot]'` guard is required because
+    # GitHub does not pass repo/environment secrets to PRs opened by
+    # dependabot[bot] (security policy), so the SWA action would always
+    # fail with `deployment_token was not provided`. Skipping the job
+    # outright also avoids burning a SWA staging slot we can't fill.
+    # Note: the SWA action does NOT support a `skip_deploy_on_missing_secrets`
+    # input (verified: the action warns "Unexpected input(s)" and proceeds
+    # to try the deploy regardless), so this gate has to live on the job.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     environment: dev
     steps:
