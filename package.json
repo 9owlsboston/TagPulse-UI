@@ -50,7 +50,7 @@
     "eslint-plugin-react-refresh": "^0.4",
     "jsdom": "^25.0",
     "openapi-typescript-codegen": "^0.29.0",
-    "playwright": "^1.49.0",
+    "playwright": "^1.55.1",
     "prettier": "^3.4",
     "typescript": "^5.7",
     "vite": "^6.0",
