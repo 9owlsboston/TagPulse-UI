@@ -8,6 +8,42 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class BulkOperationsService {
     /**
+     * List Pending Bulk Operations
+     * List pending bulk operations for the current tenant.
+     *
+     * Powers the Phase F admin inbox UI (`/admin/pending-bulk-operations`).
+     * Results are ordered newest-first. The ``payload`` bytes are
+     * intentionally omitted from the response model — operator B reviews
+     * by ``sample`` + ``row_count`` (the same preview operator A saw on
+     * dry-run) and fetches the full payload only via the per-id GET.
+     * @param status
+     * @param operation
+     * @param limit
+     * @param offset
+     * @returns PendingBulkOperationResponse Successful Response
+     * @throws ApiError
+     */
+    public static listPendingBulkOperationsBulkOperationsGet(
+        status?: (string | null),
+        operation?: (string | null),
+        limit: number = 100,
+        offset?: number,
+    ): CancelablePromise<Array<PendingBulkOperationResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/bulk-operations',
+            query: {
+                'status': status,
+                'operation': operation,
+                'limit': limit,
+                'offset': offset,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Pending Bulk Operation
      * Fetch a queued bulk op so the reviewing admin can inspect it.
      * @param pendingId
