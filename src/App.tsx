@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AntApp from 'antd/es/app';
 import Spin from 'antd/es/spin';
 import { AuthProvider } from '@/lib/auth';
@@ -58,6 +58,7 @@ const TagList = lazy(() => import('@/pages/tags/TagList').then((m) => ({ default
 const TagDetail = lazy(() => import('@/pages/tags/TagDetail').then((m) => ({ default: m.TagDetail })));
 const TagImport = lazy(() => import('@/pages/tags/TagImport').then((m) => ({ default: m.TagImport })));
 const TransferList = lazy(() => import('@/pages/transfers/TransferList').then((m) => ({ default: m.TransferList })));
+const ReconciliationPage = lazy(() => import('@/pages/reconciliation/ReconciliationPage').then((m) => ({ default: m.ReconciliationPage })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -143,6 +144,8 @@ export function AppRoutes() {
               <Route path="/tags" element={<TagList />} />
               <Route path="/tags/import" element={<TagImport />} />
               <Route path="/tag-transfers" element={<TransferList />} />
+              <Route path="/tags/reconciliation" element={<Navigate to="/tags/reconciliation/registered-unread" replace />} />
+              <Route path="/tags/reconciliation/:view" element={<ReconciliationPage />} />
               <Route path="/tags/:epcHex" element={<TagDetail />} />
               <Route path="/categories" element={<CategoryList />} />
               <Route path="/sites" element={<SitesZones />} />
