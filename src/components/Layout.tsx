@@ -75,6 +75,8 @@ const ASSETS_NAV: NavItem[] = [
   { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
   // Sprint 44 Phase B — tag registry list/detail (ADR 028).
   { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer' },
+  // Sprint 45 Phase C — CSV import wizard for the tag registry.
+  { key: '/tags/import', icon: <TagOutlined />, label: 'Import tags', minRole: 'editor' },
   { key: '/categories', icon: <TagsOutlined />, label: 'Categories', minRole: 'viewer' },
   { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: 'asset' },
   { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },
