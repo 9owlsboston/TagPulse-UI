@@ -73,6 +73,8 @@ const EVENTS_NAV: NavItem[] = [
 
 const ASSETS_NAV: NavItem[] = [
   { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
+  // Sprint 44 Phase B — tag registry list/detail (ADR 028).
+  { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer' },
   { key: '/categories', icon: <TagsOutlined />, label: 'Categories', minRole: 'viewer' },
   { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: 'asset' },
   { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },

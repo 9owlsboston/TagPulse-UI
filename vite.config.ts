@@ -151,6 +151,9 @@ export default defineConfig({
     proxy: {
       '/auth': 'http://localhost:8000',
       '/tag-reads': 'http://localhost:8000',
+      '/tag-transfers': 'http://localhost:8000',
+      '/tags': 'http://localhost:8000',
+      '/bulk-operations': 'http://localhost:8000',
       '/device-registry': 'http://localhost:8000',
       '/device-health': 'http://localhost:8000',
       '/devices': 'http://localhost:8000',
