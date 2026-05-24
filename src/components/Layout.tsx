@@ -79,6 +79,8 @@ const ASSETS_NAV: NavItem[] = [
   { key: '/tags/import', icon: <TagOutlined />, label: 'Import tags', minRole: 'editor' },
   // Sprint 46 Phase D — cross-tenant transfer queue.
   { key: '/tag-transfers', icon: <TagOutlined />, label: 'Tag transfers', minRole: 'viewer' },
+  // Sprint 47 Phase E — reconciliation views (read-only triage).
+  { key: '/tags/reconciliation', icon: <TagOutlined />, label: 'Tag reconciliation', minRole: 'viewer' },
   { key: '/categories', icon: <TagsOutlined />, label: 'Categories', minRole: 'viewer' },
   { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: 'asset' },
   { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },
