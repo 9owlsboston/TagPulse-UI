@@ -57,6 +57,7 @@ const LabelManagement = lazy(() => import('@/pages/admin/LabelManagement').then(
 const TagList = lazy(() => import('@/pages/tags/TagList').then((m) => ({ default: m.TagList })));
 const TagDetail = lazy(() => import('@/pages/tags/TagDetail').then((m) => ({ default: m.TagDetail })));
 const TagImport = lazy(() => import('@/pages/tags/TagImport').then((m) => ({ default: m.TagImport })));
+const TransferList = lazy(() => import('@/pages/transfers/TransferList').then((m) => ({ default: m.TransferList })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -141,6 +142,7 @@ export function AppRoutes() {
               <Route path="/assets/:id" element={<AssetDetail />} />
               <Route path="/tags" element={<TagList />} />
               <Route path="/tags/import" element={<TagImport />} />
+              <Route path="/tag-transfers" element={<TransferList />} />
               <Route path="/tags/:epcHex" element={<TagDetail />} />
               <Route path="/categories" element={<CategoryList />} />
               <Route path="/sites" element={<SitesZones />} />
