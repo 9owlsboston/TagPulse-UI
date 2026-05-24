@@ -38,6 +38,7 @@ const UserCreatePage = lazy(() => import('@/pages/admin/UserCreatePage').then((m
 const UserDetail = lazy(() => import('@/pages/admin/UserDetail').then((m) => ({ default: m.UserDetail })));
 const AuditLog = lazy(() => import('@/pages/admin/AuditLog').then((m) => ({ default: m.AuditLog })));
 const DeadLetters = lazy(() => import('@/pages/admin/DeadLetters').then((m) => ({ default: m.DeadLetters })));
+const PendingBulkOperations = lazy(() => import('@/pages/admin/PendingBulkOperations').then((m) => ({ default: m.PendingBulkOperations })));
 const ProductList = lazy(() => import('@/pages/inventory/ProductList').then((m) => ({ default: m.ProductList })));
 const ProductDetail = lazy(() => import('@/pages/inventory/ProductDetail').then((m) => ({ default: m.ProductDetail })));
 const StockLevels = lazy(() => import('@/pages/inventory/StockLevels').then((m) => ({ default: m.StockLevels })));
@@ -167,6 +168,7 @@ export function AppRoutes() {
               <Route path="/admin/users/:id" element={<UserDetail />} />
               <Route path="/admin/audit-logs" element={<AuditLog />} />
               <Route path="/admin/dead-letters" element={<DeadLetters />} />
+              <Route path="/admin/pending-bulk-operations" element={<PendingBulkOperations />} />
             </Route>
           </Routes>
         </Suspense>

@@ -102,6 +102,7 @@ export function AccountDropdown() {
           { key: '/admin/users', icon: <TeamOutlined />, label: 'Users' },
           { key: '/admin/audit-logs', icon: <AuditOutlined />, label: 'Audit Log' },
           { key: '/admin/dead-letters', icon: <WarningOutlined />, label: 'Dead Letters' },
+          { key: '/admin/pending-bulk-operations', icon: <AuditOutlined />, label: 'Pending Bulk Ops' },
         ] satisfies MenuProps['items'])
       : []),
     { type: 'divider' },
