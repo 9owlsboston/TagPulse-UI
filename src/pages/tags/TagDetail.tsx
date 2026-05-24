@@ -15,7 +15,6 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTag, useUpdateTag } from '@/hooks/useTags';
 import { useCanPerform } from '@/components/useCanPerform';
 import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
-import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
 import type { TagResponse } from '@/api/generated/models/TagResponse';
 
 const { Title, Text, Paragraph } = Typography;
@@ -50,7 +49,6 @@ export function TagDetail() {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | undefined>();
-  const [transferModalOpen, setTransferModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -192,12 +190,6 @@ export function TagDetail() {
                 transfer flow owns <Text code>* → transferred_out</Text>. Picking a forbidden
                 transition will return a 409 with the allowed set.
               </>
-
-      <NewTransferModal
-        open={transferModalOpen}
-        onClose={() => setTransferModalOpen(false)}
-        prefillEpcs={[tag.epc_hex]}
-      />
             }
           />
           <Select
