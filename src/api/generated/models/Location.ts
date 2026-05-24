@@ -16,6 +16,7 @@ export namespace Location {
         GPS = 'gps',
         FIXED = 'fixed',
         INFERRED = 'inferred',
+        READER_GNSS = 'reader_gnss',
     }
 }
 

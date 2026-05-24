@@ -23,6 +23,7 @@ export namespace LabelResponse {
         ZONE = 'zone',
         DEVICE = 'device',
         CATEGORY = 'category',
+        TAG = 'tag',
     }
 }
 

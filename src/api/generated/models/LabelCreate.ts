@@ -17,6 +17,7 @@ export namespace LabelCreate {
         ZONE = 'zone',
         DEVICE = 'device',
         CATEGORY = 'category',
+        TAG = 'tag',
     }
 }
 

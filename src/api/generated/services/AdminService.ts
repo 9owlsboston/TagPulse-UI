@@ -14,6 +14,8 @@ export class AdminService {
      * List audit logs for this tenant.
      * @param resourceType
      * @param actions Comma-separated list of actions to filter by (e.g. 'device.token_rotated,device.cert_attached').
+     * @param requestId Filter to audit entries carrying this bulk-op request_id (Sprint 50 Phase C5, ADR 028 §Governance #7).
+     * @param batch Filter to audit entries scoped to this label batch value (Sprint 50 Phase C5, ADR 028 §Governance #7).
      * @param limit
      * @param offset
      * @returns any Successful Response
@@ -22,6 +24,8 @@ export class AdminService {
     public static listAuditLogsAdminAuditLogsGet(
         resourceType?: (string | null),
         actions?: (string | null),
+        requestId?: (string | null),
+        batch?: (string | null),
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<Record<string, any>>> {
@@ -31,6 +35,8 @@ export class AdminService {
             query: {
                 'resource_type': resourceType,
                 'actions': actions,
+                'request_id': requestId,
+                'batch': batch,
                 'limit': limit,
                 'offset': offset,
             },

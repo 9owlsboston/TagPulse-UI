@@ -54,6 +54,8 @@ const MapPage = lazy(() => import('@/pages/map/MapPage').then((m) => ({ default:
 const TenantSettings = lazy(() => import('@/pages/admin/TenantSettings').then((m) => ({ default: m.TenantSettings })));
 const Branding = lazy(() => import('@/pages/admin/Branding').then((m) => ({ default: m.Branding })));
 const LabelManagement = lazy(() => import('@/pages/admin/LabelManagement').then((m) => ({ default: m.LabelManagement })));
+const TagList = lazy(() => import('@/pages/tags/TagList').then((m) => ({ default: m.TagList })));
+const TagDetail = lazy(() => import('@/pages/tags/TagDetail').then((m) => ({ default: m.TagDetail })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -136,6 +138,8 @@ export function AppRoutes() {
               <Route path="/integrations/:id/deliveries" element={<DeliveryLog />} />
               <Route path="/assets" element={<AssetList />} />
               <Route path="/assets/:id" element={<AssetDetail />} />
+              <Route path="/tags" element={<TagList />} />
+              <Route path="/tags/:epcHex" element={<TagDetail />} />
               <Route path="/categories" element={<CategoryList />} />
               <Route path="/sites" element={<SitesZones />} />
               <Route path="/map" element={<MapPage />} />

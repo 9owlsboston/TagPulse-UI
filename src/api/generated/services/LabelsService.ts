@@ -21,7 +21,7 @@ export class LabelsService {
      * @throws ApiError
      */
     public static listLabelsLabelsGet(
-        entityType?: ('asset' | 'site' | 'zone' | 'device' | 'category' | null),
+        entityType?: ('asset' | 'site' | 'zone' | 'device' | 'category' | 'tag' | null),
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<LabelResponse>> {

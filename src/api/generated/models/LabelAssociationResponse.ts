@@ -26,6 +26,7 @@ export namespace LabelAssociationResponse {
         ZONE = 'zone',
         DEVICE = 'device',
         CATEGORY = 'category',
+        TAG = 'tag',
     }
 }
 
