@@ -14,6 +14,8 @@ import message from 'antd/es/message';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTag, useUpdateTag } from '@/hooks/useTags';
 import { useCanPerform } from '@/components/useCanPerform';
+import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
+import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
 import type { TagResponse } from '@/api/generated/models/TagResponse';
 
 const { Title, Text, Paragraph } = Typography;
@@ -46,7 +48,9 @@ export function TagDetail() {
   const updateTag = useUpdateTag();
   const canEdit = useCanPerform('editor');
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | undefined>();
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -96,8 +100,28 @@ export function TagDetail() {
           </Button>
           <Title level={3} style={{ margin: 0 }}>
             <Text code>{tag.epc_hex}</Text>
+          {canEdit && tag.status === 'active' && (
+            <Button
+              type="primary"
+              ghost
+              onClick={() => setTransferModalOpen(true)}
+              data-testid="tag-detail-transfer-btn"
+            >
+              Transfer
+            </Button>
+          )}
           </Title>
           <Tag color={STATUS_COLOR[tag.status] ?? 'default'}>{tag.status}</Tag>
+          {canEdit && tag.status === 'active' && (
+            <Button
+              type="primary"
+              ghost
+              onClick={() => setTransferModalOpen(true)}
+              data-testid="tag-detail-transfer-btn"
+            >
+              Transfer
+            </Button>
+          )}
         </Space>
 
         <Card title="Registry">
@@ -168,6 +192,12 @@ export function TagDetail() {
                 transfer flow owns <Text code>* → transferred_out</Text>. Picking a forbidden
                 transition will return a 409 with the allowed set.
               </>
+
+      <NewTransferModal
+        open={transferModalOpen}
+        onClose={() => setTransferModalOpen(false)}
+        prefillEpcs={[tag.epc_hex]}
+      />
             }
           />
           <Select
@@ -180,6 +210,12 @@ export function TagDetail() {
           />
         </Space>
       </Modal>
+
+      <NewTransferModal
+        open={transferModalOpen}
+        onClose={() => setTransferModalOpen(false)}
+        prefillEpcs={[tag.epc_hex]}
+      />
     </div>
   );
 }
