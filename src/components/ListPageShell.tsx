@@ -130,8 +130,15 @@ export function ListPageShell({
           </div>
         )}
         {aside ? (
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 16,
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ flex: '1 1 480px', minWidth: 0 }}>{children}</div>
             {aside}
           </div>
         ) : (
