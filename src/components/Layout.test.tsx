@@ -1,21 +1,17 @@
 /**
- * Sprint 41 Phase F8 — vitest coverage for the reorganised + collapsible
- * Layout sidebar (F1 + F5 + F6).
+ * Sprint 54 Phase B (54.2) — vitest coverage for the sectioned sider
+ * + retained Sprint 41 Phase F6 collapsed-state persistence.
  *
  * Covers:
- *   1. Reorganised navigation renders Dashboard plus the four named groups
- *      (EVENTS & ALERTS, ASSETS, INVENTORY, EDGE & CONNECTIONS) when
- *      expanded, with every operator-day route present.
- *   2. Group headers disappear and items collapse to a flat icon list when
- *      the Sider is collapsed (so the empty-header reserve-row doesn't
- *      leak visual noise into icon-only mode).
- *   3. Collapsed state persists under the per-(tenantId, userId)
- *      localStorage key and re-hydrates on next mount with the same auth
- *      context.
+ *   1. Sider renders the two ungrouped top items (Dashboard, Alerts)
+ *      plus the four collapsible SubMenu sections (Asset Tracking,
+ *      Inventory, Data Management, Devices & Connections) with their
+ *      operator-day routes reachable.
+ *   2. Collapsed state persists under the per-(tenantId, userId)
+ *      localStorage key and re-hydrates on next mount.
  *
- * All hooks the Layout depends on are mocked at the module level so the
- * test is decoupled from network + global app providers — the contract
- * we care about is purely UI structure + persistence.
+ * All hooks the Layout depends on are mocked at the module level so
+ * the test stays decoupled from network + global providers.
  */
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -101,68 +97,51 @@ afterEach(() => {
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
-describe('Layout — Sprint 41 sidebar reorganisation (F1 + F5)', () => {
-  it('renders Dashboard plus the four named groups with all operator routes', () => {
+describe('Layout — Sprint 54.2 sectioned sider', () => {
+  it('renders the two ungrouped top items plus the four section headers', () => {
     renderLayout();
 
     const sider = screen.getByTestId('sider');
     expect(sider).toHaveAttribute('data-collapsed', 'false');
 
-    // Dashboard is solo (no group header) above the first group.
+    // Ungrouped top items (no SubMenu header above them).
     expect(within(sider).getByText('Dashboard')).toBeInTheDocument();
+    expect(within(sider).getByText('Alerts')).toBeInTheDocument();
 
-    // The four named groups (F5 mandates these exact labels).
-    expect(within(sider).getByText('EVENTS & ALERTS')).toBeInTheDocument();
-    expect(within(sider).getByText('ASSETS')).toBeInTheDocument();
-    expect(within(sider).getByText('INVENTORY')).toBeInTheDocument();
-    expect(within(sider).getByText('EDGE & CONNECTIONS')).toBeInTheDocument();
+    // Four collapsible section headers (54.2 mandates these labels).
+    expect(within(sider).getByText('Asset Tracking')).toBeInTheDocument();
+    expect(within(sider).getByText('Inventory')).toBeInTheDocument();
+    expect(within(sider).getByText('Data Management')).toBeInTheDocument();
+    expect(within(sider).getByText('Devices & Connections')).toBeInTheDocument();
 
-    // Every operator-day route under those groups.
-    for (const label of [
-      // EVENTS & ALERTS
-      'Telemetry',
-      'Telemetry Models',
-      'Rules',
-      'Alerts',
-      // ASSETS
-      'Assets',
-      'Categories',
-      'Locations',
-      'Map',
-      // INVENTORY
-      'Products',
-      'Lot Expiry',
-      'Stock Levels',
-      'Stock Movements',
-      'CSV Import',
-      // EDGE & CONNECTIONS
-      'Devices',
-      'Integrations',
-    ]) {
-      expect(within(sider).getByText(label)).toBeInTheDocument();
-    }
+    // Sections start collapsed (initial route `/` is ungrouped). Per-item
+    // surface coverage is provided by the route-reachability smoke test
+    // in `src/lib/nav.test.ts` — opening every SubMenu here would just
+    // re-verify what that test already checks against the registry.
+  });
+
+  it('opens a section on click and reveals its child items', () => {
+    renderLayout();
+    const sider = screen.getByTestId('sider');
+
+    fireEvent.click(within(sider).getByText('Asset Tracking'));
+    expect(within(sider).getByText('Assets')).toBeInTheDocument();
+    expect(within(sider).getByText('Tags')).toBeInTheDocument();
+    expect(within(sider).getByText('Locations')).toBeInTheDocument();
+    expect(within(sider).getByText('Map')).toBeInTheDocument();
   });
 });
 
 describe('Layout — Sprint 41 collapsible sidebar (F6)', () => {
-  it('drops group headers when collapsed (flat icon-only menu)', () => {
+  it('collapses brand text + version footer when the sider is collapsed', () => {
     renderLayout();
     const sider = screen.getByTestId('sider');
 
-    // AntD's Sider exposes a trigger button at the bottom. Toggling it
-    // calls our onCollapse handler which persists + flips data-collapsed.
     const trigger = sider.querySelector('.ant-layout-sider-trigger') as HTMLElement;
     expect(trigger).toBeTruthy();
     fireEvent.click(trigger);
 
     expect(sider).toHaveAttribute('data-collapsed', 'true');
-
-    // Group headers are no longer rendered in the DOM — the collapsed
-    // menuItems branch drops `type: 'group'` wrappers entirely.
-    expect(within(sider).queryByText('EVENTS & ALERTS')).not.toBeInTheDocument();
-    expect(within(sider).queryByText('ASSETS')).not.toBeInTheDocument();
-    expect(within(sider).queryByText('INVENTORY')).not.toBeInTheDocument();
-    expect(within(sider).queryByText('EDGE & CONNECTIONS')).not.toBeInTheDocument();
 
     // Brand display name is hidden in collapsed mode (logo space stays).
     const brandHeader = screen.getByTestId('sider-brand-header');
