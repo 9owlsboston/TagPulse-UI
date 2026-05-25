@@ -4,7 +4,6 @@ import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
-import Badge from 'antd/es/badge';
 import Input from 'antd/es/input';
 import DatePicker from 'antd/es/date-picker';
 import message from 'antd/es/message';
@@ -13,10 +12,10 @@ import { Link, useSearchParams } from 'react-router-dom';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
 import { alertsApi } from '@/api/client';
 import type { AlertResponse } from '@/types';
 
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 const SEVERITY_FILTERS = [
@@ -198,39 +197,37 @@ export function AlertHistory() {
   ];
 
   return (
-    <div>
-      <Space align="center" size="small" style={{ marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Alert History</Title>
-        <Badge
-          count={filtered.length}
-          overflowCount={99999}
-          showZero
-          style={{ backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' }}
-          data-testid="alert-history-title-count"
-        />
-      </Space>
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
-          placeholder="Search message…"
-          allowClear
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 260 }}
-        />
-        <RangePicker
-          showTime
-          allowClear
-          value={range as [Dayjs, Dayjs] | null}
-          onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)}
-          presets={RANGE_PRESETS}
-          style={{ width: 380 }}
-        />
-        {canAcknowledge && selected.length > 0 && (
+    <ListPageShell
+      title="Alert History"
+      count={filtered.length}
+      countTestId="alert-history-title-count"
+      primaryAction={
+        canAcknowledge && selected.length > 0 ? (
           <Button type="primary" onClick={handleBulkAcknowledge} loading={bulkLoading}>
             Acknowledge {selected.length} selected
           </Button>
-        )}
-      </Space>
+        ) : undefined
+      }
+      toolbar={
+        <Space wrap>
+          <Input.Search
+            placeholder="Search message…"
+            allowClear
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 260 }}
+          />
+          <RangePicker
+            showTime
+            allowClear
+            value={range as [Dayjs, Dayjs] | null}
+            onChange={(v) => setRange(v as [Dayjs | null, Dayjs | null] | null)}
+            presets={RANGE_PRESETS}
+            style={{ width: 380 }}
+          />
+        </Space>
+      }
+    >
       <Table
         rowKey="id"
         columns={columns}
@@ -260,6 +257,6 @@ export function AlertHistory() {
           rowExpandable: (record) => Object.keys(record.context ?? {}).length > 0,
         }}
       />
-    </div>
+    </ListPageShell>
   );
 }

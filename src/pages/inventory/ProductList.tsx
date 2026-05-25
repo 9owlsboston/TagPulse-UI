@@ -1,23 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import Modal from 'antd/es/modal';
 import Select from 'antd/es/select';
-import Space from 'antd/es/space';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { PlusOutlined } from '@ant-design/icons';
 import { useProducts, useCreateProduct } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
 import type { ProductResponse } from '@/api/generated/models/ProductResponse';
 import type { ProductCreate } from '@/api/generated/models/ProductCreate';
-
-const { Title } = Typography;
 
 const UNIT_OPTIONS = [
   { value: 'each', label: 'each' },
@@ -50,22 +46,25 @@ export function ProductList() {
   };
 
   return (
-    <div>
-      <Title level={2}>Products</Title>
-      <Card>
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+    <>
+      <ListPageShell
+        title="Products"
+        primaryAction={
+          canEdit && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+              New Product
+            </Button>
+          )
+        }
+        toolbar={
           <Input.Search
             placeholder="Search by SKU, GTIN, or name"
             allowClear
             onSearch={setSearch}
             style={{ maxWidth: 360 }}
           />
-          {canEdit && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-              New Product
-            </Button>
-          )}
-        </Space>
+        }
+      >
         <Table<ProductResponse>
           rowKey="id"
           loading={isLoading}
@@ -80,7 +79,7 @@ export function ProductList() {
             { title: 'Unit', dataIndex: 'unit', width: 100 },
           ]}
         />
-      </Card>
+      </ListPageShell>
 
       <Modal
         title="Create Product"
@@ -108,6 +107,6 @@ export function ProductList() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }

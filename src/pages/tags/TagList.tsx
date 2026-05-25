@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card from 'antd/es/card';
 import Input from 'antd/es/input';
 import Segmented from 'antd/es/segmented';
 import Select from 'antd/es/select';
@@ -9,9 +8,10 @@ import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Typography from 'antd/es/typography';
 import { useTags, type TagListParams } from '@/hooks/useTags';
+import { ListPageShell } from '@/components/ListPageShell';
 import { TagResponse } from '@/api/generated/models/TagResponse';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -134,52 +134,52 @@ export function TagList() {
   ];
 
   return (
-    <div data-testid="tag-list-page">
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Title level={3} style={{ marginBottom: 0 }}>
-          Tags
-        </Title>
+    <ListPageShell
+      testId="tag-list-page"
+      title="Tags"
+      titleLevel={3}
+      description={
         <Text type="secondary">
           Tag registry (ADR 028). Imported and observed EPCs with lifecycle status.
           Reads pending classification do not appear here — see the reconciliation views
           under Tags → Reconciliation.
         </Text>
-
-        <Card size="small">
-          <Space wrap size="middle">
-            <Select
-              aria-label="Filter by status"
-              value={status}
-              style={{ width: 200 }}
-              onChange={(v) => {
-                setStatus(v);
-                setPage(1);
-              }}
-              options={STATUS_OPTIONS}
-            />
-            <Input.Search
-              aria-label="Filter by EPC prefix"
-              placeholder="EPC prefix (hex)"
-              allowClear
-              style={{ width: 280 }}
-              onSearch={(v) => {
-                setEpcPrefix(v);
-                setPage(1);
-              }}
-            />
-            <Segmented
-              aria-label="Binding filter"
-              options={BOUND_OPTIONS}
-              value={bound}
-              onChange={(v) => {
-                setBound(v as 'all' | 'bound' | 'unbound');
-                setPage(1);
-              }}
-            />
-          </Space>
-        </Card>
-
-        <Table<TagResponse>
+      }
+      toolbar={
+        <Space wrap size="middle">
+          <Select
+            aria-label="Filter by status"
+            value={status}
+            style={{ width: 200 }}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+          />
+          <Input.Search
+            aria-label="Filter by EPC prefix"
+            placeholder="EPC prefix (hex)"
+            allowClear
+            style={{ width: 280 }}
+            onSearch={(v) => {
+              setEpcPrefix(v);
+              setPage(1);
+            }}
+          />
+          <Segmented
+            aria-label="Binding filter"
+            options={BOUND_OPTIONS}
+            value={bound}
+            onChange={(v) => {
+              setBound(v as 'all' | 'bound' | 'unbound');
+              setPage(1);
+            }}
+          />
+        </Space>
+      }
+    >
+      <Table<TagResponse>
           rowKey="id"
           dataSource={rows}
           loading={isLoading || isFetching}
@@ -203,14 +203,13 @@ export function TagList() {
             onClick: () => navigate(`/tags/${record.epc_hex}`),
             style: { cursor: 'pointer' },
           })}
-          locale={{
-            emptyText:
-              status || epcPrefix || bound !== 'all'
-                ? 'No tags match the current filters.'
-                : 'No tags registered yet. Import a CSV or wait for the registrar to classify reads.',
-          }}
-        />
-      </Space>
-    </div>
+        locale={{
+          emptyText:
+            status || epcPrefix || bound !== 'all'
+              ? 'No tags match the current filters.'
+              : 'No tags registered yet. Import a CSV or wait for the registrar to classify reads.',
+        }}
+      />
+    </ListPageShell>
   );
 }

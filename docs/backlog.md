@@ -21,4 +21,4 @@ Tags: `[ui]`, `[ux]`, `[a11y]`, `[perf]`, `[deps]`, `[idea]`.
 
 <!-- Add new items above this line. Oldest at bottom; remove when drained. -->
 
-_(empty)_
+- [2026-05-25] Investigate `npm run check` parallel-load test flakes: 5 tests time out at the default 5000ms when the full suite runs but pass cleanly in isolation. Affected: `AssetList renders rows and Register CTA` (Assets.test.tsx), `SitesZones — switching to Transporters tab` (Assets.test.tsx), `CategoryList renders the page title and the New Category CTA for admins` (CategoryList.test.tsx), `DataExplorer renders the title` (DataExplorer.test.tsx), one in `LabelChips.test.tsx`. Likely a slow-import / parallelism-budget issue (transform 34s, import 244s in the failing run). Options to explore: bump `testTimeout` to 10000 in vitest config, reduce poolOptions concurrency, or warm-cache heavy imports (AntD, Recharts). Preexisting — not caused by Sprint 55 work. [perf]
