@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **List pages — count moved next to page title (chore).** [src/pages/assets/AssetList.tsx](src/pages/assets/AssetList.tsx) and [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) — the "X of Y" count that lived in the filter toolbar now renders as an AntD `<Badge>` immediately next to the page `<Title>` (`data-testid="asset-list-title-count"` / `alert-history-title-count`). The toolbar duplicate is removed. Server-paginated list pages (TagList, TransferList, ReconciliationPage, PendingBulkOperations) are deferred — their pagination totals are deliberately overstated by one to keep AntD's "Next" button enabled, which would be misleading in a title badge; revisit once the backend exposes true totals.
+
 ### Added
 
 - **Sprint 54 follow-up — Tags + Locations dashboard tiles & tag-count mode setting.** Consumes the backend follow-up that added `tags_total`, `sites_total`, `zones_total` to `GET /dashboard/summary` plus the per-tenant `dashboard_tags_count_mode` config field (backend SHA `3b99c93`, PR #76). [src/pages/Dashboard.tsx](src/pages/Dashboard.tsx) gains two tiles: **Tags** (`TagOutlined`, links to `/tags`, value = `tags_total`) and **Locations** (`EnvironmentOutlined`, links to `/sites`, value = `sites_total`, suffix surfaces zone count via `· N zones`). Catalog grows from 7 → 9 tiles. [src/pages/admin/TenantSettings.tsx](src/pages/admin/TenantSettings.tsx) General tab gets a new **Dashboard — Tags tile** card with a select for `dashboard_tags_count_mode` (Live / All / Non-terminal); value is round-tripped through `PATCH /tenant/config`. [src/types.ts](src/types.ts) DashboardSummary picks up the three new int fields; generated client regenerated against backend `openapi.json`. Tests updated in [src/pages/Dashboard.test.tsx](src/pages/Dashboard.test.tsx) for the new fixture fields + tile count.

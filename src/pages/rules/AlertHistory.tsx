@@ -4,6 +4,7 @@ import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
+import Badge from 'antd/es/badge';
 import Input from 'antd/es/input';
 import DatePicker from 'antd/es/date-picker';
 import message from 'antd/es/message';
@@ -198,7 +199,16 @@ export function AlertHistory() {
 
   return (
     <div>
-      <Title level={2}>Alert History</Title>
+      <Space align="center" size="small" style={{ marginBottom: 16 }}>
+        <Title level={2} style={{ margin: 0 }}>Alert History</Title>
+        <Badge
+          count={filtered.length}
+          overflowCount={99999}
+          showZero
+          style={{ backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' }}
+          data-testid="alert-history-title-count"
+        />
+      </Space>
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search
           placeholder="Search message…"
@@ -215,9 +225,6 @@ export function AlertHistory() {
           presets={RANGE_PRESETS}
           style={{ width: 380 }}
         />
-        <Typography.Text type="secondary">
-          {filtered.length} of {data?.length ?? 0}
-        </Typography.Text>
         {canAcknowledge && selected.length > 0 && (
           <Button type="primary" onClick={handleBulkAcknowledge} loading={bulkLoading}>
             Acknowledge {selected.length} selected
