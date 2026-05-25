@@ -4,7 +4,19 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- **Sprint 55 Phase 55.0 — `<ListPageShell>` shared layout component.** [src/components/ListPageShell.tsx](src/components/ListPageShell.tsx) — single source of truth for list-page chrome (title row with optional count badge + primaryAction, optional description, Card with optional toolbar + optional aside slot for side-by-side filter panels). Eleven tests in [src/components/ListPageShell.test.tsx](src/components/ListPageShell.test.tsx) cover all slot permutations. Designed so adopting pages keep their Modals/Drawers outside the shell in a Fragment without behavioural change.
+
 ### Changed
+
+- **Sprint 55 Phase 55.A — Six list pages converted to `<ListPageShell>`.** Uniform header/toolbar/aside layout across the operator-day list surfaces. All `data-testid`s, role guards, search/filter wiring, row selection, and Modal/Drawer behaviour preserved verbatim — only chrome moves.
+  - [src/pages/assets/AssetList.tsx](src/pages/assets/AssetList.tsx) — canonical reference; count badge in title, "New Asset" in primaryAction, FilterPanel in aside.
+  - [src/pages/inventory/ProductList.tsx](src/pages/inventory/ProductList.tsx) — "New Product" in primaryAction (RoleGuard preserved), search in toolbar.
+  - [src/pages/tags/TagList.tsx](src/pages/tags/TagList.tsx) — `titleLevel={3}`, ADR-028 description text, Type/Search/Mode controls in toolbar (server-paginated → no count badge per the Phase 55.0 deferral note below).
+  - [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) — count badge in title, bulk-ack Button in primaryAction (appears only when `canAcknowledge && selected.length > 0`), Search + RangePicker in toolbar.
+  - [src/pages/devices/DeviceList.tsx](src/pages/devices/DeviceList.tsx) — full slot exercise. "Register Device" in primaryAction (RoleGuard preserved), Search/Status/Connection/Move-to-zone/Filters toggle in toolbar, FilterPanel in aside.
+  - [src/pages/inventory/StockLevels.tsx](src/pages/inventory/StockLevels.tsx) — "Export CSV" in primaryAction (disabled when no rows), low-stock Switch in toolbar, inline Empty fallback preserved.
 
 - **List pages — count moved next to page title (chore).** [src/pages/assets/AssetList.tsx](src/pages/assets/AssetList.tsx) and [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) — the "X of Y" count that lived in the filter toolbar now renders as an AntD `<Badge>` immediately next to the page `<Title>` (`data-testid="asset-list-title-count"` / `alert-history-title-count`). The toolbar duplicate is removed. Server-paginated list pages (TagList, TransferList, ReconciliationPage, PendingBulkOperations) are deferred — their pagination totals are deliberately overstated by one to keep AntD's "Next" button enabled, which would be misleading in a title badge; revisit once the backend exposes true totals.
 
