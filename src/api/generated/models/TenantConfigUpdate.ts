@@ -14,6 +14,7 @@
  * ``low_stock_count`` field on ``GET /dashboard/summary``.
  */
 export type TenantConfigUpdate = {
+    dashboard_tags_count_mode?: ('all' | 'live' | 'non_terminal' | null);
     low_stock_threshold?: (number | null);
     rate_limit_overrides?: (Record<string, number> | null);
     telemetry_subject_kinds?: (Array<'device' | 'asset' | 'lot' | 'stock_item' | 'zone'> | null);

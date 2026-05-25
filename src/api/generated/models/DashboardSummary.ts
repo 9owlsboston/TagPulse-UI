@@ -31,6 +31,16 @@
  * ``tenants.low_stock_threshold`` active stock_items
  * (``state='in_stock' AND consumed_at IS NULL``). Default
  * threshold 3; overridable via ``PATCH /tenant/config``.
+ * - ``tags_total`` — tags for the tenant. Predicate is selected
+ * by ``tenants.dashboard_tags_count_mode`` — ``"all"`` counts
+ * every row, ``"live"`` (default) counts
+ * ``status IN ('registered', 'active')``, ``"non_terminal"``
+ * counts ``status NOT IN ('retired', 'defective',
+ * 'transferred_out')``. Overridable via ``PATCH /tenant/config``.
+ * - ``sites_total`` — count of rows in ``sites`` for the tenant.
+ * - ``zones_total`` — count of rows in ``zones`` for the tenant.
+ * The Locations KPI tile renders the (sites, zones) pair as one
+ * grouped tile.
  */
 export type DashboardSummary = {
     alerts_open_24h: number;
@@ -40,7 +50,10 @@ export type DashboardSummary = {
     generated_at: string;
     low_stock_count: number;
     reads_per_hour_now: number;
+    sites_total: number;
     tag_recon_backlog: number;
     tag_transfers_in_flight: number;
+    tags_total: number;
+    zones_total: number;
 };
 

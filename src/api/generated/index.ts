@@ -115,7 +115,7 @@ export type { TelemetryReadingsBatch } from './models/TelemetryReadingsBatch';
 export type { TelemetryResponse } from './models/TelemetryResponse';
 export type { TenantBranding } from './models/TenantBranding';
 export type { TenantBrandingUpdate } from './models/TenantBrandingUpdate';
-export type { TenantConfig } from './models/TenantConfig';
+export { TenantConfig } from './models/TenantConfig';
 export type { TenantConfigUpdate } from './models/TenantConfigUpdate';
 export type { TileProviderUpdate } from './models/TileProviderUpdate';
 export type { UniqueTagsPerWindow } from './models/UniqueTagsPerWindow';

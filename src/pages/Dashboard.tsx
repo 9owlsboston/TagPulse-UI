@@ -10,6 +10,7 @@ import Typography from 'antd/es/typography';
 import {
   AlertOutlined,
   DiffOutlined,
+  EnvironmentOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   GoldOutlined,
@@ -17,6 +18,7 @@ import {
   ReadOutlined,
   ShoppingOutlined,
   SwapOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
@@ -33,7 +35,8 @@ import type { DashboardSummary } from '@/types';
  * of UI preferences and the tile catalog can evolve without migrations.
  *
  * Pass-bar (design doc §54.4):
- * - 8 tiles render in both themes.
+ * - 9 tiles render in both themes (Devices, Open alerts, Reads/hr, Assets,
+ *   Tags, Locations, Tag Transfers, Tag Reconciliation, Low-stock products).
  * - All click-throughs land on a list page pre-filtered to the tile's slice.
  * - Pin order persists across reload.
  */
@@ -48,6 +51,12 @@ interface TileDef {
   prefix: ReactNode;
   value: (s: DashboardSummary) => number;
   suffix?: (s: DashboardSummary) => string | undefined;
+}
+
+// Locations tile rolls up Sites + Zones into a single card per the sprint-54
+// follow-up — primary number is sites, suffix surfaces the zone count.
+function locationsSuffix(s: DashboardSummary): string {
+  return `· ${s.zones_total} zone${s.zones_total === 1 ? '' : 's'}`;
 }
 
 const TILES: TileDef[] = [
@@ -79,6 +88,21 @@ const TILES: TileDef[] = [
     to: '/assets?status=active',
     prefix: <GoldOutlined />,
     value: (s) => s.assets_active,
+  },
+  {
+    id: 'tags',
+    title: 'Tags',
+    to: '/tags',
+    prefix: <TagOutlined />,
+    value: (s) => s.tags_total,
+  },
+  {
+    id: 'locations',
+    title: 'Locations',
+    to: '/sites',
+    prefix: <EnvironmentOutlined />,
+    value: (s) => s.sites_total,
+    suffix: locationsSuffix,
   },
   {
     id: 'transfers-in-flight',

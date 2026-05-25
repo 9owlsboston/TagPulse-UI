@@ -28,6 +28,13 @@ import { TagDataMappings } from '@/pages/inventory/TagDataMappings';
 
 type Mode = 'asset' | 'inventory';
 type SubjectKind = 'device' | 'asset' | 'lot' | 'stock_item' | 'zone';
+type TagsCountMode = 'all' | 'live' | 'non_terminal';
+
+const TAGS_COUNT_MODE_OPTIONS: Array<{ value: TagsCountMode; label: string }> = [
+  { value: 'live', label: 'Live (registered + active)' },
+  { value: 'all', label: 'All tags' },
+  { value: 'non_terminal', label: 'Non-terminal (exclude retired, defective, transferred-out)' },
+];
 
 const SUBJECT_KIND_LABELS: Record<Exclude<SubjectKind, 'device'>, string> = {
   asset: 'Assets',
@@ -47,6 +54,7 @@ function GeneralTab() {
     stock_item: false,
     zone: false,
   });
+  const [tagsCountMode, setTagsCountMode] = useState<TagsCountMode>('live');
 
   useEffect(() => {
     if (!data) return;
@@ -59,6 +67,9 @@ function GeneralTab() {
       stock_item: enabled.includes('stock_item'),
       zone: enabled.includes('zone'),
     });
+    if (data.dashboard_tags_count_mode) {
+      setTagsCountMode(data.dashboard_tags_count_mode as TagsCountMode);
+    }
   }, [data]);
 
   // Prevent the user from turning off the last enabled mode — the backend
@@ -86,7 +97,11 @@ function GeneralTab() {
       if (subjectKinds[k]) kinds.push(k);
     });
     try {
-      await update.mutateAsync({ tracking_modes: modes, telemetry_subject_kinds: kinds });
+      await update.mutateAsync({
+        tracking_modes: modes,
+        telemetry_subject_kinds: kinds,
+        dashboard_tags_count_mode: tagsCountMode,
+      });
       message.success('Tenant configuration updated');
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Update failed');
@@ -134,6 +149,25 @@ function GeneralTab() {
               />
             </Form.Item>
           ))}
+        </Form>
+      </Card>
+
+      <Card title="Dashboard — Tags tile" loading={isLoading} style={{ marginBottom: 16 }}>
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Controls which tags count toward the Tags KPI on the dashboard. `Live` (registered + active) is the default; `All` counts every row; `Non-terminal` excludes retired, defective, and transferred-out tags."
+        />
+        <Form layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
+          <Form.Item label="Count mode">
+            <Select<TagsCountMode>
+              value={tagsCountMode}
+              onChange={setTagsCountMode}
+              options={TAGS_COUNT_MODE_OPTIONS}
+              style={{ maxWidth: 420 }}
+            />
+          </Form.Item>
         </Form>
       </Card>
 

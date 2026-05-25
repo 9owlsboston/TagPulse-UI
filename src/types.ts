@@ -410,5 +410,8 @@ export interface DashboardSummary {
   tag_transfers_in_flight: number;
   tag_recon_backlog: number;
   low_stock_count: number;
+  tags_total: number;
+  sites_total: number;
+  zones_total: number;
   generated_at: string;
 }

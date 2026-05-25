@@ -14,6 +14,9 @@ const FIXTURE: DashboardSummary = {
   tag_transfers_in_flight: 5,
   tag_recon_backlog: 2,
   low_stock_count: 1,
+  tags_total: 128,
+  sites_total: 5,
+  zones_total: 11,
   generated_at: '2026-06-01T12:00:00Z',
 };
 
@@ -41,13 +44,15 @@ describe('Dashboard (Sprint 54.4)', () => {
     expect(screen.getByTestId('dashboard-updated-at')).toBeInTheDocument();
   });
 
-  it('renders all 7 KPI tiles with values from /dashboard/summary', () => {
+  it('renders all 9 KPI tiles with values from /dashboard/summary', () => {
     render(<Dashboard />, { wrapper });
     expect(screen.getByTestId('tile-devices')).toBeInTheDocument();
     expect(screen.queryByTestId('tile-devices-total')).not.toBeInTheDocument();
     expect(screen.getByTestId('tile-alerts-open')).toBeInTheDocument();
     expect(screen.getByTestId('tile-reads-per-hour')).toBeInTheDocument();
     expect(screen.getByTestId('tile-assets-active')).toBeInTheDocument();
+    expect(screen.getByTestId('tile-tags')).toBeInTheDocument();
+    expect(screen.getByTestId('tile-locations')).toBeInTheDocument();
     expect(screen.getByTestId('tile-transfers-in-flight')).toBeInTheDocument();
     expect(screen.getByTestId('tile-recon-backlog')).toBeInTheDocument();
     expect(screen.getByTestId('tile-low-stock')).toBeInTheDocument();
@@ -59,6 +64,9 @@ describe('Dashboard (Sprint 54.4)', () => {
     expect(within(devices).getByText(/\/\s*20/)).toBeInTheDocument();
     expect(within(screen.getByTestId('tile-reads-per-hour')).getByText('451')).toBeInTheDocument();
     expect(within(screen.getByTestId('tile-assets-active')).getByText('87')).toBeInTheDocument();
+    expect(within(screen.getByTestId('tile-tags')).getByText('128')).toBeInTheDocument();
+    expect(within(screen.getByTestId('tile-locations')).getByText('5')).toBeInTheDocument();
+    expect(within(screen.getByTestId('tile-locations')).getByText(/11 zones/)).toBeInTheDocument();
 
     // Renamed labels track sidebar wording.
     expect(within(screen.getByTestId('tile-assets-active')).getByText('Assets')).toBeInTheDocument();
@@ -76,6 +84,8 @@ describe('Dashboard (Sprint 54.4)', () => {
     expect(screen.getByTestId('tile-alerts-open').getAttribute('href')).toBe(
       '/alerts?status=open&since=24h',
     );
+    expect(screen.getByTestId('tile-tags').getAttribute('href')).toBe('/tags');
+    expect(screen.getByTestId('tile-locations').getAttribute('href')).toBe('/sites');
     expect(screen.getByTestId('tile-transfers-in-flight').getAttribute('href')).toBe(
       '/tag-transfers?status=requested',
     );
@@ -103,7 +113,7 @@ describe('Dashboard (Sprint 54.4)', () => {
     const order = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileOrder') ?? '[]');
     const hidden = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileHidden') ?? '[]');
     expect(hidden).toContain('low-stock');
-    expect(order).toHaveLength(7);
+    expect(order).toHaveLength(9);
     // alerts-open should now sit after reads-per-hour rather than before it.
     const idxAlerts = order.indexOf('alerts-open');
     const idxReads = order.indexOf('reads-per-hour');
