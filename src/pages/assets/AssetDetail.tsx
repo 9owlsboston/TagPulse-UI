@@ -257,7 +257,7 @@ export function AssetDetail() {
             {asset.category_id && (
               <Descriptions.Item label="Category" span={2}>
                 {(() => {
-                  if (!category) return <span style={{ color: '#999' }}>{asset.category_id}</span>;
+                  if (!category) return <span style={{ color: 'var(--color-text-muted)' }}>{asset.category_id}</span>;
                   const typeColor: Record<string, string> = {
                     liquid_container: 'blue',
                     reference_tag: 'purple',

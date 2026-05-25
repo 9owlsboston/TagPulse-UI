@@ -16,6 +16,8 @@ import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
@@ -30,6 +32,8 @@ const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
 export function DataExplorer() {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
@@ -237,8 +241,8 @@ export function DataExplorer() {
           animation: tagpulse-row-flash ${FLASH_DURATION_MS}ms ease-out;
         }
         @keyframes tagpulse-cell-pop {
-          0%   { transform: scale(1); color: #389e0d; font-weight: 600; }
-          40%  { transform: scale(1.06); color: #389e0d; font-weight: 600; }
+          0%   { transform: scale(1); color: var(--color-success); font-weight: 600; }
+          40%  { transform: scale(1.06); color: var(--color-success); font-weight: 600; }
           100% { transform: scale(1); color: inherit; font-weight: inherit; }
         }
         .tagpulse-cell-pop {
@@ -322,7 +326,7 @@ export function DataExplorer() {
               label={{ value: 'Signal strength (dBm)', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
             />
             <Tooltip formatter={(value: number) => [`${value} dBm`, 'Signal']} />
-            <Line type="monotone" dataKey="signal" stroke="#1890ff" dot={false} />
+            <Line type="monotone" dataKey="signal" stroke={t.colorAccent} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       )}

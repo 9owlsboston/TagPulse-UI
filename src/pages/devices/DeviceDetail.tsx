@@ -350,8 +350,8 @@ export function DeviceDetail() {
             style={{
               flex: 1,
               padding: 8,
-              background: '#fafafa',
-              border: '1px solid #d9d9d9',
+              background: 'var(--color-surface-raised)',
+              border: '1px solid var(--color-border)',
               borderRadius: 4,
               margin: 0,
               wordBreak: 'break-all',

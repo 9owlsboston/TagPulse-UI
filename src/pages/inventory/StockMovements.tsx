@@ -130,7 +130,7 @@ export function StockMovements() {
             productId || zoneId || range ? (
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7}>
-                  <span style={{ color: '#999' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>
                     Filters active{productId ? ` · product=${productLabel.get(productId)}` : ''}
                     {zoneId ? ` · zone=${zoneLabel.get(zoneId)}` : ''}
                     {range ? ` · ${range[0].format('YYYY-MM-DD HH:mm')} → ${range[1].format('YYYY-MM-DD HH:mm')}` : ''}

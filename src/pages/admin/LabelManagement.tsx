@@ -379,14 +379,15 @@ export function LabelManagement() {
               presets={[
                 {
                   label: 'Common',
+                  // audit-ignore: user-facing label colour palette per ADR-029
                   colors: [
-                    '#2563eb',
-                    '#16a34a',
-                    '#f59e0b',
-                    '#dc2626',
-                    '#9333ea',
-                    '#0891b2',
-                    '#6b7280',
+                    '#2563eb', // audit-ignore: label palette per ADR-029
+                    '#16a34a', // audit-ignore: label palette per ADR-029
+                    '#f59e0b', // audit-ignore: label palette per ADR-029
+                    '#dc2626', // audit-ignore: label palette per ADR-029
+                    '#9333ea', // audit-ignore: label palette per ADR-029
+                    '#0891b2', // audit-ignore: label palette per ADR-029
+                    '#6b7280', // audit-ignore: label palette per ADR-029
                   ],
                 },
               ]}

@@ -11,6 +11,8 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { useRecentReads } from '@/hooks/useTagReads';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 
 const { Title } = Typography;
 
@@ -26,6 +28,8 @@ interface Props {
 }
 
 export function DeviceLocationTab({ deviceId }: Props) {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { data: reads, isLoading } = useRecentReads(deviceId, 100);
 
   const lastWithLocation = useMemo(
@@ -59,7 +63,7 @@ export function DeviceLocationTab({ deviceId }: Props) {
         </Descriptions.Item>
       </Descriptions>
       <Title level={5}>Last Known Position</Title>
-      <div style={{ height: 360, width: '100%', border: '1px solid #f0f0f0', borderRadius: 4 }}>
+      <div style={{ height: 360, width: '100%', border: '1px solid var(--color-border)', borderRadius: 4 }}>
         <MapContainer
           center={[lat, lon]}
           zoom={15}
@@ -78,7 +82,7 @@ export function DeviceLocationTab({ deviceId }: Props) {
             </Popup>
           </Marker>
           {accuracy != null && accuracy > 0 && (
-            <Circle center={[lat, lon]} radius={accuracy} pathOptions={{ color: '#1890ff' }} />
+            <Circle center={[lat, lon]} radius={accuracy} pathOptions={{ color: t.colorAccent }} />
           )}
         </MapContainer>
       </div>

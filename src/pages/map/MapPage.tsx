@@ -29,6 +29,8 @@ import { useMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
 import { useAuth } from '@/lib/auth';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { ManifestEntry } from '@/api/generated/models/ManifestEntry';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 
 const { Title, Text } = Typography;
 
@@ -54,8 +56,6 @@ function polygonLatLngs(polygon: PolygonGeoJSON | null | undefined): [number, nu
   // GeoJSON coords are [lng, lat].
   return ring.map((pt) => [pt[1], pt[0]] as [number, number]);
 }
-
-const PATH_COLORS = ['#1677ff', '#52c41a', '#fa8c16', '#eb2f96', '#722ed1', '#13c2c2'];
 
 // ── View persistence ─────────────────────────────────────────────────────
 // Remember the user's last pan/zoom + layer toggles per tenant so navigating
@@ -189,6 +189,9 @@ function ViewPersister({
 
 export function MapPage() {
   const { tenantId } = useAuth();
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
+  const pathColors = t.chartSeries;
   const persisted = useMemo(() => loadPersistedView(tenantId), [tenantId]);
 
   const { data: assets, isLoading: assetsLoading } = useAssets({ status: 'active', limit: 500 });
@@ -277,7 +280,7 @@ export function MapPage() {
                   const densityFill = showStockDensity && stockMax > 0
                     ? Math.min(0.65, 0.1 + 0.55 * (qty / stockMax))
                     : 0.15;
-                  const densityColor = showStockDensity && qty > 0 ? '#fa541c' : '#1677ff';
+                  const densityColor = showStockDensity && qty > 0 ? t.colorWarning : t.colorAccent;
                   return (
                     <Polygon
                       key={z.id}
@@ -306,7 +309,7 @@ export function MapPage() {
                     key={a.id}
                     asset={a}
                     replayMinutesAgo={replayMinutesAgo}
-                    pathColor={PATH_COLORS[idx % PATH_COLORS.length] ?? '#1677ff'}
+                    pathColor={pathColors[idx % pathColors.length] ?? t.colorAccent}
                     onOpenManifest={() => setManifestAsset(a)}
                   />
                 ))}
@@ -326,7 +329,7 @@ export function MapPage() {
               />
             </div>
 
-            <div style={{ marginTop: 12, fontSize: 12, color: '#888' }}>
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--color-text-muted)' }}>
               <span dangerouslySetInnerHTML={{ __html: mapConfig.attribution }} />
               {mapConfig.kind === 'osm' && (
                 <div style={{ marginTop: 4 }}>
@@ -394,7 +397,7 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: Ass
           <div style="
             width: 18px; height: 18px; border-radius: 50% 50% 50% 0;
             background: ${pathColor};
-            border: 2px solid #fff;
+            border: 2px solid #fff; /* audit-ignore: contrast outline for marker pin against arbitrary map tiles */
             box-shadow: 0 1px 4px rgba(0,0,0,0.4);
             transform: rotate(-45deg);
             transform-origin: center;
@@ -428,7 +431,7 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: Ass
             </a>
           </div>
           {replayMinutesAgo > 0 && (
-            <div style={{ marginTop: 4, fontSize: 11, color: '#888' }}>
+            <div style={{ marginTop: 4, fontSize: 11, color: 'var(--color-text-muted)' }}>
               Position at ~{replayMinutesAgo} min ago
             </div>
           )}
