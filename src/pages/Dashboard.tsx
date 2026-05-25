@@ -9,18 +9,18 @@ import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import {
   AlertOutlined,
-  CheckCircleOutlined,
+  DiffOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  GoldOutlined,
   HddOutlined,
   ReadOutlined,
-  ReconciliationOutlined,
   ShoppingOutlined,
   SwapOutlined,
-  TagOutlined,
 } from '@ant-design/icons';
 import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
+import { useThemeMode } from '@/theme/ThemeProvider';
 import type { DashboardSummary } from '@/types';
 
 /**
@@ -52,19 +52,12 @@ interface TileDef {
 
 const TILES: TileDef[] = [
   {
-    id: 'devices-online',
-    title: 'Devices online',
-    to: '/devices?connection=online',
-    prefix: <CheckCircleOutlined />,
-    value: (s) => s.devices_online,
-    suffix: (s) => `/ ${s.devices_total}`,
-  },
-  {
-    id: 'devices-total',
-    title: 'Devices total',
+    id: 'devices',
+    title: 'Devices',
     to: '/devices',
     prefix: <HddOutlined />,
-    value: (s) => s.devices_total,
+    value: (s) => s.devices_online,
+    suffix: (s) => `/ ${s.devices_total}`,
   },
   {
     id: 'alerts-open',
@@ -82,23 +75,23 @@ const TILES: TileDef[] = [
   },
   {
     id: 'assets-active',
-    title: 'Active assets',
+    title: 'Assets',
     to: '/assets?status=active',
-    prefix: <TagOutlined />,
+    prefix: <GoldOutlined />,
     value: (s) => s.assets_active,
   },
   {
     id: 'transfers-in-flight',
-    title: 'Transfers in flight',
+    title: 'Tag Transfers',
     to: '/tag-transfers?status=requested',
     prefix: <SwapOutlined />,
     value: (s) => s.tag_transfers_in_flight,
   },
   {
     id: 'recon-backlog',
-    title: 'Reconciliation backlog',
+    title: 'Tag Reconciliation',
     to: '/tags/reconciliation',
-    prefix: <ReconciliationOutlined />,
+    prefix: <DiffOutlined />,
     value: (s) => s.tag_recon_backlog,
   },
   {
@@ -131,6 +124,7 @@ function saveIds(key: string, value: string[]): void {
 
 export function Dashboard() {
   const { data, isLoading, error } = useDashboardSummary();
+  const { brandColor } = useThemeMode();
   const [orderState, setOrderState] = useState<string[]>(() => loadIds(ORDER_KEY));
   const [hiddenState, setHiddenState] = useState<string[]>(() => loadIds(HIDDEN_KEY));
   const [customizing, setCustomizing] = useState(false);
@@ -234,7 +228,7 @@ export function Dashboard() {
             <KpiTile
               title={tile.title}
               value={tileValue}
-              prefix={tile.prefix}
+              prefix={<span style={{ color: brandColor }}>{tile.prefix}</span>}
               suffix={tileSuffix}
               loading={isLoading}
               interactive={!customizing}

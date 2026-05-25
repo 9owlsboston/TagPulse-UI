@@ -41,10 +41,10 @@ describe('Dashboard (Sprint 54.4)', () => {
     expect(screen.getByTestId('dashboard-updated-at')).toBeInTheDocument();
   });
 
-  it('renders all 8 KPI tiles with values from /dashboard/summary', () => {
+  it('renders all 7 KPI tiles with values from /dashboard/summary', () => {
     render(<Dashboard />, { wrapper });
-    expect(screen.getByTestId('tile-devices-online')).toBeInTheDocument();
-    expect(screen.getByTestId('tile-devices-total')).toBeInTheDocument();
+    expect(screen.getByTestId('tile-devices')).toBeInTheDocument();
+    expect(screen.queryByTestId('tile-devices-total')).not.toBeInTheDocument();
     expect(screen.getByTestId('tile-alerts-open')).toBeInTheDocument();
     expect(screen.getByTestId('tile-reads-per-hour')).toBeInTheDocument();
     expect(screen.getByTestId('tile-assets-active')).toBeInTheDocument();
@@ -52,19 +52,27 @@ describe('Dashboard (Sprint 54.4)', () => {
     expect(screen.getByTestId('tile-recon-backlog')).toBeInTheDocument();
     expect(screen.getByTestId('tile-low-stock')).toBeInTheDocument();
 
-    // Devices-online tile shows the bare KPI value and a /total suffix.
-    const devicesOnline = screen.getByTestId('tile-devices-online');
-    expect(within(devicesOnline).getByText('12')).toBeInTheDocument();
-    expect(within(devicesOnline).getByText(/\/\s*20/)).toBeInTheDocument();
+    // Merged Devices tile shows the online value as headline and `/ total` as suffix.
+    const devices = screen.getByTestId('tile-devices');
+    expect(within(devices).getByText('Devices')).toBeInTheDocument();
+    expect(within(devices).getByText('12')).toBeInTheDocument();
+    expect(within(devices).getByText(/\/\s*20/)).toBeInTheDocument();
     expect(within(screen.getByTestId('tile-reads-per-hour')).getByText('451')).toBeInTheDocument();
     expect(within(screen.getByTestId('tile-assets-active')).getByText('87')).toBeInTheDocument();
+
+    // Renamed labels track sidebar wording.
+    expect(within(screen.getByTestId('tile-assets-active')).getByText('Assets')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('tile-transfers-in-flight')).getByText('Tag Transfers'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('tile-recon-backlog')).getByText('Tag Reconciliation'),
+    ).toBeInTheDocument();
   });
 
   it('wraps each tile in a link that deep-links to its pre-filtered list page', () => {
     render(<Dashboard />, { wrapper });
-    expect(screen.getByTestId('tile-devices-online').getAttribute('href')).toBe(
-      '/devices?connection=online',
-    );
+    expect(screen.getByTestId('tile-devices').getAttribute('href')).toBe('/devices');
     expect(screen.getByTestId('tile-alerts-open').getAttribute('href')).toBe(
       '/alerts?status=open&since=24h',
     );
@@ -95,7 +103,7 @@ describe('Dashboard (Sprint 54.4)', () => {
     const order = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileOrder') ?? '[]');
     const hidden = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileHidden') ?? '[]');
     expect(hidden).toContain('low-stock');
-    expect(order).toHaveLength(8);
+    expect(order).toHaveLength(7);
     // alerts-open should now sit after reads-per-hour rather than before it.
     const idxAlerts = order.indexOf('alerts-open');
     const idxReads = order.indexOf('reads-per-hour');
