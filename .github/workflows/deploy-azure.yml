@@ -146,6 +146,11 @@ jobs:
       # Sprint 25 B3 — Fail the deploy if the api the SPA was built against
       # is unhealthy. Catches wrong VITE_API_BASE_URL or a down backend
       # before we ship a broken SPA. Skipped on pull_request events.
+      #
+      # Retries with backoff so an Azure Container Apps cold-start
+      # (scale-to-zero / new revision activation, ~5–30s) doesn't fail
+      # the deploy. A genuinely dead backend will still exhaust the
+      # budget and fail.
       - name: API preflight check
         if: github.event_name != 'pull_request'
         env:
@@ -156,15 +161,30 @@ jobs:
             echo "::warning::VITE_API_BASE_URL is empty — skipping api preflight"
             exit 0
           fi
-          echo "Preflight: checking ${API_BASE}/health/ready"
-          code=$(curl -fsS --max-time 10 -o /tmp/health.json -w '%{http_code}' "${API_BASE}/health/ready" 2>&1 || true)
-          if [[ "$code" != "200" ]]; then
-            echo "::error::API preflight failed — ${API_BASE}/health/ready returned HTTP ${code}"
-            cat /tmp/health.json 2>/dev/null || true
-            exit 1
-          fi
-          echo "✓ API preflight passed (HTTP 200)"
-          cat /tmp/health.json
+          URL="${API_BASE}/health/ready"
+          echo "Preflight: checking ${URL} (with retries for cold-start)"
+          attempts=8
+          # Per-attempt curl timeout (s). Total worst-case ~= attempts * (timeout + sleep)
+          # 8 * (15 + 5) = 160s, plenty for a cold ACA revision activation.
+          per_try_timeout=15
+          sleep_between=5
+          code="000"
+          for i in $(seq 1 "$attempts"); do
+            code=$(curl -fsS --max-time "$per_try_timeout" \
+              -o /tmp/health.json -w '%{http_code}' "$URL" 2>/tmp/curl.err || true)
+            if [[ "$code" == "200" ]]; then
+              echo "✓ API preflight passed on attempt ${i} (HTTP 200)"
+              cat /tmp/health.json
+              exit 0
+            fi
+            echo "Attempt ${i}/${attempts}: HTTP ${code} — $(cat /tmp/curl.err 2>/dev/null | tr '\n' ' ' || true)"
+            if [[ "$i" -lt "$attempts" ]]; then
+              sleep "$sleep_between"
+            fi
+          done
+          echo "::error::API preflight failed after ${attempts} attempts — ${URL} last status HTTP ${code}"
+          cat /tmp/health.json 2>/dev/null || true
+          exit 1
 
       - name: Deploy to Azure Static Web Apps
         id: swa-deploy

@@ -58,14 +58,14 @@ React SPA admin dashboard for the TagPulse IoT platform. Provides device managem
 
 ## Cross-Repo Workflow
 
-TagPulse ships as **two repos**: the backend (`TagPulse` at
-`$TAGPULSE_PATH`, default `~/ws/TagPulse`) and this React SPA. The
-**backend owns the product roadmap**; this repo consumes the OpenAPI
-contract. Both repos share sprint numbers but ship independent PRs.
+TagPulse ships as **two repos**: the backend (`TagPulse`, conventionally
+at `~/ws/TagPulse`) and this React SPA. The **backend owns the product
+roadmap**; this repo consumes the OpenAPI contract. Both repos share
+sprint numbers but ship independent PRs.
 
 ### Roadmap lives in the backend, not here
-- All planning lives in `$TAGPULSE_PATH/docs/roadmap.md`. UI-only items
-  are listed there too, tagged `[UI]`.
+- All planning lives in `TagPulse/docs/roadmap.md` (the backend repo's
+  `docs/roadmap.md`). UI-only items are listed there too, tagged `[UI]`.
 - This repo has **no** `docs/roadmap.md`. Don't create one.
 - `CHANGELOG.md` here is for UI release notes only.
 - Sprint numbers are **shared**. "Sprint 54" means the same theme in
@@ -87,7 +87,9 @@ number, then resume.
 
 ### OpenAPI is the contract handoff
 - The generated client under `src/api/generated/` is regenerated from
-  `$TAGPULSE_PATH/openapi.json` via `npm run generate-api`.
+  `../TagPulse/openapi.json` via `npm run generate-api` (the script
+  hard-codes that relative path; assumes the backend is checked out as
+  a sibling directory).
 - When a UI PR consumes new API surface, **record the backend commit
   SHA** the `openapi.json` was regenerated against in the PR
   description (`backend SHA: <sha>`).
@@ -102,8 +104,16 @@ number, then resume.
 the draft PR body. Fill it in even when the answer is "UI only" or
 "pending backend SHA" — explicit beats implicit.
 
+If you started planning on `main` before remembering to branch, use
+`scripts/start-sprint.sh --carry <NN> <topic>` — it stashes the WIP,
+branches, pops, and commits the carried changes as the starter commit.
+Mirrors the backend's `--carry` flag.
+
 The backend's `scripts/start-sprint.sh --with-ui` can drive both branches
-in one call when starting a paired sprint from the backend side.
+in one call when starting a paired sprint from the backend side. Note
+that UI PRs created via `--with-ui` use the backend's thinner UI PR body
+(link back to backend PR + checklist) rather than this repo's local
+`## Cross-repo plan` block.
 
 ### Backlog
 `docs/backlog.md` is the lightweight scratch list for in-flight UI
