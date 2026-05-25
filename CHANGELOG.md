@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- **Transfers page — 422 Validation Error on load.** [src/hooks/useTransfers.ts](src/hooks/useTransfers.ts) — backend regex on `GET /tag-transfers?direction=…` is `^(in|out)$` (per `openapi.json`), but the UI was sending `outbound` / `inbound` (the values it uses internally for state + labels). Every initial load 422'd with `ApiError: Validation Error`. The hook now translates `outbound` → `out` and `inbound` → `in` at the API call site; UI state, props, and tests keep the verbose values. No regen needed.
+
 ### Changed
 
 - **Cross-repo workflow documented + encoded in tooling.** Codifies the two-repo (backend + UI) workflow that until now lived only in the operator's head. (1) New `## Cross-Repo Workflow` section in [.github/copilot-instructions.md](.github/copilot-instructions.md) covering shared sprint numbers, the three work shapes (sprint / chore / in-flight follow-up), OpenAPI as contract handoff with backend-SHA recording, backend-roadmap-as-source-of-truth (no roadmap lives here), and `docs/backlog.md` as the in-flight scratch list. (2) New [docs/backlog.md](docs/backlog.md). (3) `scripts/start-sprint.sh` gains a `--carry` flag mirroring the backend script — stashes in-flight planning artifacts on `main`, branches, pops, and commits as the starter commit. PR body template gains a `## Cross-repo plan` section (Backend / UI / OpenAPI / Merge-order bullets) so the cross-repo intent is declared upfront, plus a new checklist item reminding to record the backend SHA + regenerate `src/api/generated/` when consuming new API. No flag change for backend interop — backend's `start-sprint.sh --with-ui` drives both branches when starting from the backend side. Mirrored chore branch in TagPulse backend.
