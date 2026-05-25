@@ -33,4 +33,10 @@ describe('AlertHistory', () => {
     render(<AlertHistory />, { wrapper });
     expect(screen.getByText('Threshold exceeded')).toBeInTheDocument();
   });
+
+  it('shows the row count badge next to the title', () => {
+    render(<AlertHistory />, { wrapper });
+    const badge = screen.getByTestId('alert-history-title-count');
+    expect(badge).toHaveTextContent('1');
+  });
 });

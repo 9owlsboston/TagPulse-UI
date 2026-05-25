@@ -13,6 +13,7 @@ import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
+import Badge from 'antd/es/badge';
 import message from 'antd/es/message';
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -300,7 +301,16 @@ export function AssetList() {
           .tagpulse-cell-pop { animation: none; }
         }
       `}</style>
-      <Title level={2}>Assets</Title>
+      <Space align="center" size="small" style={{ marginBottom: 16 }}>
+        <Title level={2} style={{ margin: 0 }}>Assets</Title>
+        <Badge
+          count={filteredRows.length}
+          overflowCount={99999}
+          showZero
+          style={{ backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' }}
+          data-testid="asset-list-title-count"
+        />
+      </Space>
       <Card>
         <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
           <Space wrap>
@@ -355,9 +365,6 @@ export function AssetList() {
             >
               Never seen
             </Checkbox>
-            <Typography.Text type="secondary">
-              {filteredRows.length} of {rows.length}
-            </Typography.Text>
           </Space>
           {canEdit && (
             <Button

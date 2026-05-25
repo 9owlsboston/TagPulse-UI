@@ -236,6 +236,12 @@ describe('Assets pages — smoke', () => {
     expect(screen.getByRole('button', { name: /register asset/i })).toBeInTheDocument();
   });
 
+  it('AssetList shows the row count badge next to the title', () => {
+    render(wrap(<AssetList />));
+    const badge = screen.getByTestId('asset-list-title-count');
+    expect(badge).toHaveTextContent('1');
+  });
+
   it('SitesZones renders site, zone and reader chip', () => {
     render(wrap(<SitesZones />));
     expect(screen.getByText('Locations')).toBeInTheDocument();
