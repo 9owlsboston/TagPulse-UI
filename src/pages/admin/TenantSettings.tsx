@@ -360,7 +360,7 @@ function MapConfigTab() {
           alt="Sample map tile"
           width={256}
           height={256}
-          style={{ border: '1px solid #d9d9d9', borderRadius: 4 }}
+          style={{ border: '1px solid var(--color-border)', borderRadius: 4 }}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.opacity = '0.3';
           }}

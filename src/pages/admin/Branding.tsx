@@ -159,7 +159,7 @@ export function Branding() {
         <div
           style={{
             background: previewColor,
-            color: '#fff',
+            color: '#fff', // audit-ignore: contrast colour for arbitrary brand background
             padding: 16,
             borderRadius: 6,
             display: 'flex',
@@ -184,7 +184,7 @@ export function Branding() {
               }}
             />
           )}
-          <Text strong style={{ color: '#fff', fontSize: 18 }}>
+          <Text strong style={{ color: '#fff', fontSize: 18 }}>{/* audit-ignore: contrast colour for arbitrary brand background */}
             {previewName}
           </Text>
         </div>

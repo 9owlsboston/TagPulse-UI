@@ -274,8 +274,8 @@ export function AssetList() {
           animation: tagpulse-row-flash ${FLASH_DURATION_MS}ms ease-out;
         }
         @keyframes tagpulse-cell-pop {
-          0%   { transform: scale(1); color: #389e0d; font-weight: 600; }
-          40%  { transform: scale(1.06); color: #389e0d; font-weight: 600; }
+          0%   { transform: scale(1); color: var(--color-success); font-weight: 600; }
+          40%  { transform: scale(1.06); color: var(--color-success); font-weight: 600; }
           100% { transform: scale(1); color: inherit; font-weight: inherit; }
         }
         .tagpulse-cell-pop {

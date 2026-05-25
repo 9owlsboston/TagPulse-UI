@@ -30,6 +30,8 @@ export default [
         CSSStyleDeclaration: 'readonly',
         HTMLElement: 'readonly',
         HTMLImageElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        getComputedStyle: 'readonly',
         // Browser storage / timers / encoding
         localStorage: 'readonly',
         sessionStorage: 'readonly',

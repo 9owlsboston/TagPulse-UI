@@ -19,6 +19,8 @@ import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import dayjs, { type Dayjs } from 'dayjs';
 import { useCreateLot, useLots, useProduct, useStockLevels, useUpdateProduct } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 import type { LotResponse } from '@/api/generated/models/LotResponse';
 
 const { Title } = Typography;
@@ -39,6 +41,8 @@ interface ProductEditFormValues {
 }
 
 export function ProductDetail() {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading } = useProduct(id);
@@ -155,7 +159,7 @@ export function ProductDetail() {
         <Col span={12}>
           <Card title="Stock by zone" size="small">
             {chartData.length === 0 ? (
-              <div style={{ color: '#999' }}>No stock items recorded yet.</div>
+              <div style={{ color: 'var(--color-text-muted)' }}>No stock items recorded yet.</div>
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData}>
@@ -163,7 +167,7 @@ export function ProductDetail() {
                   <XAxis dataKey="zone" />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="quantity" fill="#1677ff" />
+                  <Bar dataKey="quantity" fill={t.colorAccent} />
                 </BarChart>
               </ResponsiveContainer>
             )}

@@ -245,12 +245,14 @@ export function Layout() {
       .sort((a, b) => b.key.length - a.key.length)[0]?.key ?? '/';
 
   // Sider chrome: branding display_name + optional logo (QW6) over
-  // a tenant-name fallback. In light mode the Sider is white with the
-  // brand blue as accents (QW1); in dark mode the classic dark Sider.
-  const siderBg = mode === 'dark' ? '#001529' : '#ffffff';
-  const siderTitleColor = mode === 'dark' ? '#fff' : 'rgba(0,0,0,0.85)';
-  const siderFooterColor = mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
-  const siderBorder = mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid #f0f0f0';
+  // a tenant-name fallback. Colour roles flow through semantic tokens
+  // (ADR-029) — the AntD Sider `theme` prop still drives menu chrome
+  // so we keep the light/dark mapping for that, but background and
+  // borders read from `var(--color-surface)` / `var(--color-border)`.
+  const siderBg = 'var(--color-surface)';
+  const siderTitleColor = 'var(--color-text)';
+  const siderFooterColor = 'var(--color-text-muted)';
+  const siderBorder = '1px solid var(--color-border)';
 
   const tenantDisplayName =
     branding?.display_name?.trim() ||
@@ -335,7 +337,7 @@ export function Layout() {
       <AntLayout>
         <Header
           style={{
-            background: mode === 'dark' ? '#141414' : '#fff',
+            background: 'var(--color-surface)',
             padding: '0 24px',
             display: 'flex',
             justifyContent: 'flex-end',

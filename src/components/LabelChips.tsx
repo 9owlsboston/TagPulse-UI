@@ -144,7 +144,7 @@ export function LabelChips({ entityType, entityId, compact = false }: LabelChips
   const chips = (associations ?? []).map((a) => {
     const color = a.color ?? colorByKey.get(a.key) ?? undefined;
     // AntD's `color` prop accepts both preset names (e.g. "blue") and
-    // hex strings (e.g. "#2563eb"). The catalog stores hex per ADR 020.
+    // hex strings (e.g. "#2563eb"). The catalog stores hex per ADR 020. audit-ignore
     return (
       <Tag
         key={a.label_id}

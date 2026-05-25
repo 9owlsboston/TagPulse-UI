@@ -60,6 +60,7 @@ const TagDetail = lazy(() => import('@/pages/tags/TagDetail').then((m) => ({ def
 const TagImport = lazy(() => import('@/pages/tags/TagImport').then((m) => ({ default: m.TagImport })));
 const TransferList = lazy(() => import('@/pages/transfers/TransferList').then((m) => ({ default: m.TransferList })));
 const ReconciliationPage = lazy(() => import('@/pages/reconciliation/ReconciliationPage').then((m) => ({ default: m.ReconciliationPage })));
+const TokensPage = lazy(() => import('@/pages/dev/TokensPage').then((m) => ({ default: m.TokensPage })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -169,6 +170,7 @@ export function AppRoutes() {
               <Route path="/admin/audit-logs" element={<AuditLog />} />
               <Route path="/admin/dead-letters" element={<DeadLetters />} />
               <Route path="/admin/pending-bulk-operations" element={<PendingBulkOperations />} />
+              <Route path="/dev/tokens" element={<TokensPage />} />
             </Route>
           </Routes>
         </Suspense>

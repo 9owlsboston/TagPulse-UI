@@ -20,48 +20,64 @@ function ThemeProbe() {
 describe('ThemeProvider', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    // Force OS preference to dark so default-mode tests are deterministic.
+    // matchMedia is jsdom-mocked; default returns matches:false for every query.
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }));
   });
 
   afterEach(() => {
     window.localStorage.clear();
+    vi.restoreAllMocks();
   });
 
-  it('defaults to light mode and the Tailwind blue-600 brand colour', () => {
+  it('defaults to dark mode and the dark-theme accent as the brand colour', () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>,
     );
-    expect(screen.getByTestId('mode').textContent).toBe('light');
+    expect(screen.getByTestId('mode').textContent).toBe('dark');
     expect(screen.getByTestId('brand').textContent).toBe(DEFAULT_BRAND_COLOR);
   });
 
-  it('toggleMode flips light↔dark and persists the choice', () => {
+  it('toggleMode flips dark↔light, persists, and writes data-theme on <html>', () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>,
     );
-    act(() => {
-      fireEvent.click(screen.getByTestId('toggle'));
-    });
-    expect(screen.getByTestId('mode').textContent).toBe('dark');
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     act(() => {
       fireEvent.click(screen.getByTestId('toggle'));
     });
     expect(screen.getByTestId('mode').textContent).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    act(() => {
+      fireEvent.click(screen.getByTestId('toggle'));
+    });
+    expect(screen.getByTestId('mode').textContent).toBe('dark');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
-  it('honours a persisted dark mode on first mount', () => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+  it('honours a persisted light mode on first mount', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>,
     );
-    expect(screen.getByTestId('mode').textContent).toBe('dark');
+    expect(screen.getByTestId('mode').textContent).toBe('light');
   });
 
   it('setBrandColor accepts hex, rejects garbage, clears on null', () => {
@@ -79,10 +95,11 @@ describe('ThemeProvider', () => {
     expect(screen.getByTestId('brand').textContent).toBe(DEFAULT_BRAND_COLOR);
   });
 
-  it('useThemeMode throws when used outside the provider', () => {
-    // Silence the React error boundary log noise for this assertion-only test.
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => render(<ThemeProbe />)).toThrow(/useThemeMode/);
-    spy.mockRestore();
+  it('useThemeMode returns a safe dark-mode fallback when used outside the provider', () => {
+    // Components that only read `mode` for chart colours can render in
+    // isolation (in unit tests) without being wrapped in <ThemeProvider>.
+    render(<ThemeProbe />);
+    expect(screen.getByTestId('mode').textContent).toBe('dark');
+    expect(screen.getByTestId('brand').textContent).toBe(DEFAULT_BRAND_COLOR);
   });
 });

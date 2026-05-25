@@ -44,6 +44,8 @@ import {
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
 import { FilterPanel } from '@/components/FilterPanel';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
@@ -56,6 +58,8 @@ import { PolygonDraw } from '@/components/PolygonDraw';
 const { Title, Text } = Typography;
 
 export function SitesZones() {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { modal, message } = App.useApp();
   // Sprint 37 row 3.9b — site + zone label filters; Sprint 43 — moved
   // into two stacked side <FilterPanel/>s under a single Filters toggle
@@ -316,7 +320,7 @@ export function SitesZones() {
             label: (
               <Space>
                 <KindIcon
-                  style={{ color: isTransporter ? '#fa8c16' : '#1677ff' }}
+                  style={{ color: isTransporter ? t.colorWarning : t.colorAccent }}
                   aria-label={isTransporter ? 'transporter' : 'site'}
                 />
                 <strong>{site.name}</strong>

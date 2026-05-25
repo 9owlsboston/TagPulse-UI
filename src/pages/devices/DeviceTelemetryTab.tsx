@@ -10,6 +10,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useTelemetryModels } from '@/hooks/useTelemetryModels';
 import { useDeviceTelemetry } from '@/hooks/useTelemetry';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 import type { DeviceTelemetryReading, MetricDefinition } from '@/types';
 
 const { Text, Title } = Typography;
@@ -20,6 +22,8 @@ interface Props {
 }
 
 export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { data: models } = useTelemetryModels();
   const model = models?.find((m) => m.device_type === deviceType);
   const metrics: MetricDefinition[] = model?.metrics ?? [];
@@ -147,7 +151,7 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
               ]}
             />
             <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#1890ff" dot={false} />
+            <Line type="monotone" dataKey="value" stroke={t.colorAccent} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       )}
