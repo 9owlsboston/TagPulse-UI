@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Segmented from 'antd/es/segmented';
@@ -55,10 +55,22 @@ function formatTimestamp(iso: string | null): string {
 export function TransferList() {
   const navigate = useNavigate();
   const canCreate = useCanPerform('editor');
+  const [searchParams] = useSearchParams();
   const [direction, setDirection] = useState<'outbound' | 'inbound'>('outbound');
-  const [status, setStatus] = useState<string>('');
+  const [status, setStatus] = useState<string>(() => {
+    // Sprint 54.4 — dashboard "Transfers in flight" tile deep-links with
+    // ?status=requested. Direction is always outbound on entry because the
+    // KPI count is operator-actionable from their own initiations first.
+    const s = searchParams.get('status') ?? '';
+    return ['requested', 'completed', 'failed'].includes(s) ? s : '';
+  });
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    const s = searchParams.get('status') ?? '';
+    if (['requested', 'completed', 'failed', ''].includes(s)) setStatus(s);
+  }, [searchParams]);
 
   const params = useMemo<TransferListParams>(
     () => ({

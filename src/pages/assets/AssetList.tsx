@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Checkbox from 'antd/es/checkbox';
@@ -76,8 +76,13 @@ const FLASH_DURATION_MS = 900;
 
 export function AssetList() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(() => {
+    // Sprint 54.4 — dashboard "Active assets" tile deep-links with ?status=active.
+    const s = searchParams.get('status') ?? '';
+    return ['active', 'retired', 'lost'].includes(s) ? s : '';
+  });
   // Sprint 42 — list-page Category filter is now multi-select. The wire
   // shape is `?category_ids=A&category_ids=B` (FastAPI default for
   // `list[UUID]`); `useAssets` falls back to the raw `request()` helper
@@ -121,6 +126,13 @@ export function AssetList() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm<AssetCreate>();
+
+  // Sprint 54.4 — re-apply URL-param status when the dashboard navigates
+  // between tiles without a full reload.
+  useEffect(() => {
+    const s = searchParams.get('status') ?? '';
+    if (['active', 'retired', 'lost', ''].includes(s)) setStatus(s);
+  }, [searchParams]);
 
   const rows = useMemo(() => data ?? [], [data]);
   const locationByAssetId = useMemo(() => {

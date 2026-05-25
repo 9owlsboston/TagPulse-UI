@@ -7,6 +7,7 @@
  */
 export type TenantConfig = {
     id: string;
+    low_stock_threshold?: number;
     name: string;
     plan: string;
     rate_limit_overrides?: (Record<string, number> | null);

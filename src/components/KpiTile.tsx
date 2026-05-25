@@ -43,17 +43,36 @@ interface KpiTileProps {
   title: string;
   value: number | string;
   prefix?: ReactNode;
+  suffix?: ReactNode;
   loading?: boolean;
+  /** Render hoverable + cursor:pointer when wrapped in a click target. */
+  interactive?: boolean;
+  /** Visually de-emphasize when hidden during dashboard customization. */
+  dimmed?: boolean;
 }
 
-export function KpiTile({ title, value, prefix, loading }: KpiTileProps) {
+export function KpiTile({
+  title,
+  value,
+  prefix,
+  suffix,
+  loading,
+  interactive,
+  dimmed,
+}: KpiTileProps) {
   const numericValue = typeof value === 'number' ? value : 0;
   const animated = useAnimatedCounter(numericValue);
   const displayValue = typeof value === 'number' ? animated : value;
 
   return (
-    <Card>
-      <Statistic title={title} value={displayValue} prefix={prefix} loading={loading} />
+    <Card hoverable={interactive} style={dimmed ? { opacity: 0.45 } : undefined}>
+      <Statistic
+        title={title}
+        value={displayValue}
+        prefix={prefix}
+        suffix={suffix}
+        loading={loading}
+      />
     </Card>
   );
 }

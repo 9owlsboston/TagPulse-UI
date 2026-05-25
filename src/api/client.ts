@@ -357,3 +357,9 @@ export const tagDataMappingsApi = {
   update: (id: string, data: TagDataMappingUpdate) =>
     request<unknown>(`/tag-data-mappings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
+
+// ── Dashboard summary ──
+
+export const dashboardApi = {
+  summary: () => request<import('@/types').DashboardSummary>('/dashboard/summary'),
+};

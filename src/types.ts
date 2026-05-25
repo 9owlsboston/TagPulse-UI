@@ -398,3 +398,17 @@ export interface ApiKeyResponse {
   prefix: string;
   message: string;
 }
+
+// ── Dashboard summary (Sprint 54.3) ──
+
+export interface DashboardSummary {
+  devices_online: number;
+  devices_total: number;
+  alerts_open_24h: number;
+  reads_per_hour_now: number;
+  assets_active: number;
+  tag_transfers_in_flight: number;
+  tag_recon_backlog: number;
+  low_stock_count: number;
+  generated_at: string;
+}
