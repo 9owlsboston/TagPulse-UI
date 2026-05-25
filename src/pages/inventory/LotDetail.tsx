@@ -33,6 +33,8 @@ import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { lotsApi } from '@/api/client';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 
 const { Title, Text } = Typography;
 
@@ -46,6 +48,8 @@ interface LotEditFormValues {
 }
 
 function ColdChainCard({ latest }: { latest: NonNullable<ReturnType<typeof useLot>['data']>['latest_telemetry'] }) {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const temp = (latest ?? []).find((m) => m.metric_name === 'temperature_c');
   if (!temp) {
     return (
@@ -71,7 +75,7 @@ function ColdChainCard({ latest }: { latest: NonNullable<ReturnType<typeof useLo
           value={temp.metric_value}
           precision={2}
           suffix={temp.unit ?? '°C'}
-          valueStyle={{ color: breached ? '#cf1322' : '#3f8600' }}
+          valueStyle={{ color: breached ? t.colorDanger : t.colorSuccess }}
         />
         <Text type="secondary">
           As of {new Date(temp.timestamp).toLocaleString()} · source: {temp.source}

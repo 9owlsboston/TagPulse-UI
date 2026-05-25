@@ -9,15 +9,18 @@ import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useReadsPerHour } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 
 const { Title } = Typography;
 
-const COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2'];
 const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
 export function TelemetryDashboard() {
   const navigate = useNavigate();
+  const { mode } = useThemeMode();
+  const COLORS = tokens[mode].chartSeries;
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();

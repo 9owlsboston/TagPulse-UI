@@ -27,6 +27,8 @@ import {
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { useSubjectTelemetry, type SubjectKind } from '@/hooks/useTelemetry';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 import type { LatestTelemetryEntry } from '@/api/generated/models/LatestTelemetryEntry';
 
 const { Text } = Typography;
@@ -39,6 +41,8 @@ interface Props {
 }
 
 export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { data: tenant } = useTenantConfig();
   const optedIn = (tenant?.telemetry_subject_kinds ?? []).includes(subjectKind);
 
@@ -118,7 +122,7 @@ export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
             <XAxis dataKey="time" hide />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#1677ff" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="value" stroke={t.colorAccent} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       )}

@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TagPulse</title>
+    <script>
+      // Pre-paint theme apply — Sprint 54 Phase 54.1. Must match the
+      // logic in src/theme/ThemeProvider.tsx readInitialMode() so the
+      // first paint uses the right tokens (no theme-flash on load).
+      (function () {
+        try {
+          var stored = window.localStorage.getItem('tagpulse.theme');
+          var mode =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark';
+          document.documentElement.setAttribute('data-theme', mode);
+        } catch (_e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

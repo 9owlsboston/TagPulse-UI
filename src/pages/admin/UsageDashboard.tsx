@@ -5,6 +5,7 @@ import Progress from 'antd/es/progress';
 import Spin from 'antd/es/spin';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useUsage, useUsageSummary } from '@/hooks/useUsage';
+import { cssVar } from '@/theme/tokens';
 import type { UsageSummary } from '@/types';
 
 const { Title } = Typography;
@@ -21,12 +22,12 @@ const QUOTA_LIMITS: Record<string, number> = {
 };
 
 const COLORS: Record<string, string> = {
-  api_read: '#1890ff',
-  api_write: '#52c41a',
-  ingestion: '#faad14',
-  rule_evaluations: '#722ed1',
-  alerts_fired: '#f5222d',
-  webhook_deliveries: '#13c2c2',
+  api_read: cssVar.chart(1),
+  api_write: cssVar.chart(2),
+  ingestion: cssVar.chart(3),
+  rule_evaluations: cssVar.chart(5),
+  alerts_fired: cssVar.chart(4),
+  webhook_deliveries: cssVar.chart(6),
 };
 
 export function UsageDashboard() {
@@ -80,7 +81,7 @@ export function UsageDashboard() {
           <Tooltip />
           <Legend />
           {dimensions.map((dim) => (
-            <Bar key={dim} dataKey={dim} fill={COLORS[dim] ?? '#999'} />
+            <Bar key={dim} dataKey={dim} fill={COLORS[dim] ?? cssVar.textMuted} />
           ))}
         </BarChart>
       </ResponsiveContainer>

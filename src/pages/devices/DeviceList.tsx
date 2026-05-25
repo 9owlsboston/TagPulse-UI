@@ -61,7 +61,7 @@ const adminTokenColumn: ColumnsType<DeviceResponse>[number] = {
   title: 'Last Rotated',
   dataIndex: 'token_rotated_at',
   render: (v: string | null) =>
-    v ? new Date(v).toLocaleString() : <span style={{ color: '#999' }}>never</span>,
+    v ? new Date(v).toLocaleString() : <span style={{ color: 'var(--color-text-muted)' }}>never</span>,
 };
 
 export function DeviceList() {

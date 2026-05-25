@@ -15,6 +15,8 @@ import { DeleteOutlined, UndoOutlined } from '@ant-design/icons';
 import 'leaflet/dist/leaflet.css';
 
 import { useMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import { tokens } from '@/theme/tokens';
 
 const { Text } = Typography;
 
@@ -36,6 +38,8 @@ function ClickCapture({ onAdd }: { onAdd: (lat: number, lng: number) => void }) 
 }
 
 export function PolygonDraw({ value, onChange, height = 320, center = [37.7749, -122.4194] }: PolygonDrawProps) {
+  const { mode } = useThemeMode();
+  const t = tokens[mode];
   const { data: mapConfigData } = useMapConfig();
   const mapConfig = mapConfigData ?? OSM_FALLBACK;
 
@@ -82,7 +86,7 @@ export function PolygonDraw({ value, onChange, height = 320, center = [37.7749, 
           Clear
         </Button>
       </Space>
-      <div style={{ height, width: '100%', border: '1px solid #d9d9d9' }}>
+      <div style={{ height, width: '100%', border: '1px solid var(--color-border)' }}>
         <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             url={mapConfig.tile_url_template}
@@ -92,10 +96,10 @@ export function PolygonDraw({ value, onChange, height = 320, center = [37.7749, 
           />
           <ClickCapture onAdd={addVertex} />
           {vertices.map((v, i) => (
-            <CircleMarker key={i} center={v} radius={4} pathOptions={{ color: '#1677ff' }} />
+            <CircleMarker key={i} center={v} radius={4} pathOptions={{ color: t.colorAccent }} />
           ))}
           {vertices.length >= 3 && (
-            <Polygon positions={vertices} pathOptions={{ color: '#1677ff', fillOpacity: 0.15 }} />
+            <Polygon positions={vertices} pathOptions={{ color: t.colorAccent, fillOpacity: 0.15 }} />
           )}
         </MapContainer>
       </div>
