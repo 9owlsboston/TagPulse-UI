@@ -4,6 +4,9 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- **Transfers page — 422 Validation Error on load.** [src/hooks/useTransfers.ts](src/hooks/useTransfers.ts) — backend regex on `GET /tag-transfers?direction=…` is `^(in|out)$` (per `openapi.json`), but the UI was sending `outbound` / `inbound` (the values it uses internally for state + labels). Every initial load 422'd with `ApiError: Validation Error`. The hook now translates `outbound` → `out` and `inbound` → `in` at the API call site; UI state, props, and tests keep the verbose values. No regen needed.
 ### Added
 
 - **Sprint 54 Phase 54.1 — Design-token foundation (ADR-029).** Introduces a two-layer token system (primitive palette → semantic roles) as the single source of truth for colour across the SPA, with dark theme as default. Acceptance artifact lives at `/dev/tokens`.

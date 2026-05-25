@@ -21,12 +21,20 @@ export interface TransferListParams {
   offset?: number;
 }
 
+// Backend accepts the short wire values `in` / `out` (regex
+// `^(in|out)$`); the UI uses the more readable `inbound` / `outbound`
+// in state and labels. Translate at the call site only.
+const DIRECTION_WIRE: Record<'inbound' | 'outbound', 'in' | 'out'> = {
+  inbound: 'in',
+  outbound: 'out',
+};
+
 export function useTransfers(params?: TransferListParams) {
   return useQuery({
     queryKey: [TRANSFERS_QUERY_KEY, 'list', params],
     queryFn: () =>
       TagsService.listTagTransfersTagTransfersGet(
-        params?.direction ?? null,
+        params?.direction ? DIRECTION_WIRE[params.direction] : null,
         params?.status ?? null,
         params?.limit ?? 100,
         params?.offset ?? 0,
