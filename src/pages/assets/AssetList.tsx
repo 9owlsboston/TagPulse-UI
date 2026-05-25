@@ -27,6 +27,7 @@ import {
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
 import { FilterPanel } from '@/components/FilterPanel';
+import { EmptyState } from '@/components/EmptyState';
 import type { LabelFilter } from '@/lib/labelFilter';
 import { isEmptyLabelFilter } from '@/lib/labelFilter';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
@@ -396,6 +397,36 @@ export function AssetList() {
           }
           pagination={{ pageSize: 25, showSizeChanger: false }}
           style={{ cursor: 'pointer' }}
+          locale={{
+            emptyText:
+              search ||
+              status ||
+              categoryIds.length > 0 ||
+              !isEmptyLabelFilter(labelFilter) ||
+              lastSeenRange ||
+              neverSeenOnly ? (
+                <EmptyState
+                  title="No assets match these filters"
+                  description="Try clearing search, status, category, label, or last-seen filters."
+                />
+              ) : (
+                <EmptyState
+                  title="No assets yet"
+                  description="Register your first asset to start tracking it."
+                  action={
+                    canEdit ? (
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => setModalOpen(true)}
+                      >
+                        Register Asset
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              ),
+          }}
           columns={[
             { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
             // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;

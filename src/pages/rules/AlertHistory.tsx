@@ -13,6 +13,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import { alertsApi } from '@/api/client';
 import type { AlertResponse } from '@/types';
 
@@ -234,6 +235,20 @@ export function AlertHistory() {
         dataSource={filtered}
         loading={isLoading}
         pagination={{ pageSize: 20, showSizeChanger: true }}
+        locale={{
+          emptyText:
+            search || range || statusFilter ? (
+              <EmptyState
+                title="No alerts match these filters"
+                description="Try widening the time range or clearing the search."
+              />
+            ) : (
+              <EmptyState
+                title="No alerts yet"
+                description="Alerts triggered by your rules will appear here."
+              />
+            ),
+        }}
         rowSelection={
           canAcknowledge
             ? {

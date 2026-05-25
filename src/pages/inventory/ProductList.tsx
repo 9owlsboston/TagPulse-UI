@@ -12,6 +12,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useProducts, useCreateProduct } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { ProductResponse } from '@/api/generated/models/ProductResponse';
 import type { ProductCreate } from '@/api/generated/models/ProductCreate';
 
@@ -71,6 +72,26 @@ export function ProductList() {
           dataSource={rows}
           onRow={(row) => ({ onClick: () => navigate(`/inventory/products/${row.id}`) })}
           pagination={{ pageSize: 25, showSizeChanger: false }}
+          locale={{
+            emptyText: search ? (
+              <EmptyState
+                title="No products match your search"
+                description={`No products match “${search}”. Try a different SKU, GTIN, or name.`}
+              />
+            ) : (
+              <EmptyState
+                title="No products yet"
+                description="Create your first product to start tracking stock."
+                action={
+                  canEdit ? (
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+                      New Product
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ),
+          }}
           columns={[
             { title: 'SKU', dataIndex: 'sku', sorter: (a, b) => a.sku.localeCompare(b.sku) },
             { title: 'Name', dataIndex: 'name' },

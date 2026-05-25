@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import Button from 'antd/es/button';
-import Empty from 'antd/es/empty';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
@@ -20,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stockMovementsApi } from '@/api/client';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { StockMovementCreate } from '@/api/client';
 
 const UNASSIGNED = '__unassigned__';
@@ -187,7 +187,10 @@ export function StockLevels() {
         }
       >
         {rows.length === 0 && !isLoading ? (
-          <Empty description="No stock levels yet" />
+          <EmptyState
+            title="No stock levels yet"
+            description="Record a stock movement to see balances by product and zone."
+          />
         ) : (
           <Table<PivotRow>
             rowKey="key"
@@ -195,6 +198,15 @@ export function StockLevels() {
             dataSource={displayRows}
             pagination={{ pageSize: 25 }}
             scroll={{ x: 'max-content' }}
+            locale={{
+              emptyText:
+                lowOnly && rows.length > 0 ? (
+                  <EmptyState
+                    title="No low-stock items"
+                    description={`Nothing is below the threshold of ${lowThreshold}. Toggle off to see all stock.`}
+                  />
+                ) : undefined,
+            }}
             columns={[
               { title: 'Product', dataIndex: 'product', fixed: 'left', width: 280 },
               ...zoneCols.map((z) => ({

@@ -18,6 +18,7 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { useUpdateZone, useZones } from '@/hooks/useAssets';
 import { FilterPanel } from '@/components/FilterPanel';
 import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { DeviceResponse } from '@/types';
 
@@ -259,6 +260,31 @@ export function DeviceList() {
           dataSource={filtered}
           loading={isLoading}
           pagination={{ pageSize: 20 }}
+          locale={{
+            emptyText:
+              search || status || connection || !isEmptyLabelFilter(labelFilter) ? (
+                <EmptyState
+                  title="No devices match these filters"
+                  description="Try clearing search, status, connection, or label filters."
+                />
+              ) : (
+                <EmptyState
+                  title="No devices yet"
+                  description="Register your first device to start collecting reads."
+                  action={
+                    <RoleGuard roles={['admin', 'editor']}>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => navigate('/devices/register')}
+                      >
+                        Register Device
+                      </Button>
+                    </RoleGuard>
+                  }
+                />
+              ),
+          }}
           rowSelection={
             canEdit
               ? {
