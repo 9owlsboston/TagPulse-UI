@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Cross-repo workflow documented + encoded in tooling.** Codifies the two-repo (backend + UI) workflow that until now lived only in the operator's head. (1) New `## Cross-Repo Workflow` section in [.github/copilot-instructions.md](.github/copilot-instructions.md) covering shared sprint numbers, the three work shapes (sprint / chore / in-flight follow-up), OpenAPI as contract handoff with backend-SHA recording, backend-roadmap-as-source-of-truth (no roadmap lives here), and `docs/backlog.md` as the in-flight scratch list. (2) New [docs/backlog.md](docs/backlog.md). (3) `scripts/start-sprint.sh` PR body template gains a `## Cross-repo plan` section (Backend / UI / OpenAPI / Merge-order bullets) so the cross-repo intent is declared upfront, plus a new checklist item reminding to record the backend SHA + regenerate `src/api/generated/` when consuming new API. No script flag change here — backend's `start-sprint.sh --with-ui` drives both branches when starting from the backend side. Mirrored chore branch in TagPulse backend.
+
 ### Added
 
 - **Sprint 48 — Tag registry UI Phase F (pending bulk-operations inbox).** Fifth slice of the Sprint 51 tag-registry-UI workstream. Stacked on Sprint 47 Phase E (PR #58). Surfaces the Sprint 52 backend `GET /bulk-operations` list endpoint ([9owlsboston/TagPulse#71](https://github.com/9owlsboston/TagPulse/pull/71)) plus the per-id `GET` / `approve` / `reject` endpoints already delivered in Sprint 50 Phase C3. Closes the second-admin-approval loop from ADR 028 §Governance #4 end-to-end in the UI: operator A queues a CSV import via `/tags/import` (Phase C), operator B reviews + approves/rejects it via the new `/admin/pending-bulk-operations` inbox.

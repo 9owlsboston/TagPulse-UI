@@ -41,11 +41,19 @@ gh pr create --draft --base main --head "$branch" \
 ## Scope
 _TBD_
 
+## Cross-repo plan
+<!-- See .github/copilot-instructions.md § Cross-Repo Workflow. -->
+- Backend: _TBD (none / sprint-${NN}/<topic> at <link> / in-flight follow-up)_
+- UI: this PR
+- OpenAPI: _no change / consumes new endpoints from backend SHA \`<sha>\`_
+- Merge order: _UI only / after backend PR merges_
+
 ## Checklist
 - [ ] Implementation complete
 - [ ] Tests added / updated
 - [ ] \`npm run check\` clean
-- [ ] CHANGELOG updated under \`## Unreleased\`"
+- [ ] CHANGELOG updated under \`## Unreleased\`
+- [ ] If consuming new API: backend SHA recorded above and \`src/api/generated/\` regenerated"
 
 echo ""
 echo "Done. You're now on $branch with a draft PR."
