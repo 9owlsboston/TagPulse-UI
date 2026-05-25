@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Input from 'antd/es/input';
@@ -11,7 +11,7 @@ import Alert from 'antd/es/alert';
 import App from 'antd/es/app';
 import { FilterOutlined, PlusOutlined, SwapOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDevices } from '@/hooks/useDevices';
 import { useAuth } from '@/lib/auth';
 import { RoleGuard } from '@/components/RoleGuard';
@@ -31,6 +31,15 @@ const STATUS_OPTIONS = [
   { label: 'All', value: '' },
   { label: 'Active', value: 'active' },
   { label: 'Decommissioned', value: 'decommissioned' },
+];
+
+// Sprint 54.4 — Dashboard "Devices online" tile click-through deep-links
+// here with ?connection=online. We filter client-side because the devices
+// endpoint doesn't expose connection_state as a query param.
+const CONNECTION_OPTIONS = [
+  { label: 'Any connection', value: '' },
+  { label: 'Online', value: 'online' },
+  { label: 'Offline', value: 'offline' },
 ];
 
 const baseColumns: ColumnsType<DeviceResponse> = [
@@ -68,7 +77,15 @@ export function DeviceList() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { message } = App.useApp();
-  const [status, setStatus] = useState('');
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState(() => {
+    const s = searchParams.get('status') ?? '';
+    return ['active', 'decommissioned'].includes(s) ? s : '';
+  });
+  const [connection, setConnection] = useState(() => {
+    const c = searchParams.get('connection') ?? '';
+    return ['online', 'offline'].includes(c) ? c : '';
+  });
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -86,8 +103,19 @@ export function DeviceList() {
   const columns: ColumnsType<DeviceResponse> =
     role === 'admin' ? [...baseColumns, adminTokenColumn] : baseColumns;
 
-  const filtered = data?.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase()),
+  // Re-read URL params if the user navigates between dashboard tiles without
+  // a full reload (e.g. clicks "Devices online" → back → "Devices total").
+  useEffect(() => {
+    const s = searchParams.get('status') ?? '';
+    if (['active', 'decommissioned', ''].includes(s)) setStatus(s);
+    const c = searchParams.get('connection') ?? '';
+    if (['online', 'offline', ''].includes(c)) setConnection(c);
+  }, [searchParams]);
+
+  const filtered = data?.filter(
+    (d) =>
+      d.name.toLowerCase().includes(search.toLowerCase()) &&
+      (connection === '' || d.connection_state === connection),
   );
 
   const zoneOptions = useMemo(
@@ -178,6 +206,13 @@ export function DeviceList() {
       <Space style={{ marginBottom: 16 }} wrap>
         <Search placeholder="Search devices" onSearch={setSearch} allowClear style={{ width: 250 }} />
         <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} style={{ width: 160 }} />
+        <Select
+          options={CONNECTION_OPTIONS}
+          value={connection}
+          onChange={setConnection}
+          style={{ width: 160 }}
+          data-testid="device-list-connection-filter"
+        />
         {canEdit && (
           <Button
             icon={<SwapOutlined />}

@@ -1,179 +1,317 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import Alert from 'antd/es/alert';
+import Button from 'antd/es/button';
 import Col from 'antd/es/col';
 import Row from 'antd/es/row';
+import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
-import List from 'antd/es/list';
-import Tag from 'antd/es/tag';
-import Spin from 'antd/es/spin';
-import Statistic from 'antd/es/statistic';
 import {
+  AlertOutlined,
+  DiffOutlined,
+  EnvironmentOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  GoldOutlined,
   HddOutlined,
   ReadOutlined,
-  AlertOutlined,
-  WarningOutlined,
-  EnvironmentOutlined,
+  ShoppingOutlined,
+  SwapOutlined,
   TagOutlined,
 } from '@ant-design/icons';
-import { Responsive, WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { KpiTile } from '@/components/KpiTile';
-import { DeviceHealthCard } from '@/components/DeviceHealthCard';
-import { useDevices } from '@/hooks/useDevices';
-import { useReadsPerHour, useTagReads } from '@/hooks/useTagReads';
-import { useAlerts } from '@/hooks/useAlerts';
-import { useDeviceHealthList } from '@/hooks/useDeviceHealth';
-import { useReadFrequency } from '@/hooks/useAnalytics';
-import { useAssets } from '@/hooks/useAssets';
-import { useTenantConfig } from '@/hooks/useTenantConfig';
-import { useSSE } from '@/lib/sse';
+import { useDashboardSummary } from '@/hooks/useDashboardSummary';
+import { useThemeMode } from '@/theme/ThemeProvider';
+import type { DashboardSummary } from '@/types';
 
-const { Title } = Typography;
-const ResponsiveGridLayout = WidthProvider(Responsive);
+/**
+ * Operator landing page — Sprint 54.4 rewrite (ADR-029 + sprint-54 UI overhaul).
+ *
+ * Replaces the previous draggable `react-grid-layout` board with a static
+ * responsive grid driven by a single `/dashboard/summary` fetch. Personalisation
+ * is intentionally LocalStorage-only (no backend persistence): order + hide on
+ * one device only. This keeps the contract narrow — the server stays unaware
+ * of UI preferences and the tile catalog can evolve without migrations.
+ *
+ * Pass-bar (design doc §54.4):
+ * - 9 tiles render in both themes (Devices, Open alerts, Reads/hr, Assets,
+ *   Tags, Locations, Tag Transfers, Tag Reconciliation, Low-stock products).
+ * - All click-throughs land on a list page pre-filtered to the tile's slice.
+ * - Pin order persists across reload.
+ */
 
-const DEFAULT_LAYOUTS = {
-  lg: [
-    { i: 'kpi-devices', x: 0, y: 0, w: 3, h: 2 },
-    { i: 'kpi-reads', x: 3, y: 0, w: 3, h: 2 },
-    { i: 'kpi-alerts', x: 6, y: 0, w: 3, h: 2 },
-    { i: 'kpi-anomalies', x: 9, y: 0, w: 3, h: 2 },
-    { i: 'kpi-location', x: 0, y: 2, w: 3, h: 2 },
-    { i: 'kpi-assets', x: 3, y: 2, w: 3, h: 2 },
-    { i: 'recent-alerts', x: 0, y: 4, w: 6, h: 5 },
-    { i: 'device-health', x: 6, y: 4, w: 6, h: 5 },
-    { i: 'live-counter', x: 0, y: 9, w: 12, h: 2 },
-  ],
-};
+const ORDER_KEY = 'tagpulse.dashboard.tileOrder';
+const HIDDEN_KEY = 'tagpulse.dashboard.tileHidden';
 
-const SSE_EVENTS = ['tag_read.created', 'alert.triggered'];
-const SSE_QUERY_KEYS = [['tag-reads'], ['alerts'], ['device-health']];
+interface TileDef {
+  id: string;
+  title: string;
+  to: string;
+  prefix: ReactNode;
+  value: (s: DashboardSummary) => number;
+  suffix?: (s: DashboardSummary) => string | undefined;
+}
+
+// Locations tile rolls up Sites + Zones into a single card per the sprint-54
+// follow-up — primary number is sites, suffix surfaces the zone count.
+function locationsSuffix(s: DashboardSummary): string {
+  return `· ${s.zones_total} zone${s.zones_total === 1 ? '' : 's'}`;
+}
+
+const TILES: TileDef[] = [
+  {
+    id: 'devices',
+    title: 'Devices',
+    to: '/devices',
+    prefix: <HddOutlined />,
+    value: (s) => s.devices_online,
+    suffix: (s) => `/ ${s.devices_total}`,
+  },
+  {
+    id: 'alerts-open',
+    title: 'Open alerts (24h)',
+    to: '/alerts?status=open&since=24h',
+    prefix: <AlertOutlined />,
+    value: (s) => s.alerts_open_24h,
+  },
+  {
+    id: 'reads-per-hour',
+    title: 'Reads / hour',
+    to: '/telemetry',
+    prefix: <ReadOutlined />,
+    value: (s) => s.reads_per_hour_now,
+  },
+  {
+    id: 'assets-active',
+    title: 'Assets',
+    to: '/assets?status=active',
+    prefix: <GoldOutlined />,
+    value: (s) => s.assets_active,
+  },
+  {
+    id: 'tags',
+    title: 'Tags',
+    to: '/tags',
+    prefix: <TagOutlined />,
+    value: (s) => s.tags_total,
+  },
+  {
+    id: 'locations',
+    title: 'Locations',
+    to: '/sites',
+    prefix: <EnvironmentOutlined />,
+    value: (s) => s.sites_total,
+    suffix: locationsSuffix,
+  },
+  {
+    id: 'transfers-in-flight',
+    title: 'Tag Transfers',
+    to: '/tag-transfers?status=requested',
+    prefix: <SwapOutlined />,
+    value: (s) => s.tag_transfers_in_flight,
+  },
+  {
+    id: 'recon-backlog',
+    title: 'Tag Reconciliation',
+    to: '/tags/reconciliation',
+    prefix: <DiffOutlined />,
+    value: (s) => s.tag_recon_backlog,
+  },
+  {
+    id: 'low-stock',
+    title: 'Low-stock products',
+    to: '/inventory/stock-levels?low=1',
+    prefix: <ShoppingOutlined />,
+    value: (s) => s.low_stock_count,
+  },
+];
+
+function loadIds(key: string): string[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveIds(key: string, value: string[]): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* localStorage may be disabled / full — ignore, personalisation is best-effort */
+  }
+}
 
 export function Dashboard() {
-  const devicesQuery = useDevices();
-  const todayStart = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, []);
-  const last24hStart = useMemo(
-    () => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    [],
-  );
-  const readsPerHourQuery = useReadsPerHour({ start: todayStart });
-  const alertsQuery = useAlerts({ status: 'open', limit: 5 });
-  const healthQuery = useDeviceHealthList('active');
-  const anomalyQuery = useReadFrequency({ metric: 'anomaly_count', limit: 1 });
-  // KPI: distinct devices that produced a read with location in the last 24h.
-  // Client-side aggregation against the existing tag-reads endpoint; can be
-  // promoted to a dedicated server endpoint if cardinality grows.
-  const locationReadsQuery = useTagReads({ start: last24hStart, limit: 1000 });
-  const { data: tenantConfig } = useTenantConfig();
-  const assetModeEnabled = (tenantConfig?.tracking_modes ?? ['asset']).includes('asset');
-  const activeAssetsQuery = useAssets({ status: 'active', limit: 1000 });
-  const [liveCount, setLiveCount] = useState(0);
+  const { data, isLoading, error } = useDashboardSummary();
+  const { brandColor } = useThemeMode();
+  const [orderState, setOrderState] = useState<string[]>(() => loadIds(ORDER_KEY));
+  const [hiddenState, setHiddenState] = useState<string[]>(() => loadIds(HIDDEN_KEY));
+  const [customizing, setCustomizing] = useState(false);
 
-  useSSE(SSE_EVENTS, SSE_QUERY_KEYS, () => setLiveCount((c) => c + 1));
-
-  const loading = devicesQuery.isLoading || readsPerHourQuery.isLoading;
-
-  const deviceCount = devicesQuery.data?.length ?? 0;
-  const readsToday = useMemo(
-    () => readsPerHourQuery.data?.reduce((sum, r) => sum + r.read_count, 0) ?? 0,
-    [readsPerHourQuery.data],
-  );
-  const openAlerts = alertsQuery.data?.length ?? 0;
-  const anomalies = useMemo(
-    () => anomalyQuery.data?.reduce((sum, r) => sum + r.metric_value, 0) ?? 0,
-    [anomalyQuery.data],
-  );
-  const devicesReportingLocation = useMemo(() => {
-    const ids = new Set<string>();
-    for (const r of locationReadsQuery.data ?? []) {
-      if (r.latitude != null && r.longitude != null) ids.add(r.device_id);
+  // Merge saved order with canonical TILES so newly-shipped tiles auto-append
+  // for users who already saved a layout.
+  const orderedTiles = useMemo<TileDef[]>(() => {
+    const byId = new Map(TILES.map((t) => [t.id, t]));
+    const seen = new Set<string>();
+    const result: TileDef[] = [];
+    for (const id of orderState) {
+      const tile = byId.get(id);
+      if (tile && !seen.has(id)) {
+        result.push(tile);
+        seen.add(id);
+      }
     }
-    return ids.size;
-  }, [locationReadsQuery.data]);
+    for (const tile of TILES) {
+      if (!seen.has(tile.id)) result.push(tile);
+    }
+    return result;
+  }, [orderState]);
+
+  const hidden = useMemo(() => new Set(hiddenState), [hiddenState]);
+  const visibleTiles = customizing
+    ? orderedTiles
+    : orderedTiles.filter((t) => !hidden.has(t.id));
+
+  const move = (id: string, dir: -1 | 1): void => {
+    const cur = orderedTiles.map((t) => t.id);
+    const idx = cur.indexOf(id);
+    const swap = idx + dir;
+    if (idx < 0 || swap < 0 || swap >= cur.length) return;
+    const next = [...cur];
+    const a = next[idx];
+    const b = next[swap];
+    if (a === undefined || b === undefined) return;
+    next[idx] = b;
+    next[swap] = a;
+    setOrderState(next);
+    saveIds(ORDER_KEY, next);
+  };
+
+  const toggleHidden = (id: string): void => {
+    const next = hidden.has(id) ? hiddenState.filter((x) => x !== id) : [...hiddenState, id];
+    setHiddenState(next);
+    saveIds(HIDDEN_KEY, next);
+  };
+
+  const resetLayout = (): void => {
+    setOrderState([]);
+    setHiddenState([]);
+    saveIds(ORDER_KEY, []);
+    saveIds(HIDDEN_KEY, []);
+  };
 
   return (
     <div>
-      <Title level={2}>TagPulse Dashboard</Title>
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={DEFAULT_LAYOUTS}
-        breakpoints={{ lg: 996, md: 768, sm: 480 }}
-        cols={{ lg: 12, md: 6, sm: 1 }}
-        rowHeight={60}
-        isDraggable
-        isResizable
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
       >
-        <div key="kpi-devices">
-          <KpiTile title="Total Devices" value={deviceCount} prefix={<HddOutlined />} loading={loading} />
-        </div>
-        <div key="kpi-reads">
-          <KpiTile title="Reads Today" value={readsToday} prefix={<ReadOutlined />} loading={loading} />
-        </div>
-        <div key="kpi-alerts">
-          <KpiTile title="Open Alerts" value={openAlerts} prefix={<AlertOutlined />} loading={loading} />
-        </div>
-        <div key="kpi-anomalies">
-          <KpiTile title="Anomalies" value={anomalies} prefix={<WarningOutlined />} loading={loading} />
-        </div>
-        <div key="kpi-location">
-          <KpiTile
-            title="Devices reporting location (24h)"
-            value={devicesReportingLocation}
-            prefix={<EnvironmentOutlined />}
-            loading={locationReadsQuery.isLoading}
-          />
-        </div>
-        {assetModeEnabled && (
-          <div key="kpi-assets">
+        <Typography.Title level={2} style={{ margin: 0 }}>
+          Dashboard
+        </Typography.Title>
+        <Space>
+          {customizing && (
+            <Button size="small" onClick={resetLayout}>
+              Reset layout
+            </Button>
+          )}
+          <Button
+            size="small"
+            type={customizing ? 'primary' : 'default'}
+            onClick={() => setCustomizing((c) => !c)}
+          >
+            {customizing ? 'Done' : 'Customize'}
+          </Button>
+        </Space>
+      </div>
+
+      {error && (
+        <Alert
+          type="error"
+          message="Failed to load dashboard summary"
+          description={(error as Error).message}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <Row gutter={[16, 16]}>
+        {visibleTiles.map((tile, idx) => {
+          const isHidden = hidden.has(tile.id);
+          const tileValue = data ? tile.value(data) : 0;
+          const tileSuffix = data && tile.suffix ? tile.suffix(data) : undefined;
+          const card = (
             <KpiTile
-              title="Active Assets"
-              value={activeAssetsQuery.data?.length ?? 0}
-              prefix={<TagOutlined />}
-              loading={activeAssetsQuery.isLoading}
+              title={tile.title}
+              value={tileValue}
+              prefix={<span style={{ color: brandColor }}>{tile.prefix}</span>}
+              suffix={tileSuffix}
+              loading={isLoading}
+              interactive={!customizing}
+              dimmed={customizing && isHidden}
             />
-          </div>
-        )}
-        <div key="recent-alerts" style={{ overflow: 'auto' }}>
-          <Title level={4}>Recent Alerts</Title>
-          {alertsQuery.isLoading ? (
-            <Spin />
-          ) : (
-            <List
-              dataSource={alertsQuery.data ?? []}
-              locale={{ emptyText: 'No open alerts' }}
-              renderItem={(alert) => (
-                <List.Item>
-                  <List.Item.Meta
-                    title={alert.message}
-                    description={new Date(alert.triggered_at).toLocaleString()}
-                  />
-                  <Tag color={alert.severity === 'critical' ? 'red' : 'orange'}>{alert.severity}</Tag>
-                </List.Item>
+          );
+          return (
+            <Col key={tile.id} xs={24} sm={12} lg={6}>
+              {customizing ? (
+                <div data-testid={`tile-${tile.id}`}>
+                  {card}
+                  <Space style={{ marginTop: 8 }} wrap>
+                    <Button
+                      size="small"
+                      aria-label={`Move ${tile.title} up`}
+                      disabled={idx === 0}
+                      onClick={() => move(tile.id, -1)}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      size="small"
+                      aria-label={`Move ${tile.title} down`}
+                      disabled={idx === visibleTiles.length - 1}
+                      onClick={() => move(tile.id, 1)}
+                    >
+                      ↓
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={isHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                      aria-label={isHidden ? `Show ${tile.title}` : `Hide ${tile.title}`}
+                      onClick={() => toggleHidden(tile.id)}
+                    />
+                  </Space>
+                </div>
+              ) : (
+                <Link
+                  to={tile.to}
+                  data-testid={`tile-${tile.id}`}
+                  style={{ display: 'block', color: 'inherit' }}
+                >
+                  {card}
+                </Link>
               )}
-            />
-          )}
-        </div>
-        <div key="device-health" style={{ overflow: 'auto' }}>
-          <Title level={4}>Device Health</Title>
-          {healthQuery.isLoading ? (
-            <Spin />
-          ) : (
-            <Row gutter={[8, 8]}>
-              {(healthQuery.data ?? []).map((d) => (
-                <Col key={d.device_id}>
-                  <DeviceHealthCard device={d} />
-                </Col>
-              ))}
-            </Row>
-          )}
-        </div>
-        <div key="live-counter">
-          <Statistic title="Live Tag Reads (this session)" value={liveCount} prefix={<ReadOutlined />} />
-        </div>
-      </ResponsiveGridLayout>
+            </Col>
+          );
+        })}
+      </Row>
+
+      {data && (
+        <Typography.Paragraph
+          type="secondary"
+          style={{ marginTop: 16, fontSize: 12 }}
+          data-testid="dashboard-updated-at"
+        >
+          Updated {new Date(data.generated_at).toLocaleTimeString()}
+        </Typography.Paragraph>
+      )}
     </div>
   );
 }

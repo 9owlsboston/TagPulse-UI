@@ -6,7 +6,9 @@
  * Read-only view of tenant-scoped feature flags.
  */
 export type TenantConfig = {
+    dashboard_tags_count_mode?: TenantConfig.dashboard_tags_count_mode;
     id: string;
+    low_stock_threshold?: number;
     name: string;
     plan: string;
     rate_limit_overrides?: (Record<string, number> | null);
@@ -14,4 +16,11 @@ export type TenantConfig = {
     telemetry_subject_kinds?: Array<'device' | 'asset' | 'lot' | 'stock_item' | 'zone'>;
     tracking_modes: Array<'asset' | 'inventory'>;
 };
+export namespace TenantConfig {
+    export enum dashboard_tags_count_mode {
+        ALL = 'all',
+        LIVE = 'live',
+        NON_TERMINAL = 'non_terminal',
+    }
+}
 

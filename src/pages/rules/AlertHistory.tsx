@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
@@ -8,7 +8,7 @@ import Input from 'antd/es/input';
 import DatePicker from 'antd/es/date-picker';
 import message from 'antd/es/message';
 import type { ColumnsType } from 'antd/es/table';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
 import { useCanPerform } from '@/components/useCanPerform';
@@ -32,13 +32,36 @@ const RANGE_PRESETS: { label: string; value: [Dayjs, Dayjs] }[] = [
 ];
 
 export function AlertHistory() {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => {
+    // Sprint 54.4 — dashboard "Open alerts (24h)" tile deep-links with
+    // ?since=24h. Map a small set of presets to dayjs ranges.
+    const since = searchParams.get('since');
+    if (since === '24h') return [dayjs().subtract(24, 'hour'), dayjs()];
+    if (since === '7d') return [dayjs().subtract(7, 'day'), dayjs()];
+    if (since === '1h') return [dayjs().subtract(1, 'hour'), dayjs()];
+    return null;
+  });
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    const s = searchParams.get('status') ?? '';
+    return ['open', 'acknowledged'].includes(s) ? s : '';
+  });
   const [selected, setSelected] = useState<string[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const { data, isLoading } = useAlerts();
   const acknowledge = useAcknowledgeAlert();
   const canAcknowledge = useCanPerform('editor');
+
+  // Re-apply URL filters if the user re-navigates from the dashboard.
+  useEffect(() => {
+    const s = searchParams.get('status') ?? '';
+    if (['open', 'acknowledged', ''].includes(s)) setStatusFilter(s);
+    const since = searchParams.get('since');
+    if (since === '24h') setRange([dayjs().subtract(24, 'hour'), dayjs()]);
+    else if (since === '7d') setRange([dayjs().subtract(7, 'day'), dayjs()]);
+    else if (since === '1h') setRange([dayjs().subtract(1, 'hour'), dayjs()]);
+  }, [searchParams]);
 
   // Build device filter dropdown from the current page of alerts (client-side).
   const deviceFilters = useMemo(() => {
@@ -56,6 +79,7 @@ export function AlertHistory() {
     const from = range?.[0]?.valueOf();
     const to = range?.[1]?.valueOf();
     return (data ?? []).filter((a) => {
+      if (statusFilter && a.status !== statusFilter) return false;
       if (needle && !a.message.toLowerCase().includes(needle)) return false;
       if (from || to) {
         const ts = new Date(a.triggered_at).getTime();
@@ -64,7 +88,7 @@ export function AlertHistory() {
       }
       return true;
     });
-  }, [data, search, range]);
+  }, [data, search, range, statusFilter]);
 
   const handleBulkAcknowledge = async () => {
     if (selected.length === 0) return;

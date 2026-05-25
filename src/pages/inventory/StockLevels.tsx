@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Empty from 'antd/es/empty';
@@ -8,12 +8,15 @@ import InputNumber from 'antd/es/input-number';
 import Modal from 'antd/es/modal';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
+import Switch from 'antd/es/switch';
 import Table from 'antd/es/table';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { DownloadOutlined, EditOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import { useStockLevels } from '@/hooks/useInventory';
 import { useProducts } from '@/hooks/useInventory';
+import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stockMovementsApi } from '@/api/client';
@@ -70,12 +73,25 @@ interface AdjustFormValues {
 export function StockLevels() {
   const { data: levels, isLoading } = useStockLevels();
   const { data: products } = useProducts({ limit: 500 });
+  const { data: tenantConfig } = useTenantConfig();
   const { data: zones } = useQuery({
     queryKey: ['zones'],
     queryFn: () => SitesZonesService.listZonesZonesGet(),
   });
   const canEdit = useCanPerform('editor');
   const qc = useQueryClient();
+
+  // Sprint 54.4 — dashboard "Low stock" tile deep-links with ?low=1 and we
+  // filter the displayed rows to those whose total stock falls below the
+  // tenant's configured low_stock_threshold (default 3).
+  const [searchParams] = useSearchParams();
+  const [lowOnly, setLowOnly] = useState(
+    () => searchParams.get('low') === '1',
+  );
+  useEffect(() => {
+    setLowOnly(searchParams.get('low') === '1');
+  }, [searchParams]);
+  const lowThreshold = tenantConfig?.low_stock_threshold ?? 3;
 
   const [adjustRow, setAdjustRow] = useState<PivotRow | null>(null);
   const [adjustForm] = Form.useForm<AdjustFormValues>();
@@ -132,8 +148,13 @@ export function StockLevels() {
     return { rows, zoneCols };
   }, [levels, productLabel, zoneLabel]);
 
+  const displayRows = useMemo(
+    () => (lowOnly ? rows.filter((r) => r.total < lowThreshold) : rows),
+    [rows, lowOnly, lowThreshold],
+  );
+
   const onExport = () => {
-    downloadCsv('stock-levels.csv', toCsv(rows, zoneCols));
+    downloadCsv('stock-levels.csv', toCsv(displayRows, zoneCols));
   };
 
   const onAdjust = (values: AdjustFormValues) => {
@@ -152,9 +173,19 @@ export function StockLevels() {
     <div>
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Stock Levels</Title>
-        <Button icon={<DownloadOutlined />} onClick={onExport} disabled={rows.length === 0}>
-          Export CSV
-        </Button>
+        <Space>
+          <Space size="small">
+            <Switch
+              checked={lowOnly}
+              onChange={setLowOnly}
+              data-testid="stock-levels-low-only"
+            />
+            <span>Low stock only (&lt;{lowThreshold})</span>
+          </Space>
+          <Button icon={<DownloadOutlined />} onClick={onExport} disabled={displayRows.length === 0}>
+            Export CSV
+          </Button>
+        </Space>
       </Space>
       <Card>
         {rows.length === 0 && !isLoading ? (
@@ -163,7 +194,7 @@ export function StockLevels() {
           <Table<PivotRow>
             rowKey="key"
             loading={isLoading}
-            dataSource={rows}
+            dataSource={displayRows}
             pagination={{ pageSize: 25 }}
             scroll={{ x: 'max-content' }}
             columns={[
