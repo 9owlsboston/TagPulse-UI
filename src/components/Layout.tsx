@@ -1,26 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AntLayout from 'antd/es/layout';
 import Menu from 'antd/es/menu';
 import Alert from 'antd/es/alert';
 import type { MenuProps } from 'antd';
-import {
-  DashboardOutlined,
-  HddOutlined,
-  LineChartOutlined,
-  ThunderboltOutlined,
-  AlertOutlined,
-  ApiOutlined,
-  DatabaseOutlined,
-  ShoppingOutlined,
-  AppstoreOutlined,
-  SwapOutlined,
-  ClockCircleOutlined,
-  TagOutlined,
-  TagsOutlined,
-  EnvironmentOutlined,
-  GlobalOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
@@ -30,74 +12,30 @@ import { AccountDropdown } from '@/components/AccountDropdown';
 import { BrandSync } from '@/components/BrandSync';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import Typography from 'antd/es/typography';
+import {
+  NAV_SECTIONS,
+  NAV_TOP,
+  matchesPath,
+  sectionForPath,
+  type NavItem,
+} from '@/lib/nav';
 const { Sider, Header, Content } = AntLayout;
 const { Text } = Typography;
 
-type MinRole = 'viewer' | 'editor' | 'admin';
-type RequiredMode = 'asset' | 'inventory';
-
-interface NavItem {
-  key: string;
-  icon: React.ReactNode;
-  label: string;
-  minRole: MinRole;
-  requires?: RequiredMode;
-}
-
-// Sprint 41 Phase F5 — sidebar reorganization.
+// Sprint 54 Phase B (54.2) — sectioned sider.
 //
-// Operator-day nav only. Admin chrome lives in the Account dropdown (QW3)
-// so the sidebar stays focused on what crew use minute-to-minute. Groups:
-//   * Dashboard (solo, no group header)
-//   * EVENTS & ALERTS (Phase F1)      — telemetry pipeline + rules + alerts
-//   * ASSETS                          — asset taxonomy + locations + map
-//   * INVENTORY                       — stock-tracking surfaces
-//   * EDGE & CONNECTIONS              — physical devices + outbound webhooks
+// The taxonomy lives in `src/lib/nav.tsx` as a single registry so a
+// route-reachability smoke test (src/lib/nav.test.ts) can walk
+// App.tsx and assert every `<Route path>` is either in some section,
+// a top-level item, or explicitly allow-listed as reachable elsewhere
+// (account dropdown, deep-link from list page, dev-only URL).
 //
-// The label "EVENTS & ALERTS" is intentionally neutral (Azure-Monitor-aligned)
-// rather than "Signaling Events & Data" so the post-Sprint-41 taxonomy
-// unification doesn't have to rename it again. The previous DATA MANAGEMENT
-// / EDGE MANAGEMENT split (Sprint 33) is collapsed into the new four-group
-// layout — Dashboard stands alone, Integrations joins Devices under "Edge
-// & Connections".
-const DASHBOARD_NAV: NavItem[] = [
-  { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', minRole: 'viewer' },
-];
-
-const EVENTS_NAV: NavItem[] = [
-  { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer' },
-  { key: '/telemetry-models', icon: <DatabaseOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
-  { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' },
-  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' },
-];
-
-const ASSETS_NAV: NavItem[] = [
-  { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
-  // Sprint 44 Phase B — tag registry list/detail (ADR 028).
-  { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer' },
-  // Sprint 45 Phase C — CSV import wizard for the tag registry.
-  { key: '/tags/import', icon: <TagOutlined />, label: 'Import tags', minRole: 'editor' },
-  // Sprint 46 Phase D — cross-tenant transfer queue.
-  { key: '/tag-transfers', icon: <TagOutlined />, label: 'Tag transfers', minRole: 'viewer' },
-  // Sprint 47 Phase E — reconciliation views (read-only triage).
-  { key: '/tags/reconciliation', icon: <TagOutlined />, label: 'Tag reconciliation', minRole: 'viewer' },
-  { key: '/categories', icon: <TagsOutlined />, label: 'Categories', minRole: 'viewer' },
-  { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: 'asset' },
-  { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },
-];
-
-const INVENTORY_NAV: NavItem[] = [
-  { key: '/inventory/products', icon: <ShoppingOutlined />, label: 'Products', minRole: 'viewer', requires: 'inventory' },
-  { key: '/inventory/lots', icon: <ClockCircleOutlined />, label: 'Lot Expiry', minRole: 'viewer', requires: 'inventory' },
-  { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer', requires: 'inventory' },
-  { key: '/inventory/stock-movements', icon: <SwapOutlined />, label: 'Stock Movements', minRole: 'viewer', requires: 'inventory' },
-  { key: '/inventory/csv-import', icon: <UploadOutlined />, label: 'CSV Import', minRole: 'admin', requires: 'inventory' },
-];
-
-const EDGE_NAV: NavItem[] = [
-  { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer' },
-  { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
-];
+// Layout shape: ≤2 ungrouped top items (Dashboard, Alerts) above
+// ≤4 collapsible SubMenu sections (Asset Tracking, Inventory,
+// Data Management, Devices & Connections). The SubMenu containing
+// the current route is opened by default; users can open / close
+// any section freely and switching routes auto-opens the matching
+// section without collapsing the others they've toggled open.
 
 // Sprint 41 Phase F6 — collapsed-sidebar persistence.
 // Per-tenant + per-user key so a shared workstation doesn't bleed one
@@ -133,11 +71,16 @@ function writePersistedCollapsed(key: string, collapsed: boolean): void {
 
 const ROLE_LEVEL: Record<string, number> = { viewer: 0, editor: 1, admin: 2 };
 
+function modeOk(item: NavItem, enabledModes: Set<string>): boolean {
+  if (item.requires === undefined) return true;
+  const required = Array.isArray(item.requires) ? item.requires : [item.requires];
+  // OR-semantics: visible if ANY listed mode is enabled.
+  return required.some((m) => enabledModes.has(m));
+}
+
 function filterNav(items: NavItem[], role: string, enabledModes: Set<string>): NavItem[] {
   return items.filter(
-    (item) =>
-      (ROLE_LEVEL[role] ?? 0) >= (ROLE_LEVEL[item.minRole] ?? 0) &&
-      (item.requires === undefined || enabledModes.has(item.requires)),
+    (item) => (ROLE_LEVEL[role] ?? 0) >= (ROLE_LEVEL[item.minRole] ?? 0) && modeOk(item, enabledModes),
   );
 }
 
@@ -156,11 +99,11 @@ export function Layout() {
 
   const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
-  const dashboardItems = filterNav(DASHBOARD_NAV, role, enabledModes);
-  const eventsItems = filterNav(EVENTS_NAV, role, enabledModes);
-  const assetsItems = filterNav(ASSETS_NAV, role, enabledModes);
-  const inventoryItems = filterNav(INVENTORY_NAV, role, enabledModes);
-  const edgeItems = filterNav(EDGE_NAV, role, enabledModes);
+  const topItems = filterNav(NAV_TOP, role, enabledModes);
+  const sections = NAV_SECTIONS.map((sec) => ({
+    ...sec,
+    items: filterNav(sec.items, role, enabledModes),
+  })).filter((sec) => sec.items.length > 0);
 
   // Sprint 41 Phase F6 — collapsed-sidebar state, persisted per
   // (tenant, user). We re-hydrate whenever the storage key changes
@@ -200,49 +143,44 @@ export function Layout() {
     [setCollapsed],
   );
 
-  // Sprint 41 Phase F1 + F5 — grouped menu items, four named groups.
-  // Group headers are hidden when the Sider is collapsed (Ant Menu
-  // suppresses `type: 'group'` labels in icon-only mode automatically,
-  // but the empty header row still reserves vertical space, so we drop
-  // the group wrapper entirely when collapsed and render a flat item
-  // list with hover tooltips coming from the Menu's built-in behaviour).
-  const groups: { key: string; label: string; items: NavItem[] }[] = [
-    { key: 'grp-events', label: 'EVENTS & ALERTS', items: eventsItems },
-    { key: 'grp-assets', label: 'ASSETS', items: assetsItems },
-    { key: 'grp-inventory', label: 'INVENTORY', items: inventoryItems },
-    { key: 'grp-edge', label: 'EDGE & CONNECTIONS', items: edgeItems },
-  ].filter((g) => g.items.length > 0);
-
+  // Sprint 54 Phase B (54.2) — collapsible SubMenu sections.
+  // Items with `children:` render as SubMenu in AntD Menu. Collapsed
+  // (icon-only) sider mode falls back to popover-on-hover automatically.
   const navItemToMenuItem = ({ key, icon, label }: NavItem) => ({ key, icon, label });
 
-  const menuItems: MenuProps['items'] = collapsed
-    ? [
-        ...dashboardItems.map(navItemToMenuItem),
-        ...groups.flatMap((g) => g.items.map(navItemToMenuItem)),
-      ]
-    : [
-        ...dashboardItems.map(navItemToMenuItem),
-        ...groups.map((g) => ({
-          type: 'group' as const,
-          key: g.key,
-          label: g.label,
-          children: g.items.map(navItemToMenuItem),
-        })),
-      ];
-
-  const flatItems = [
-    ...dashboardItems,
-    ...eventsItems,
-    ...assetsItems,
-    ...inventoryItems,
-    ...edgeItems,
+  const menuItems: MenuProps['items'] = [
+    ...topItems.map(navItemToMenuItem),
+    ...sections.map((s) => ({
+      key: s.key,
+      icon: s.icon,
+      label: s.label,
+      children: s.items.map(navItemToMenuItem),
+    })),
   ];
+
+  const flatItems = [...topItems, ...sections.flatMap((s) => s.items)];
   const selectedKey =
     flatItems
-      .filter((item) =>
-        item.key === '/' ? location.pathname === '/' : location.pathname.startsWith(item.key),
-      )
+      .filter((item) => matchesPath(item.key, location.pathname))
       .sort((a, b) => b.key.length - a.key.length)[0]?.key ?? '/';
+
+  // openKeys: open the section containing the current route, and keep
+  // open any section the user has manually toggled open. Switching to a
+  // route in a different section auto-adds that section to openKeys
+  // without collapsing the others.
+  const initialOpen = useMemo(() => {
+    const sec = sectionForPath(location.pathname);
+    return sec ? [sec.key] : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [openKeys, setOpenKeys] = useState<string[]>(initialOpen);
+  useEffect(() => {
+    const sec = sectionForPath(location.pathname);
+    if (sec && !openKeys.includes(sec.key)) {
+      setOpenKeys((prev) => [...prev, sec.key]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Sider chrome: branding display_name + optional logo (QW6) over
   // a tenant-name fallback. Colour roles flow through semantic tokens
@@ -313,6 +251,8 @@ export function Layout() {
           mode="inline"
           inlineCollapsed={collapsed}
           selectedKeys={[selectedKey]}
+          openKeys={collapsed ? undefined : openKeys}
+          onOpenChange={(keys) => setOpenKeys(keys as string[])}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
           style={{ marginBottom: 56, borderRight: 0, background: 'transparent' }}
