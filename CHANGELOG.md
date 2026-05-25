@@ -4,6 +4,11 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Left-nav icon disambiguation.** Several items in the sectioned sider shipped with duplicate AntD icons (`TagOutlined` on Asset Tracking + Assets + Tags; `ShoppingOutlined` on Inventory + Products; `DatabaseOutlined` on Data Management + Telemetry Models; `TagsOutlined` on Categories + Labels; `UploadOutlined` on Tag Import + Inventory CSV Import; `SwapOutlined` on Tag Transfers + Stock Movements + Tag Reconciliation), which hurt scannability in the collapsed (icon-only) sider. [src/lib/nav.tsx](src/lib/nav.tsx) — Asset Tracking → `AimOutlined`, Assets → `GoldOutlined`, Products → `ShoppingCartOutlined`, Stock Movements → `RetweetOutlined`, Categories → `FolderOutlined`, Tag Reconciliation → `DiffOutlined`, Inventory CSV Import → `FileExcelOutlined`, Telemetry Models → `PartitionOutlined`. No behaviour change; visual only.
+- **AccountDropdown — remove redundant Labels entry.** [src/components/AccountDropdown.tsx](src/components/AccountDropdown.tsx) — Sprint 54.2 promoted Labels into the sider's Data Management section as an operator-day surface, but the legacy Admin-submenu entry in the account dropdown was left in place, surfacing `/admin/labels` twice. Removed the dropdown entry (and the now-unused `TagsOutlined` import); the sider remains the single canonical surface. Other admin-chrome entries (Tenant Settings, Branding, Usage, Users, Audit Log, Dead Letters, Pending Bulk Ops) are unchanged.
+
 ### Fixed
 
 - **Transfers page — 422 Validation Error on load.** [src/hooks/useTransfers.ts](src/hooks/useTransfers.ts) — backend regex on `GET /tag-transfers?direction=…` is `^(in|out)$` (per `openapi.json`), but the UI was sending `outbound` / `inbound` (the values it uses internally for state + labels). Every initial load 422'd with `ApiError: Validation Error`. The hook now translates `outbound` → `out` and `inbound` → `in` at the API call site; UI state, props, and tests keep the verbose values. No regen needed.

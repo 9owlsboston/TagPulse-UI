@@ -20,23 +20,31 @@
  */
 import type { ReactNode } from 'react';
 import {
-  DashboardOutlined,
-  HddOutlined,
-  LineChartOutlined,
-  ThunderboltOutlined,
+  AimOutlined,
   AlertOutlined,
   ApiOutlined,
-  DatabaseOutlined,
-  ShoppingOutlined,
   AppstoreOutlined,
-  SwapOutlined,
   ClockCircleOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  DeploymentUnitOutlined,
+  DiffOutlined,
+  EnvironmentOutlined,
+  FileExcelOutlined,
+  FolderOutlined,
+  GlobalOutlined,
+  GoldOutlined,
+  HddOutlined,
+  LineChartOutlined,
+  PartitionOutlined,
+  RetweetOutlined,
+  ShoppingCartOutlined,
+  ShoppingOutlined,
+  SwapOutlined,
   TagOutlined,
   TagsOutlined,
-  EnvironmentOutlined,
-  GlobalOutlined,
+  ThunderboltOutlined,
   UploadOutlined,
-  DeploymentUnitOutlined,
 } from '@ant-design/icons';
 
 export type MinRole = 'viewer' | 'editor' | 'admin';
@@ -68,9 +76,9 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: 'sec-asset-tracking',
     label: 'Asset Tracking',
-    icon: <TagOutlined />,
+    icon: <AimOutlined />,
     items: [
-      { key: '/assets', icon: <TagOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
+      { key: '/assets', icon: <GoldOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
       { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer' },
       // Sites/Zones are shared with inventory stock-levels — cross-mode.
       { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: ['asset', 'inventory'] },
@@ -82,10 +90,10 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Inventory',
     icon: <ShoppingOutlined />,
     items: [
-      { key: '/inventory/products', icon: <ShoppingOutlined />, label: 'Products', minRole: 'viewer', requires: 'inventory' },
+      { key: '/inventory/products', icon: <ShoppingCartOutlined />, label: 'Products', minRole: 'viewer', requires: 'inventory' },
       { key: '/inventory/lots', icon: <ClockCircleOutlined />, label: 'Lot Expiry', minRole: 'viewer', requires: 'inventory' },
       { key: '/inventory/stock-levels', icon: <AppstoreOutlined />, label: 'Stock Levels', minRole: 'viewer', requires: 'inventory' },
-      { key: '/inventory/stock-movements', icon: <SwapOutlined />, label: 'Stock Movements', minRole: 'viewer', requires: 'inventory' },
+      { key: '/inventory/stock-movements', icon: <RetweetOutlined />, label: 'Stock Movements', minRole: 'viewer', requires: 'inventory' },
     ],
   },
   {
@@ -93,12 +101,12 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Data Management',
     icon: <DatabaseOutlined />,
     items: [
-      { key: '/categories', icon: <TagsOutlined />, label: 'Categories', minRole: 'viewer' },
+      { key: '/categories', icon: <FolderOutlined />, label: 'Categories', minRole: 'viewer' },
       { key: '/admin/labels', icon: <TagsOutlined />, label: 'Labels', minRole: 'admin' },
       { key: '/tags/import', icon: <UploadOutlined />, label: 'Tag Import', minRole: 'editor' },
       { key: '/tag-transfers', icon: <SwapOutlined />, label: 'Tag Transfers', minRole: 'viewer' },
-      { key: '/tags/reconciliation', icon: <SwapOutlined />, label: 'Tag Reconciliation', minRole: 'viewer' },
-      { key: '/inventory/csv-import', icon: <UploadOutlined />, label: 'Inventory CSV Import', minRole: 'admin', requires: 'inventory' },
+      { key: '/tags/reconciliation', icon: <DiffOutlined />, label: 'Tag Reconciliation', minRole: 'viewer' },
+      { key: '/inventory/csv-import', icon: <FileExcelOutlined />, label: 'Inventory CSV Import', minRole: 'admin', requires: 'inventory' },
     ],
   },
   {
@@ -109,7 +117,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer' },
       { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
       { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer' },
-      { key: '/telemetry-models', icon: <DatabaseOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
+      { key: '/telemetry-models', icon: <PartitionOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
       { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' },
     ],
   },
