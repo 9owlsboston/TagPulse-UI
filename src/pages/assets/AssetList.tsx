@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import Checkbox from 'antd/es/checkbox';
 import DatePicker from 'antd/es/date-picker';
 import Form from 'antd/es/form';
@@ -13,8 +12,8 @@ import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
-import Badge from 'antd/es/badge';
 import message from 'antd/es/message';
+import { ListPageShell } from '@/components/ListPageShell';
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';
@@ -34,7 +33,6 @@ import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLocation';
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
 
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 const STATUS_OPTIONS = [
@@ -275,8 +273,64 @@ export function AssetList() {
     }
   };
 
+  // Sprint 55 — page now uses <ListPageShell>. Filter toolbar (search,
+  // status, filter-drawer toggle, last-seen range, never-seen) goes in
+  // the shell's `toolbar` slot; the Register Asset button goes in
+  // `primaryAction`; the side FilterPanel goes in `aside`.
+  const toolbar = (
+    <Space wrap>
+      <Input.Search
+        placeholder="Search by name, external ref, or tag"
+        allowClear
+        onSearch={setSearch}
+        style={{ width: 360 }}
+      />
+      <Select
+        options={STATUS_OPTIONS}
+        value={status}
+        onChange={setStatus}
+        style={{ width: 160 }}
+      />
+      <Button
+        icon={<FilterOutlined />}
+        onClick={() => setFiltersOpen((v) => !v)}
+        type={filtersOpen ? 'primary' : 'default'}
+        data-testid="asset-list-filters-toggle"
+      >
+        Filters
+        {(categoryIds.length > 0 || !isEmptyLabelFilter(labelFilter)) && (
+          <Tag color="blue" style={{ marginLeft: 8 }} data-testid="asset-list-filters-applied-count">
+            {categoryIds.length + Object.keys(labelFilter).length}
+          </Tag>
+        )}
+      </Button>
+      <RangePicker
+        showTime
+        allowClear
+        placeholder={['Last seen from', 'to']}
+        value={lastSeenRange as [Dayjs, Dayjs] | null}
+        onChange={(v) => {
+          setLastSeenRange(v as [Dayjs | null, Dayjs | null] | null);
+          if (v) setNeverSeenOnly(false);
+        }}
+        presets={LAST_SEEN_PRESETS}
+        style={{ width: 360 }}
+        disabled={neverSeenOnly}
+      />
+      <Checkbox
+        checked={neverSeenOnly}
+        onChange={(e) => {
+          setNeverSeenOnly(e.target.checked);
+          if (e.target.checked) setLastSeenRange(null);
+        }}
+      >
+        Never seen
+      </Checkbox>
+    </Space>
+  );
+
   return (
-    <div>
+    <>
       <style>{`
         @keyframes tagpulse-row-flash {
           0%   { background-color: rgba(82, 196, 26, 0.28); }
@@ -301,72 +355,12 @@ export function AssetList() {
           .tagpulse-cell-pop { animation: none; }
         }
       `}</style>
-      <Space align="center" size="small" style={{ marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Assets</Title>
-        <Badge
-          count={filteredRows.length}
-          overflowCount={99999}
-          showZero
-          style={{ backgroundColor: 'var(--color-surface-raised)', color: 'var(--color-text)' }}
-          data-testid="asset-list-title-count"
-        />
-      </Space>
-      <Card>
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
-          <Space wrap>
-            <Input.Search
-              placeholder="Search by name, external ref, or tag"
-              allowClear
-              onSearch={setSearch}
-              style={{ width: 360 }}
-            />
-            <Select
-              options={STATUS_OPTIONS}
-              value={status}
-              onChange={setStatus}
-              style={{ width: 160 }}
-            />
-            {/* Sprint 42 — Categories + Labels filters live in the side
-                FilterPanel below. The toggle button shows an "n active"
-                badge so the user knows when filters are narrowing the
-                table even with the panel closed. */}
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => setFiltersOpen((v) => !v)}
-              type={filtersOpen ? 'primary' : 'default'}
-              data-testid="asset-list-filters-toggle"
-            >
-              Filters
-              {(categoryIds.length > 0 || !isEmptyLabelFilter(labelFilter)) && (
-                <Tag color="blue" style={{ marginLeft: 8 }} data-testid="asset-list-filters-applied-count">
-                  {categoryIds.length + Object.keys(labelFilter).length}
-                </Tag>
-              )}
-            </Button>
-            <RangePicker
-              showTime
-              allowClear
-              placeholder={['Last seen from', 'to']}
-              value={lastSeenRange as [Dayjs, Dayjs] | null}
-              onChange={(v) => {
-                setLastSeenRange(v as [Dayjs | null, Dayjs | null] | null);
-                if (v) setNeverSeenOnly(false);
-              }}
-              presets={LAST_SEEN_PRESETS}
-              style={{ width: 360 }}
-              disabled={neverSeenOnly}
-            />
-            <Checkbox
-              checked={neverSeenOnly}
-              onChange={(e) => {
-                setNeverSeenOnly(e.target.checked);
-                if (e.target.checked) setLastSeenRange(null);
-              }}
-            >
-              Never seen
-            </Checkbox>
-          </Space>
-          {canEdit && (
+      <ListPageShell
+        title="Assets"
+        count={filteredRows.length}
+        countTestId="asset-list-title-count"
+        primaryAction={
+          canEdit && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -374,14 +368,25 @@ export function AssetList() {
             >
               Register Asset
             </Button>
-          )}
-        </Space>
-        {/* Sprint 42 — the inline <LabelFilterStrip> moved into the side
-            FilterPanel below. The panel renders to the right of the table
-            via a flex row when open. */}
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Table<AssetResponse>
+          )
+        }
+        toolbar={toolbar}
+        aside={
+          filtersOpen ? (
+            <FilterPanel
+              entityType="asset"
+              value={{ categoryIds, labelFilter }}
+              onApply={({ categoryIds: nextIds, labelFilter: nextLabels }) => {
+                setCategoryIds(nextIds);
+                setLabelFilter(nextLabels);
+              }}
+              onClose={() => setFiltersOpen(false)}
+              data-testid="asset-list-filter-panel"
+            />
+          ) : undefined
+        }
+      >
+        <Table<AssetResponse>
           rowKey="id"
           loading={isLoading}
           dataSource={filteredRows}
@@ -512,21 +517,7 @@ export function AssetList() {
               : []),
           ]}
         />
-          </div>
-          {filtersOpen && (
-            <FilterPanel
-              entityType="asset"
-              value={{ categoryIds, labelFilter }}
-              onApply={({ categoryIds: nextIds, labelFilter: nextLabels }) => {
-                setCategoryIds(nextIds);
-                setLabelFilter(nextLabels);
-              }}
-              onClose={() => setFiltersOpen(false)}
-              data-testid="asset-list-filter-panel"
-            />
-          )}
-        </div>
-      </Card>
+      </ListPageShell>
 
       <Modal
         title="Register Asset"
@@ -583,6 +574,6 @@ export function AssetList() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }
