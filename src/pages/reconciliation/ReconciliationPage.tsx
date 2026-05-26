@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
 import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import InputNumber from 'antd/es/input-number';
 import Pagination from 'antd/es/pagination';
 import Space from 'antd/es/space';
@@ -19,10 +18,12 @@ import {
   type ReconciliationView,
   useReconciliation,
 } from '@/hooks/useReconciliation';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
 dayjs.extend(relativeTime);
 
-const { Title, Paragraph, Text } = Typography;
+const { Text } = Typography;
 const PAGE_SIZE = 50;
 
 const VIEW_META: Record<
@@ -259,37 +260,15 @@ export function ReconciliationPage() {
   }
 
   return (
-    <div data-testid="reconciliation-page">
+    <>
       {!isValid && <Navigate to="/tags/reconciliation/registered-unread" replace />}
-      <Title level={3}>Reconciliation — {meta.title}</Title>
-      <Paragraph type="secondary">{meta.description}</Paragraph>
-
-      <Card style={{ marginBottom: 16 }}>
-        <Space size="middle" wrap>
-          <Space>
-            {VIEWS.map((vk) => (
-              <Link key={vk} to={`/tags/reconciliation/${vk}`}>
-                <Button type={vk === v ? 'primary' : 'default'} size="small">
-                  {VIEW_META[vk].title}
-                </Button>
-              </Link>
-            ))}
-          </Space>
-          {meta.supportsDays && (
-            <Space>
-              <Text>Window (days):</Text>
-              <InputNumber
-                min={1}
-                max={365}
-                value={days}
-                onChange={(v) => {
-                  setPage(1);
-                  setDays(typeof v === 'number' ? v : 30);
-                }}
-                data-testid="reconciliation-days"
-              />
-            </Space>
-          )}
+      <ListPageShell
+        testId="reconciliation-page"
+        title={`Reconciliation — ${meta.title}`}
+        count={rows.length}
+        countTestId="reconciliation-count"
+        description={meta.description}
+        primaryAction={
           <Button
             icon={<DownloadOutlined />}
             onClick={handleCsvDownload}
@@ -298,37 +277,69 @@ export function ReconciliationPage() {
           >
             Download CSV
           </Button>
-        </Space>
-      </Card>
+        }
+        toolbar={
+          <Space size="middle" wrap>
+            <Space>
+              {VIEWS.map((vk) => (
+                <Link key={vk} to={`/tags/reconciliation/${vk}`}>
+                  <Button type={vk === v ? 'primary' : 'default'} size="small">
+                    {VIEW_META[vk].title}
+                  </Button>
+                </Link>
+              ))}
+            </Space>
+            {meta.supportsDays && (
+              <Space>
+                <Text>Window (days):</Text>
+                <InputNumber
+                  min={1}
+                  max={365}
+                  value={days}
+                  onChange={(v) => {
+                    setPage(1);
+                    setDays(typeof v === 'number' ? v : 30);
+                  }}
+                  data-testid="reconciliation-days"
+                />
+              </Space>
+            )}
+          </Space>
+        }
+      >
+        {query.error && (
+          <Alert
+            type="error"
+            message="Failed to load reconciliation view"
+            description={String((query.error as { message?: string }).message ?? query.error)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
 
-      {query.error && (
-        <Alert
-          type="error"
-          message="Failed to load reconciliation view"
-          description={String((query.error as { message?: string }).message ?? query.error)}
-          style={{ marginBottom: 16 }}
+        <Table
+          rowKey={rowKey}
+          loading={query.isLoading}
+          dataSource={rows}
+          columns={columns}
+          pagination={false}
+          locale={{
+            emptyText: (
+              <EmptyState title="All clear" description={meta.emptyCopy(queryDays)} />
+            ),
+          }}
+          data-testid="reconciliation-table"
         />
-      )}
 
-      <Table
-        rowKey={rowKey}
-        loading={query.isLoading}
-        dataSource={rows}
-        columns={columns}
-        pagination={false}
-        locale={{ emptyText: meta.emptyCopy(queryDays) }}
-        data-testid="reconciliation-table"
-      />
-
-      <Pagination
-        style={{ marginTop: 16, textAlign: 'right' }}
-        current={page}
-        pageSize={PAGE_SIZE}
-        total={fudgedTotal}
-        showSizeChanger={false}
-        onChange={setPage}
-      />
-    </div>
+        <Pagination
+          style={{ marginTop: 16, textAlign: 'right' }}
+          current={page}
+          pageSize={PAGE_SIZE}
+          total={fudgedTotal}
+          showSizeChanger={false}
+          onChange={setPage}
+        />
+      </ListPageShell>
+    </>
   );
 }
 

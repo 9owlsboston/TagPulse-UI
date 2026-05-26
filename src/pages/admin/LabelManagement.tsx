@@ -24,7 +24,6 @@ import { useMemo, useState } from 'react';
 import App from 'antd/es/app';
 import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import ColorPicker from 'antd/es/color-picker';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
@@ -46,8 +45,10 @@ import {
   type LabelEntityType,
 } from '@/hooks/useLabels';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const ENTITY_TYPES: { value: LabelEntityType; label: string }[] = [
   { value: 'asset', label: 'Asset' },
@@ -211,50 +212,56 @@ export function LabelManagement() {
     );
   }
 
+  const rows = labels ?? [];
+  const filtersActive = !!typeFilter;
+
   return (
-    <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
+    <>
+      <ListPageShell
+        testId="label-management-page"
+        title="Labels"
+        count={rows.length}
+        countTestId="label-management-count"
+        description={
+          <>
+            Define the catalog of label keys per entity type. Operators then attach
+            key-value pairs (e.g. <code>priority: high</code>) to individual assets,
+            sites, zones, devices, or categories. Per ADR 020 the entity type is
+            fixed when a label is created.
+          </>
+        }
+        primaryAction={
+          <Space>
+            <Select
+              value={typeFilter ?? ''}
+              onChange={(v) => setTypeFilter(v ? (v as LabelEntityType) : undefined)}
+              options={filterOptions}
+              style={{ width: 200 }}
+              aria-label="Filter by entity type"
+            />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              New Label
+            </Button>
+          </Space>
+        }
       >
-        <Title level={2} style={{ margin: 0 }}>
-          Labels
-        </Title>
-        <Space>
-          <Select
-            value={typeFilter ?? ''}
-            onChange={(v) => setTypeFilter(v ? (v as LabelEntityType) : undefined)}
-            options={filterOptions}
-            style={{ width: 200 }}
-            aria-label="Filter by entity type"
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            New Label
-          </Button>
-        </Space>
-      </div>
-
-      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        Define the catalog of label keys per entity type. Operators then attach
-        key-value pairs (e.g. <code>priority: high</code>) to individual assets,
-        sites, zones, devices, or categories. Per ADR 020 the entity type is
-        fixed when a label is created.
-      </Text>
-
-      <Card>
         <Table<LabelResponse>
           rowKey="id"
-          dataSource={labels ?? []}
+          dataSource={rows}
           loading={isLoading}
           pagination={{ pageSize: 25 }}
           locale={{
-            emptyText: typeFilter
-              ? `No labels defined for ${ENTITY_TYPE_LABELS[typeFilter]}s yet.`
-              : 'No labels yet. Create one to start tagging entities.',
+            emptyText: filtersActive ? (
+              <EmptyState
+                title="No labels match the filter"
+                description={`No labels defined for ${ENTITY_TYPE_LABELS[typeFilter!]}s yet.`}
+              />
+            ) : (
+              <EmptyState
+                title="No labels yet"
+                description="Create one to start tagging entities."
+              />
+            ),
           }}
           columns={[
             {
@@ -329,7 +336,7 @@ export function LabelManagement() {
             },
           ]}
         />
-      </Card>
+      </ListPageShell>
 
       {/* Create modal */}
       <Modal
@@ -435,6 +442,6 @@ export function LabelManagement() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }

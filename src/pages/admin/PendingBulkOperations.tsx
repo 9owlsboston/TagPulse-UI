@@ -22,7 +22,6 @@ import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
 import Drawer from 'antd/es/drawer';
 import Descriptions from 'antd/es/descriptions';
-import Empty from 'antd/es/empty';
 import Input from 'antd/es/input';
 import Pagination from 'antd/es/pagination';
 import Select from 'antd/es/select';
@@ -39,6 +38,8 @@ import {
   useRejectPendingBulkOperation,
 } from '@/hooks/usePendingBulkOperations';
 import { RoleGuard } from '@/components/RoleGuard';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
 const { Title, Paragraph, Text } = Typography;
 const PAGE_SIZE = 50;
@@ -215,42 +216,48 @@ export function PendingBulkOperations() {
     },
   ];
 
+  const filtersActive = !!(status || operation.trim());
+
   return (
     <RoleGuard roles={['admin']}>
-      <div>
-        <Title level={2} style={{ marginTop: 0 }}>
-          Pending bulk operations
-        </Title>
-        <Paragraph type="secondary" style={{ maxWidth: 720 }}>
-          Second-admin review queue for bulk operations queued by another administrator
-          (ADR 028 §Governance #4). You cannot approve or reject your own request — the
-          server will return <Text code>SELF_APPROVAL</Text> if you try.
-        </Paragraph>
-
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Select
-            data-testid="status-filter"
-            value={status}
-            options={STATUS_OPTIONS}
-            style={{ width: 180 }}
-            onChange={(v) => {
-              setStatus(v);
-              setPage(1);
-            }}
-          />
-          <Input
-            data-testid="operation-filter"
-            allowClear
-            placeholder="Filter by operation (e.g. tag_import)"
-            value={operation}
-            style={{ width: 320 }}
-            onChange={(e) => {
-              setOperation(e.target.value);
-              setPage(1);
-            }}
-          />
-        </Space>
-
+      <ListPageShell
+        testId="pending-bulk-operations-page"
+        title="Pending bulk operations"
+        count={rows.length}
+        countTestId="pending-bulk-operations-count"
+        description={
+          <>
+            Second-admin review queue for bulk operations queued by another administrator
+            (ADR 028 §Governance #4). You cannot approve or reject your own request — the
+            server will return <Text code>SELF_APPROVAL</Text> if you try.
+          </>
+        }
+        toolbar={
+          <Space wrap>
+            <Select
+              data-testid="status-filter"
+              value={status}
+              options={STATUS_OPTIONS}
+              style={{ width: 180 }}
+              onChange={(v) => {
+                setStatus(v);
+                setPage(1);
+              }}
+            />
+            <Input
+              data-testid="operation-filter"
+              allowClear
+              placeholder="Filter by operation (e.g. tag_import)"
+              value={operation}
+              style={{ width: 320 }}
+              onChange={(e) => {
+                setOperation(e.target.value);
+                setPage(1);
+              }}
+            />
+          </Space>
+        }
+      >
         {isError ? (
           <Alert
             type="error"
@@ -268,14 +275,15 @@ export function PendingBulkOperations() {
           loading={isLoading}
           pagination={false}
           locale={{
-            emptyText: (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  status === 'pending'
-                    ? 'Nothing waiting on you. New requests will appear here within 30s.'
-                    : 'No bulk operations match these filters.'
-                }
+            emptyText: filtersActive ? (
+              <EmptyState
+                title="No bulk operations match these filters"
+                description="Try clearing or broadening the filters."
+              />
+            ) : (
+              <EmptyState
+                title="Inbox zero"
+                description="Nothing waiting on you. New requests will appear here within 30s."
               />
             ),
           }}
@@ -386,7 +394,7 @@ export function PendingBulkOperations() {
             </>
           ) : null}
         </Drawer>
-      </div>
+      </ListPageShell>
     </RoleGuard>
   );
 }

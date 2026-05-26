@@ -19,9 +19,11 @@ import { useIntegrations, useCreateIntegration, useUpdateIntegration, useDeleteI
 import { integrationTestApi } from '@/api/client';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { IntegrationResponse, IntegrationCreate } from '@/types';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const TYPE_OPTIONS = [
   { label: 'Webhook', value: 'webhook' },
@@ -160,17 +162,42 @@ export function IntegrationList() {
     },
   ];
 
+  const rows = data ?? [];
+
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Integrations</Title>
+    <ListPageShell
+      testId="integration-list-page"
+      title="Integrations"
+      count={rows.length}
+      countTestId="integration-list-count"
+      primaryAction={
         <RoleGuard roles={['admin', 'editor']}>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
             Create Integration
           </Button>
         </RoleGuard>
-      </div>
-      <Table rowKey="id" columns={columns} dataSource={data} loading={isLoading} pagination={{ pageSize: 20 }} />
+      }
+    >
+      <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={isLoading}
+        pagination={{ pageSize: 20 }}
+        locale={{
+          emptyText: canEdit ? (
+            <EmptyState
+              title="No integrations yet"
+              description="Create a webhook, SSE stream, or export to deliver events outside TagPulse."
+            />
+          ) : (
+            <EmptyState
+              title="No integrations yet"
+              description="Ask an editor or admin to configure event delivery for this tenant."
+            />
+          ),
+        }}
+      />
       <Modal title="Create Integration" open={open} onCancel={() => setOpen(false)} footer={null}>
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>
@@ -209,6 +236,6 @@ export function IntegrationList() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </ListPageShell>
   );
 }

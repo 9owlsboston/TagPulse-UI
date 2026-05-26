@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import Modal from 'antd/es/modal';
@@ -9,7 +8,6 @@ import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useCreateTagDataMapping, useDeleteTagDataMapping, useProducts, useTagDataMappings } from '@/hooks/useInventory';
@@ -18,8 +16,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { tagDataMappingsApi } from '@/api/client';
 import { TagDataMappingCreate } from '@/api/generated/models/TagDataMappingCreate';
 import type { TagDataMappingResponse } from '@/api/generated/models/TagDataMappingResponse';
-
-const { Title, Paragraph } = Typography;
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
 interface FormValues {
   tag_data_key: string;
@@ -110,26 +108,42 @@ export function TagDataMappings() {
     });
   };
 
+  const rows = mappings ?? [];
+
   return (
-    <div>
-      <Title level={2}>Tag data mappings</Title>
-      <Paragraph type="secondary">
-        Map RFID <code>tag_data.&lt;key&gt;</code> values to inventory semantic fields. Most-specific
-        scope wins (product overrides tenant).
-      </Paragraph>
-      <Card>
-        <Space style={{ marginBottom: 16 }}>
-          {isAdmin && (
+    <>
+      <ListPageShell
+        testId="tag-data-mappings-page"
+        title="Tag data mappings"
+        count={rows.length}
+        countTestId="tag-data-mappings-count"
+        description="Map RFID tag_data.<key> values to inventory semantic fields. Most-specific scope wins (product overrides tenant)."
+        primaryAction={
+          isAdmin ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
               New Mapping
             </Button>
-          )}
-        </Space>
+          ) : undefined
+        }
+      >
         <Table<TagDataMappingResponse>
           rowKey="id"
           loading={isLoading}
-          dataSource={mappings ?? []}
+          dataSource={rows}
           pagination={{ pageSize: 25 }}
+          locale={{
+            emptyText: isAdmin ? (
+              <EmptyState
+                title="No tag-data mappings yet"
+                description='Click "New Mapping" to map a tag_data key (e.g. lot, sku) to a semantic field.'
+              />
+            ) : (
+              <EmptyState
+                title="No tag-data mappings yet"
+                description="Ask an admin to map tag_data keys to inventory semantic fields."
+              />
+            ),
+          }}
           columns={[
             { title: 'Tag-data key', dataIndex: 'tag_data_key', render: (v: string) => <code>{v}</code> },
             { title: 'Semantic field', dataIndex: 'semantic_field' },
@@ -156,7 +170,7 @@ export function TagDataMappings() {
             },
           ]}
         />
-      </Card>
+      </ListPageShell>
 
       {/* Create modal */}
       <Modal
@@ -223,6 +237,6 @@ export function TagDataMappings() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }

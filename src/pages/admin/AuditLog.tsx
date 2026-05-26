@@ -3,14 +3,14 @@ import Typography from 'antd/es/typography';
 import Table from 'antd/es/table';
 import Segmented from 'antd/es/segmented';
 import Tag from 'antd/es/tag';
-import Spin from 'antd/es/spin';
-import Empty from 'antd/es/empty';
 import Tooltip from 'antd/es/tooltip';
 import type { ColumnsType } from 'antd/es/table';
 import { useAuditLogs, DEVICE_SECURITY_ACTIONS } from '@/hooks/useAuditLogs';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { AuditLogEntry } from '@/api/client';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 type Preset = 'all' | 'device-security' | 'tenant-config' | 'user-management';
 
@@ -83,14 +83,17 @@ export function AuditLog() {
     },
   ];
 
-  return (
-    <div>
-      <Title level={2}>Audit Log</Title>
-      <Text type="secondary">
-        Tenant-scoped audit trail. Use presets to focus on common investigation flows.
-      </Text>
+  const rows = logs ?? [];
+  const filtersActive = preset !== 'all';
 
-      <div style={{ margin: '16px 0' }}>
+  return (
+    <ListPageShell
+      testId="audit-log-page"
+      title="Audit Log"
+      count={rows.length}
+      countTestId="audit-log-count"
+      description="Tenant-scoped audit trail. Use presets to focus on common investigation flows."
+      toolbar={
         <Segmented
           value={preset}
           onChange={(v) => setPreset(v as Preset)}
@@ -101,21 +104,29 @@ export function AuditLog() {
             { label: 'User management', value: 'user-management' },
           ]}
         />
-      </div>
-
-      {isLoading ? (
-        <Spin size="large" />
-      ) : !logs || logs.length === 0 ? (
-        <Empty description="No audit entries match this filter" />
-      ) : (
-        <Table<AuditLogEntry>
-          rowKey="id"
-          columns={columns}
-          dataSource={logs}
-          pagination={{ pageSize: 50, showSizeChanger: false }}
-          size="small"
-        />
-      )}
-    </div>
+      }
+    >
+      <Table<AuditLogEntry>
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={isLoading}
+        pagination={{ pageSize: 50, showSizeChanger: false }}
+        size="small"
+        locale={{
+          emptyText: filtersActive ? (
+            <EmptyState
+              title="No audit entries match this filter"
+              description="Switch to a different preset or clear the filter to see other events."
+            />
+          ) : (
+            <EmptyState
+              title="No audit entries yet"
+              description="Tenant activity will appear here as users and devices interact with the system."
+            />
+          ),
+        }}
+      />
+    </ListPageShell>
   );
 }

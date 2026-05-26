@@ -15,8 +15,10 @@ import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { deadLetterApi } from '@/api/client';
 import { RoleGuard } from '@/components/RoleGuard';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface DeadLetterEvent {
   id: string;
@@ -129,28 +131,42 @@ export function DeadLetters() {
     },
   ];
 
+  const rows = data ?? [];
+
   return (
     <RoleGuard roles={['admin']}>
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Title level={2} style={{ margin: 0 }}>Dead-letter Events</Title>
-          {selected.length > 0 && (
+      <ListPageShell
+        testId="dead-letters-page"
+        title="Dead-letter Events"
+        count={rows.length}
+        countTestId="dead-letters-count"
+        primaryAction={
+          selected.length > 0 ? (
             <Space>
               <Tag>{selected.length} selected</Tag>
               <Button onClick={handleBulkRetry}>Retry selected</Button>
               <Button danger onClick={handleBulkAbandon}>Abandon selected</Button>
             </Space>
-          )}
-        </div>
+          ) : undefined
+        }
+      >
         <Table<DeadLetterEvent>
           rowKey="id"
           columns={columns}
-          dataSource={data ?? []}
+          dataSource={rows}
           loading={isLoading}
           pagination={{ pageSize: 25, showSizeChanger: true }}
           rowSelection={{
             selectedRowKeys: selected,
             onChange: (keys) => setSelected(keys as string[]),
+          }}
+          locale={{
+            emptyText: (
+              <EmptyState
+                title="No dead-letter events"
+                description="Events that fail processing repeatedly will appear here for manual retry or abandonment."
+              />
+            ),
           }}
         />
         <Modal
@@ -164,7 +180,7 @@ export function DeadLetters() {
             {JSON.stringify(previewPayload, null, 2)}
           </pre>
         </Modal>
-      </div>
+      </ListPageShell>
     </RoleGuard>
   );
 }
