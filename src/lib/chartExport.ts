@@ -2,7 +2,7 @@
  * Chart export utilities — CSV + PNG.
  *
  * Sprint 57 C.2. Shared by the upcoming <TpLineChart> wrapper and any
- * page-level "Export CSV / PNG" buttons (e.g. DataExplorer's existing
+ * page-level "Export CSV / PNG" buttons (e.g. TagReads' existing
  * Export CSV uses these).
  *
  * - CSV: RFC-4180-ish escaping (quote fields containing `,` `"` or newline,

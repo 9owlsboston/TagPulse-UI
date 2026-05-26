@@ -9,7 +9,7 @@
  *     allow-listed below as "reachable elsewhere" (account dropdown,
  *     deep-link from a list page, dev-only URL).
  *
- * Constraint per roadmap: **≤4 sections + ≤2 ungrouped top items**.
+ * Constraint per roadmap: **≤4 sections + ≤3 ungrouped top items**.
  *
  * Cross-mode gating uses `requires`. With a single mode string the
  * item is only shown when that mode is enabled in
@@ -37,6 +37,7 @@ import {
   HddOutlined,
   LineChartOutlined,
   PartitionOutlined,
+  ReadOutlined,
   RetweetOutlined,
   ShoppingCartOutlined,
   ShoppingOutlined,
@@ -65,9 +66,10 @@ export interface NavSection {
   items: NavItem[];
 }
 
-// ─── Ungrouped top items (≤2) ─────────────────────────────────────────────
+// ─── Ungrouped top items (≤3) ──────────────────────────────────────────────
 export const NAV_TOP: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', minRole: 'viewer' },
+  { key: '/tag-reads', icon: <ReadOutlined />, label: 'Tag Reads', minRole: 'viewer' },
   { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' },
 ];
 

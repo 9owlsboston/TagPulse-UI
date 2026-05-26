@@ -67,8 +67,8 @@ export function TelemetryDashboard() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Telemetry</Title>
-        <Button icon={<SearchOutlined />} onClick={() => navigate('/telemetry/explore')}>
-          Data Explorer
+        <Button icon={<SearchOutlined />} onClick={() => navigate('/tag-reads')}>
+          Tag Reads
         </Button>
       </div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>

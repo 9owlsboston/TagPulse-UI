@@ -32,7 +32,15 @@ const SSE_KEYS = [['tag-reads']];
 
 const SIGNAL_SERIES: TpSeries[] = [{ key: 'signal', label: 'Signal' }];
 
-export function DataExplorer() {
+// Sprint 57 Phase D — virtualize the table once filtered rows exceed this
+// threshold. Below the threshold we keep the paginated layout so the
+// typical small-result UX is unchanged; above it we switch to a single
+// scroll viewport so high-`limit` exploratory queries don't render
+// thousands of DOM nodes.
+const VIRTUAL_ROW_THRESHOLD = 500;
+const VIRTUAL_SCROLL_HEIGHT = 480;
+
+export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
@@ -181,6 +189,8 @@ export function DataExplorer() {
     [data],
   );
 
+  const isVirtual = (data?.length ?? 0) > VIRTUAL_ROW_THRESHOLD;
+
   const handleExportCsv = () => {
     if (!data?.length) return;
     const columns: CsvColumn<TagReadResponse>[] = [
@@ -225,7 +235,7 @@ export function DataExplorer() {
           .tagpulse-cell-pop { animation: none; }
         }
       `}</style>
-      <Title level={2}>Data Explorer</Title>
+      <Title level={2}>Tag Reads</Title>
       <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <Form.Item label="Device">
           <Select
@@ -266,8 +276,19 @@ export function DataExplorer() {
           </Checkbox>
         </Form.Item>
       </Form>
-      <Space style={{ marginBottom: 16 }}>
-        <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+      <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap' }}>
+        <Space wrap>
+          <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+          {viewMode === 'table' && (
+            <Button
+              onClick={handleExportCsv}
+              disabled={!data?.length}
+              data-testid="tag-reads-export-rows-csv"
+            >
+              Export rows CSV
+            </Button>
+          )}
+        </Space>
         <Segmented
           options={[
             { label: <><TableOutlined /> Table</>, value: 'table' },
@@ -276,17 +297,31 @@ export function DataExplorer() {
           value={viewMode}
           onChange={(v) => setViewMode(v as 'table' | 'chart')}
         />
-        <Button onClick={handleExportCsv} disabled={!data?.length}>Export CSV</Button>
       </Space>
       {viewMode === 'table' ? (
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          loading={isLoading}
-          rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
-          pagination={{ pageSize: 20 }}
-        />
+        isVirtual ? (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={isLoading}
+            rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
+            virtual
+            scroll={{ y: VIRTUAL_SCROLL_HEIGHT, x: 1200 }}
+            pagination={false}
+            data-testid="tag-reads-table-virtual"
+          />
+        ) : (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={isLoading}
+            rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
+            pagination={{ pageSize: 20 }}
+            data-testid="tag-reads-table-paginated"
+          />
+        )
       ) : (
         <TpLineChart
           data={chartData}
@@ -296,6 +331,8 @@ export function DataExplorer() {
           yLabel="Signal strength (dBm)"
           loading={isLoading}
           ariaLabel="Signal strength over time"
+          exportFileName="tag-reads"
+          showExport
         />
       )}
     </div>

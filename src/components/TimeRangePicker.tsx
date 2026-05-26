@@ -8,7 +8,7 @@
  *   - prev/next stepper arrows shift the active window by its own width;
  *     forward arrow disabled when stepping would cross `now`
  *   - callback signature unchanged — `(start: string, end: string) => void` ISO —
- *     so the 4 existing callers (DataExplorer, TelemetryDashboard,
+ *     so the 4 existing callers (TagReads, TelemetryDashboard,
  *     DeviceTelemetryTab, SubjectTelemetryTab) compile without edits.
  */
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';

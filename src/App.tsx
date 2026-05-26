@@ -25,7 +25,7 @@ const DeviceList = lazy(() => import('@/pages/devices/DeviceList').then((m) => (
 const DeviceDetail = lazy(() => import('@/pages/devices/DeviceDetail').then((m) => ({ default: m.DeviceDetail })));
 const DeviceRegister = lazy(() => import('@/pages/devices/DeviceRegister').then((m) => ({ default: m.DeviceRegister })));
 const TelemetryDashboard = lazy(() => import('@/pages/telemetry/TelemetryDashboard').then((m) => ({ default: m.TelemetryDashboard })));
-const DataExplorer = lazy(() => import('@/pages/telemetry/DataExplorer').then((m) => ({ default: m.DataExplorer })));
+const TagReads = lazy(() => import('@/pages/telemetry/TagReads').then((m) => ({ default: m.TagReads })));
 const TelemetryModels = lazy(() => import('@/pages/telemetry-models/TelemetryModels').then((m) => ({ default: m.TelemetryModels })));
 const RuleList = lazy(() => import('@/pages/rules/RuleList').then((m) => ({ default: m.RuleList })));
 const RuleEditor = lazy(() => import('@/pages/rules/RuleEditor').then((m) => ({ default: m.RuleEditor })));
@@ -134,7 +134,7 @@ export function AppRoutes() {
               <Route path="/devices/register" element={<DeviceRegister />} />
               <Route path="/devices/:id" element={<DeviceDetail />} />
               <Route path="/telemetry" element={<TelemetryDashboard />} />
-              <Route path="/telemetry/explore" element={<DataExplorer />} />
+              <Route path="/tag-reads" element={<TagReads />} />
               <Route path="/telemetry-models" element={<TelemetryModels />} />
               <Route path="/rules" element={<RuleList />} />
               <Route path="/rules/new" element={<RuleEditor />} />

@@ -78,7 +78,7 @@ const TILES: TileDef[] = [
   {
     id: 'reads-per-hour',
     title: 'Reads / hour',
-    to: '/telemetry',
+    to: '/tag-reads',
     prefix: <ReadOutlined />,
     value: (s) => s.reads_per_hour_now,
   },

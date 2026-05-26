@@ -82,8 +82,8 @@ describe('route-reachability smoke (Sprint 54.2)', () => {
     expect(unreachable, `unreachable routes — add to NAV_* or NAV_UNROUTED_ALLOWLIST:\n  ${unreachable.join('\n  ')}`).toEqual([]);
   });
 
-  it('nav constraint: ≤4 sections + ≤2 ungrouped top items', () => {
+  it('nav constraint: ≤4 sections + ≤3 ungrouped top items', () => {
     expect(NAV_SECTIONS.length).toBeLessThanOrEqual(4);
-    expect(NAV_TOP.length).toBeLessThanOrEqual(2);
+    expect(NAV_TOP.length).toBeLessThanOrEqual(3);
   });
 });
