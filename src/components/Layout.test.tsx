@@ -5,7 +5,7 @@
  * Covers:
  *   1. Sider renders the two ungrouped top items (Dashboard, Alerts)
  *      plus the four collapsible SubMenu sections (Asset Tracking,
- *      Inventory, Data Management, Devices & Connections) with their
+ *      Inventory, Data Management, Devices & Telemetry) with their
  *      operator-day routes reachable.
  *   2. Collapsed state persists under the per-(tenantId, userId)
  *      localStorage key and re-hydrates on next mount.
@@ -112,7 +112,7 @@ describe('Layout — Sprint 54.2 sectioned sider', () => {
     expect(within(sider).getByText('Asset Tracking')).toBeInTheDocument();
     expect(within(sider).getByText('Inventory')).toBeInTheDocument();
     expect(within(sider).getByText('Data Management')).toBeInTheDocument();
-    expect(within(sider).getByText('Devices & Connections')).toBeInTheDocument();
+    expect(within(sider).getByText('Devices & Telemetry')).toBeInTheDocument();
 
     // Sections start collapsed (initial route `/` is ungrouped). Per-item
     // surface coverage is provided by the route-reachability smoke test

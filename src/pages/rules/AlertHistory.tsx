@@ -199,7 +199,7 @@ export function AlertHistory() {
 
   return (
     <ListPageShell
-      title="Alert History"
+      title="Alerts"
       count={filtered.length}
       countTestId="alert-history-title-count"
       primaryAction={

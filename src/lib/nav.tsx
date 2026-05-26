@@ -111,7 +111,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     key: 'sec-devices-connections',
-    label: 'Devices & Connections',
+    label: 'Devices & Telemetry',
     icon: <DeploymentUnitOutlined />,
     items: [
       { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer' },

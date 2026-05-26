@@ -32,7 +32,7 @@ const { Text } = Typography;
 //
 // Layout shape: ≤2 ungrouped top items (Dashboard, Alerts) above
 // ≤4 collapsible SubMenu sections (Asset Tracking, Inventory,
-// Data Management, Devices & Connections). The SubMenu containing
+// Data Management, Devices & Telemetry). The SubMenu containing
 // the current route is opened by default; users can open / close
 // any section freely and switching routes auto-opens the matching
 // section without collapsing the others they've toggled open.
