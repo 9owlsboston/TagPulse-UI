@@ -41,6 +41,7 @@ describe('ChartsPlayground', () => {
       'line-error',
       'area-overlay',
       'area-stacked',
+      'perf-spike',
       'sparkline-row',
     ]) {
       expect(screen.getByTestId(`playground-section-${id}`)).toBeInTheDocument();

@@ -12,9 +12,11 @@
  *
  * Not linked from the main nav. Reachable only at `/dev/charts`.
  */
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Card from 'antd/es/card';
 import Space from 'antd/es/space';
+import Button from 'antd/es/button';
+import Statistic from 'antd/es/statistic';
 import Typography from 'antd/es/typography';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { TpAreaChart } from '@/components/charts/TpAreaChart';
@@ -181,6 +183,14 @@ export function ChartsPlayground() {
       </Section>
 
       <Section
+        id="perf-spike"
+        title="<TpLineChart> — perf spike (50 series × 720 points)"
+        description="Sprint 57 §C.6 swap-trigger gate. Click 'Mount stress chart' then 'Run hover sweep' to measure FPS during a programmatic mousemove across the chart container. Target: ≥ 60 FPS average over a 3s sweep. If Recharts misses, swap to uPlot behind the unchanged TpLineChart contract."
+      >
+        <PerfHarness />
+      </Section>
+
+      <Section
         id="sparkline-row"
         title="<TpSparkline> — inline tile sparklines"
         description="No axes, legend, tooltip, or export. Just trend lines for dashboard tiles."
@@ -204,3 +214,147 @@ export function ChartsPlayground() {
 }
 
 export default ChartsPlayground;
+
+// ---------------------------------------------------------------------------
+// Perf harness (§C.6 swap-trigger gate)
+// ---------------------------------------------------------------------------
+
+const PERF_SERIES_COUNT = 50;
+const PERF_POINT_COUNT = 720;
+const PERF_SWEEP_MS = 3000;
+
+const PERF_SERIES: TpSeries[] = Array.from({ length: PERF_SERIES_COUNT }, (_, i) => ({
+  key: `s${i}`,
+  label: `Series ${String(i + 1).padStart(2, '0')}`,
+}));
+
+function PerfHarness() {
+  const [mounted, setMounted] = useState(false);
+  const [mountMs, setMountMs] = useState<number | null>(null);
+  const [sweepResult, setSweepResult] = useState<{
+    avgFps: number;
+    minFps: number;
+    frames: number;
+    durationMs: number;
+  } | null>(null);
+  const [sweeping, setSweeping] = useState(false);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+
+  const data = useMemo(
+    () =>
+      mounted
+        ? makeData(
+            PERF_POINT_COUNT,
+            PERF_SERIES.map((s) => s.key),
+            1,
+            '2026-04-20T00:00:00Z',
+          )
+        : [],
+    [mounted],
+  );
+
+  const handleMount = useCallback(() => {
+    const t0 = performance.now();
+    setMounted(true);
+    // Capture mount-to-paint in a rAF chain.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMountMs(performance.now() - t0);
+      });
+    });
+  }, []);
+
+  const handleSweep = useCallback(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    setSweeping(true);
+    setSweepResult(null);
+    const rect = host.getBoundingClientRect();
+    const startX = rect.left + 8;
+    const endX = rect.right - 8;
+    const y = rect.top + rect.height / 2;
+    const t0 = performance.now();
+    let frames = 0;
+    let minFps = Infinity;
+    let lastFrame = t0;
+    const target = host.querySelector('svg') ?? host;
+    const tick = (now: number) => {
+      const elapsed = now - t0;
+      const dt = now - lastFrame;
+      if (dt > 0) minFps = Math.min(minFps, 1000 / dt);
+      lastFrame = now;
+      frames += 1;
+      const progress = Math.min(1, elapsed / PERF_SWEEP_MS);
+      const x = startX + (endX - startX) * progress;
+      target.dispatchEvent(
+        new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }),
+      );
+      if (elapsed < PERF_SWEEP_MS) {
+        requestAnimationFrame(tick);
+      } else {
+        const durationMs = performance.now() - t0;
+        setSweepResult({
+          avgFps: (frames / durationMs) * 1000,
+          minFps: Number.isFinite(minFps) ? minFps : 0,
+          frames,
+          durationMs,
+        });
+        setSweeping(false);
+      }
+    };
+    requestAnimationFrame(tick);
+  }, []);
+
+  return (
+    <div data-testid="perf-harness">
+      <Space style={{ marginBottom: 12 }}>
+        <Button type="primary" onClick={handleMount} disabled={mounted}>
+          {mounted ? 'Mounted' : `Mount stress chart (${PERF_SERIES_COUNT}×${PERF_POINT_COUNT})`}
+        </Button>
+        <Button onClick={handleSweep} disabled={!mounted || sweeping}>
+          {sweeping ? 'Sweeping…' : `Run hover sweep (${PERF_SWEEP_MS}ms)`}
+        </Button>
+      </Space>
+      {mountMs !== null ? (
+        <Space size="large" style={{ marginBottom: 12 }}>
+          <Statistic title="Mount-to-paint" value={mountMs} precision={0} suffix="ms" />
+          {sweepResult ? (
+            <>
+              <Statistic
+                title="Avg FPS"
+                value={sweepResult.avgFps}
+                precision={1}
+                valueStyle={{ color: sweepResult.avgFps >= 60 ? 'var(--color-success)' : 'var(--color-danger)' }}
+              />
+              <Statistic
+                title="Min FPS"
+                value={sweepResult.minFps}
+                precision={1}
+                valueStyle={{ color: sweepResult.minFps >= 30 ? 'var(--color-success)' : 'var(--color-danger)' }}
+              />
+              <Statistic title="Frames" value={sweepResult.frames} />
+            </>
+          ) : null}
+        </Space>
+      ) : null}
+      <div ref={hostRef}>
+        {mounted ? (
+          <TpLineChart
+            data={data}
+            series={PERF_SERIES}
+            xKey="t"
+            height={360}
+            ariaLabel="Perf spike: 50 series by 720 points"
+            enableSeriesFilter={false}
+          />
+        ) : (
+          <Paragraph type="secondary">
+            Stress chart not mounted. Click the button above to render {PERF_SERIES_COUNT}{' '}
+            series × {PERF_POINT_COUNT} points (≈{PERF_SERIES_COUNT * PERF_POINT_COUNT}{' '}
+            data points).
+          </Paragraph>
+        )}
+      </div>
+    </div>
+  );
+}

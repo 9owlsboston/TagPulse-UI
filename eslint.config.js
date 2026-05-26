@@ -59,6 +59,7 @@ export default [
         SVGSVGElement: 'readonly',
         XMLSerializer: 'readonly',
         Image: 'readonly',
+        MouseEvent: 'readonly',
       },
     },
     plugins: {
