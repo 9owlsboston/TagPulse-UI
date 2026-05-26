@@ -4,7 +4,6 @@ import Tag from 'antd/es/tag';
 import Input from 'antd/es/input';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
-import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 import Modal from 'antd/es/modal';
 import Alert from 'antd/es/alert';
@@ -18,13 +17,14 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useUpdateZone, useZones } from '@/hooks/useAssets';
 import { FilterPanel } from '@/components/FilterPanel';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { DeviceResponse } from '@/types';
 
 // Sprint 28 G5 — cap parallel bulk reassign per page (Sprint 27 C6 pattern).
 const BULK_REASSIGN_MAX = 50;
 
-const { Title } = Typography;
 const { Search } = Input;
 
 const STATUS_OPTIONS = [
@@ -194,89 +194,117 @@ export function DeviceList() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Devices</Title>
-        <RoleGuard roles={['admin', 'editor']}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/devices/register')}>
-            Register Device
-          </Button>
-        </RoleGuard>
-      </div>
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Search placeholder="Search devices" onSearch={setSearch} allowClear style={{ width: 250 }} />
-        <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} style={{ width: 160 }} />
-        <Select
-          options={CONNECTION_OPTIONS}
-          value={connection}
-          onChange={setConnection}
-          style={{ width: 160 }}
-          data-testid="device-list-connection-filter"
-        />
-        {canEdit && (
-          <Button
-            icon={<SwapOutlined />}
-            disabled={selectedIds.length === 0}
-            onClick={() => setReassignOpen(true)}
-          >
-            Move to zone… ({selectedIds.length})
-          </Button>
-        )}
-        <Button
-          icon={<FilterOutlined />}
-          onClick={() => setFiltersOpen((v) => !v)}
-          type={filtersOpen ? 'primary' : 'default'}
-          data-testid="device-list-filters-toggle"
-        >
-          Filters
-          {!isEmptyLabelFilter(labelFilter) && (
-            <Tag color="blue" style={{ marginLeft: 8 }} data-testid="device-list-filters-applied-count">
-              {Object.keys(labelFilter).length}
-            </Tag>
-          )}
-        </Button>
-      </Space>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={filtered}
-            loading={isLoading}
-            pagination={{ pageSize: 20 }}
-            rowSelection={
-              canEdit
-                ? {
-                    selectedRowKeys: selectedIds,
-                    onChange: (keys) => setSelectedIds(keys as string[]),
-                    preserveSelectedRowKeys: false,
+    <>
+      <ListPageShell
+        title="Devices"
+        primaryAction={
+          <RoleGuard roles={['admin', 'editor']}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/devices/register')}>
+              Register Device
+            </Button>
+          </RoleGuard>
+        }
+        toolbar={
+          <Space wrap>
+            <Search placeholder="Search devices" onSearch={setSearch} allowClear style={{ width: 250 }} />
+            <Select options={STATUS_OPTIONS} value={status} onChange={setStatus} style={{ width: 160 }} />
+            <Select
+              options={CONNECTION_OPTIONS}
+              value={connection}
+              onChange={setConnection}
+              style={{ width: 160 }}
+              data-testid="device-list-connection-filter"
+            />
+            {canEdit && (
+              <Button
+                icon={<SwapOutlined />}
+                disabled={selectedIds.length === 0}
+                onClick={() => setReassignOpen(true)}
+              >
+                Move to zone… ({selectedIds.length})
+              </Button>
+            )}
+            <Button
+              icon={<FilterOutlined />}
+              onClick={() => setFiltersOpen((v) => !v)}
+              type={filtersOpen ? 'primary' : 'default'}
+              data-testid="device-list-filters-toggle"
+            >
+              Filters
+              {!isEmptyLabelFilter(labelFilter) && (
+                <Tag color="blue" style={{ marginLeft: 8 }} data-testid="device-list-filters-applied-count">
+                  {Object.keys(labelFilter).length}
+                </Tag>
+              )}
+            </Button>
+          </Space>
+        }
+        aside={
+          filtersOpen ? (
+            <FilterPanel
+              entityType="device"
+              showCategories={false}
+              value={{ categoryIds: [], labelFilter }}
+              onApply={({ labelFilter: nextLabels }) => {
+                setLabelFilter(nextLabels);
+              }}
+              onClose={() => setFiltersOpen(false)}
+              data-testid="device-list-filter-panel"
+            />
+          ) : undefined
+        }
+      >
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={filtered}
+          loading={isLoading}
+          pagination={{ pageSize: 20 }}
+          locale={{
+            emptyText:
+              search || status || connection || !isEmptyLabelFilter(labelFilter) ? (
+                <EmptyState
+                  title="No devices match these filters"
+                  description="Try clearing search, status, connection, or label filters."
+                />
+              ) : (
+                <EmptyState
+                  title="No devices yet"
+                  description="Register your first device to start collecting reads."
+                  action={
+                    <RoleGuard roles={['admin', 'editor']}>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => navigate('/devices/register')}
+                      >
+                        Register Device
+                      </Button>
+                    </RoleGuard>
                   }
-                : undefined
-            }
-            onRow={(record) => ({
-              onClick: (e) => {
-                // Don't navigate when the click is on the checkbox.
-                const target = e.target as HTMLElement;
-                if (target.closest('.ant-table-selection-column')) return;
-                navigate(`/devices/${record.id}`);
-              },
-            })}
-            style={{ cursor: 'pointer' }}
-          />
-        </div>
-        {filtersOpen && (
-          <FilterPanel
-            entityType="device"
-            showCategories={false}
-            value={{ categoryIds: [], labelFilter }}
-            onApply={({ labelFilter: nextLabels }) => {
-              setLabelFilter(nextLabels);
-            }}
-            onClose={() => setFiltersOpen(false)}
-            data-testid="device-list-filter-panel"
-          />
-        )}
-      </div>
+                />
+              ),
+          }}
+          rowSelection={
+            canEdit
+              ? {
+                  selectedRowKeys: selectedIds,
+                  onChange: (keys) => setSelectedIds(keys as string[]),
+                  preserveSelectedRowKeys: false,
+                }
+              : undefined
+          }
+          onRow={(record) => ({
+            onClick: (e) => {
+              // Don't navigate when the click is on the checkbox.
+              const target = e.target as HTMLElement;
+              if (target.closest('.ant-table-selection-column')) return;
+              navigate(`/devices/${record.id}`);
+            },
+          })}
+          style={{ cursor: 'pointer' }}
+        />
+      </ListPageShell>
 
       {/* Sprint 28 G5 — bulk reassign modal. */}
       <Modal
@@ -305,6 +333,6 @@ export function DeviceList() {
           optionFilterProp="label"
         />
       </Modal>
-    </div>
+    </>
   );
 }

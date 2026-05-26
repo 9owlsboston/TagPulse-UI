@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
-import Empty from 'antd/es/empty';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
@@ -10,7 +8,6 @@ import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Switch from 'antd/es/switch';
 import Table from 'antd/es/table';
-import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { DownloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
@@ -21,9 +18,9 @@ import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stockMovementsApi } from '@/api/client';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { StockMovementCreate } from '@/api/client';
-
-const { Title } = Typography;
 
 const UNASSIGNED = '__unassigned__';
 
@@ -170,10 +167,15 @@ export function StockLevels() {
   };
 
   return (
-    <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Stock Levels</Title>
-        <Space>
+    <>
+      <ListPageShell
+        title="Stock Levels"
+        primaryAction={
+          <Button icon={<DownloadOutlined />} onClick={onExport} disabled={displayRows.length === 0}>
+            Export CSV
+          </Button>
+        }
+        toolbar={
           <Space size="small">
             <Switch
               checked={lowOnly}
@@ -182,14 +184,13 @@ export function StockLevels() {
             />
             <span>Low stock only (&lt;{lowThreshold})</span>
           </Space>
-          <Button icon={<DownloadOutlined />} onClick={onExport} disabled={displayRows.length === 0}>
-            Export CSV
-          </Button>
-        </Space>
-      </Space>
-      <Card>
+        }
+      >
         {rows.length === 0 && !isLoading ? (
-          <Empty description="No stock levels yet" />
+          <EmptyState
+            title="No stock levels yet"
+            description="Record a stock movement to see balances by product and zone."
+          />
         ) : (
           <Table<PivotRow>
             rowKey="key"
@@ -197,6 +198,15 @@ export function StockLevels() {
             dataSource={displayRows}
             pagination={{ pageSize: 25 }}
             scroll={{ x: 'max-content' }}
+            locale={{
+              emptyText:
+                lowOnly && rows.length > 0 ? (
+                  <EmptyState
+                    title="No low-stock items"
+                    description={`Nothing is below the threshold of ${lowThreshold}. Toggle off to see all stock.`}
+                  />
+                ) : undefined,
+            }}
             columns={[
               { title: 'Product', dataIndex: 'product', fixed: 'left', width: 280 },
               ...zoneCols.map((z) => ({
@@ -235,7 +245,7 @@ export function StockLevels() {
             ]}
           />
         )}
-      </Card>
+      </ListPageShell>
 
       <Modal
         title={`Adjust stock — ${adjustRow?.product ?? ''}`}
@@ -262,6 +272,6 @@ export function StockLevels() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 }
