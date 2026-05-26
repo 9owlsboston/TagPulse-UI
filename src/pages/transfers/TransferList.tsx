@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import Segmented from 'antd/es/segmented';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
@@ -13,8 +12,10 @@ import type { TagTransferResponse } from '@/api/generated/models/TagTransferResp
 import { useTransfers, type TransferListParams } from '@/hooks/useTransfers';
 import { useCanPerform } from '@/components/useCanPerform';
 import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const STATUS_COLOR: Record<string, string> = {
   requested: 'blue',
@@ -140,13 +141,15 @@ export function TransferList() {
   ];
 
   return (
-    <div data-testid="transfer-list-page">
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Title level={3} style={{ margin: 0 }}>
-            Tag transfers
-          </Title>
-          {canCreate && (
+    <>
+      <ListPageShell
+        testId="transfer-list-page"
+        title="Tag transfers"
+        count={rows.length}
+        countTestId="transfer-list-count"
+        description="Cross-tenant transfers of EPCs (ADR 028 §Transfers). Outbound rows show transfers this tenant initiated; inbound rows show transfers other tenants have requested to this tenant. Receiving-tenant acknowledgement lands in a later sprint."
+        primaryAction={
+          canCreate ? (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -155,17 +158,10 @@ export function TransferList() {
             >
               New transfer
             </Button>
-          )}
-        </Space>
-
-        <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Cross-tenant transfers of EPCs (ADR 028 §Transfers). Outbound rows show transfers this
-          tenant initiated; inbound rows show transfers other tenants have requested to this
-          tenant. Receiving-tenant acknowledgement lands in a later sprint.
-        </Paragraph>
-
-        <Card>
-          <Space wrap style={{ marginBottom: 16 }}>
+          ) : undefined
+        }
+        toolbar={
+          <Space wrap>
             <Segmented
               options={DIRECTION_OPTIONS}
               value={direction}
@@ -185,33 +181,45 @@ export function TransferList() {
               data-testid="transfer-list-status-filter"
             />
           </Space>
-
-          {error ? (
-            <Text type="danger">Failed to load transfers. {String(error)}</Text>
-          ) : (
-            <Table<TagTransferResponse>
-              rowKey="id"
-              size="small"
-              loading={isLoading}
-              columns={columns}
-              dataSource={rows}
-              pagination={{
-                current: page,
-                pageSize: PAGE_SIZE,
-                total: rows.length === PAGE_SIZE ? page * PAGE_SIZE + 1 : (page - 1) * PAGE_SIZE + rows.length,
-                showSizeChanger: false,
-                onChange: setPage,
-              }}
-              locale={{
-                emptyText:
-                  direction === 'outbound'
-                    ? 'No outbound transfers yet — initiate one from a tag detail page or "New transfer".'
-                    : 'No inbound transfers yet.',
-              }}
-            />
-          )}
-        </Card>
-      </Space>
+        }
+      >
+        {error ? (
+          <Text type="danger">Failed to load transfers. {String(error)}</Text>
+        ) : (
+          <Table<TagTransferResponse>
+            rowKey="id"
+            size="small"
+            loading={isLoading}
+            columns={columns}
+            dataSource={rows}
+            pagination={{
+              current: page,
+              pageSize: PAGE_SIZE,
+              total: rows.length === PAGE_SIZE ? page * PAGE_SIZE + 1 : (page - 1) * PAGE_SIZE + rows.length,
+              showSizeChanger: false,
+              onChange: setPage,
+            }}
+            locale={{
+              emptyText: status ? (
+                <EmptyState
+                  title="No transfers match this status"
+                  description="Try clearing the status filter or switching direction."
+                />
+              ) : direction === 'outbound' ? (
+                <EmptyState
+                  title="No outbound transfers yet"
+                  description={canCreate ? 'Initiate a transfer from a tag detail page or "New transfer".' : 'Transfers this tenant initiates will appear here.'}
+                />
+              ) : (
+                <EmptyState
+                  title="No inbound transfers yet"
+                  description="Transfers other tenants initiate to this tenant will appear here."
+                />
+              ),
+            }}
+          />
+        )}
+      </ListPageShell>
 
       <NewTransferModal
         open={modalOpen}
@@ -220,6 +228,6 @@ export function TransferList() {
           refetch();
         }}
       />
-    </div>
+    </>
   );
 }

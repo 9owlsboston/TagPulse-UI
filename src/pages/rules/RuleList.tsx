@@ -3,7 +3,6 @@ import Tag from 'antd/es/tag';
 import Switch from 'antd/es/switch';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
-import Typography from 'antd/es/typography';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
@@ -11,10 +10,10 @@ import { useState } from 'react';
 import { useRules, useUpdateRule, useDeleteRule } from '@/hooks/useRules';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import { SignalingRuleModal } from '@/pages/rules/SignalingRuleModal';
 import type { RuleResponse } from '@/types';
-
-const { Title } = Typography;
 
 export function RuleList() {
   const navigate = useNavigate();
@@ -73,10 +72,15 @@ export function RuleList() {
     }] : []),
   ];
 
+  const rows = data ?? [];
+
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Rules</Title>
+    <ListPageShell
+      testId="rule-list-page"
+      title="Rules"
+      count={rows.length}
+      countTestId="rule-list-count"
+      primaryAction={
         <RoleGuard roles={['admin', 'editor']}>
           <Space>
             <Button
@@ -92,12 +96,31 @@ export function RuleList() {
             </Button>
           </Space>
         </RoleGuard>
-      </div>
-      <Table rowKey="id" columns={columns} dataSource={data} loading={isLoading} pagination={{ pageSize: 20 }} />
+      }
+    >
+      <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={isLoading}
+        pagination={{ pageSize: 20 }}
+        locale={{
+          emptyText: (
+            <EmptyState
+              title="No rules yet"
+              description={
+                canEdit
+                  ? 'Click "Add alert rule" above to create your first rule.'
+                  : 'Ask an editor or admin to create the first rule.'
+              }
+            />
+          ),
+        }}
+      />
       <SignalingRuleModal
         open={signalingModalOpen}
         onClose={() => setSignalingModalOpen(false)}
       />
-    </div>
+    </ListPageShell>
   );
 }

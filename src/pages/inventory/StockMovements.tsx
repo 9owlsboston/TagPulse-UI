@@ -1,19 +1,18 @@
 import { useMemo, useState } from 'react';
-import Card from 'antd/es/card';
 import DatePicker from 'antd/es/date-picker';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Typography from 'antd/es/typography';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useProducts, useStockMovements } from '@/hooks/useInventory';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery } from '@tanstack/react-query';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { StockMovementResponse } from '@/api/generated/models/StockMovementResponse';
 
-const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 const TYPE_COLOUR: Record<string, string> = {
@@ -56,12 +55,17 @@ export function StockMovements() {
 
   const productOptions = (products ?? []).map((p) => ({ value: p.id, label: `${p.sku} — ${p.name}` }));
   const zoneOptions = (zones ?? []).map((z) => ({ value: z.id, label: z.name }));
+  const rows = movements ?? [];
+  const filtersActive = !!(productId || zoneId || range);
 
   return (
-    <div>
-      <Title level={2}>Stock Movements</Title>
-      <Card>
-        <Space style={{ marginBottom: 16, flexWrap: 'wrap' }}>
+    <ListPageShell
+      testId="stock-movements-page"
+      title="Stock Movements"
+      count={rows.length}
+      countTestId="stock-movements-count"
+      toolbar={
+        <Space wrap>
           <Select
             allowClear
             showSearch
@@ -84,12 +88,27 @@ export function StockMovements() {
           />
           <RangePicker showTime onChange={(v) => setRange(v as [Dayjs, Dayjs] | null)} />
         </Space>
-        <Table<StockMovementResponse>
-          rowKey="id"
-          loading={isLoading}
-          dataSource={movements ?? []}
-          pagination={{ pageSize: 25, showSizeChanger: false }}
-          columns={[
+      }
+    >
+      <Table<StockMovementResponse>
+        rowKey="id"
+        loading={isLoading}
+        dataSource={rows}
+        pagination={{ pageSize: 25, showSizeChanger: false }}
+        locale={{
+          emptyText: filtersActive ? (
+            <EmptyState
+              title="No movements match these filters"
+              description="Try clearing a filter or widening the date range."
+            />
+          ) : (
+            <EmptyState
+              title="No stock movements yet"
+              description="Movements appear here when items enter, exit, transfer, or are consumed."
+            />
+          ),
+        }}
+        columns={[
             {
               title: 'When',
               dataIndex: 'occurred_at',
@@ -126,21 +145,20 @@ export function StockMovements() {
               render: (v: string | null) => (v ? <code>{v.slice(0, 8)}</code> : '—'),
             },
           ]}
-          summary={() =>
-            productId || zoneId || range ? (
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={7}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>
-                    Filters active{productId ? ` · product=${productLabel.get(productId)}` : ''}
-                    {zoneId ? ` · zone=${zoneLabel.get(zoneId)}` : ''}
-                    {range ? ` · ${range[0].format('YYYY-MM-DD HH:mm')} → ${range[1].format('YYYY-MM-DD HH:mm')}` : ''}
-                  </span>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            ) : null
-          }
-        />
-      </Card>
-    </div>
+        summary={() =>
+          filtersActive ? (
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0} colSpan={7}>
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  Filters active{productId ? ` · product=${productLabel.get(productId)}` : ''}
+                  {zoneId ? ` · zone=${zoneLabel.get(zoneId)}` : ''}
+                  {range ? ` · ${range[0].format('YYYY-MM-DD HH:mm')} → ${range[1].format('YYYY-MM-DD HH:mm')}` : ''}
+                </span>
+              </Table.Summary.Cell>
+            </Table.Summary.Row>
+          ) : null
+        }
+      />
+    </ListPageShell>
   );
 }

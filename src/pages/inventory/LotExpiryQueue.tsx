@@ -5,7 +5,6 @@
  * 7 days; the user can broaden the window or include un-expiring lots.
  */
 import { useMemo, useState } from 'react';
-import Card from 'antd/es/card';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Select from 'antd/es/select';
@@ -14,6 +13,8 @@ import Typography from 'antd/es/typography';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useAllLots, useProducts } from '@/hooks/useInventory';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { LotResponse } from '@/api/generated/models/LotResponse';
 
 const WINDOWS = [
@@ -47,11 +48,16 @@ export default function LotExpiryQueue() {
     (products ?? []).forEach((p) => m.set(p.id, p.name));
     return m;
   }, [products]);
+  const rows = lots ?? [];
+  const filtersActive = windowDays !== 7;
 
   return (
-    <Card
+    <ListPageShell
+      testId="lot-expiry-queue-page"
       title="Lot Expiry Queue"
-      extra={
+      count={rows.length}
+      countTestId="lot-expiry-queue-count"
+      toolbar={
         <Space>
           <Typography.Text>Window:</Typography.Text>
           <Select
@@ -66,9 +72,22 @@ export default function LotExpiryQueue() {
       <Table<LotResponse>
         rowKey="id"
         loading={isLoading}
-        dataSource={lots ?? []}
+        dataSource={rows}
         size="small"
         pagination={{ pageSize: 50 }}
+        locale={{
+          emptyText: filtersActive ? (
+            <EmptyState
+              title="No lots match this window"
+              description="Try a broader window or select 'All lots' to include lots without an expiry date."
+            />
+          ) : (
+            <EmptyState
+              title="No lots expiring soon"
+              description="Nothing is expiring in the next 7 days. Broaden the window to see lots further out."
+            />
+          ),
+        }}
         columns={[
           {
             title: 'Lot code',
@@ -110,6 +129,6 @@ export default function LotExpiryQueue() {
           },
         ]}
       />
-    </Card>
+    </ListPageShell>
   );
 }

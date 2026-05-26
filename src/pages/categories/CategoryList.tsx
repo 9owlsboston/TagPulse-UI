@@ -12,7 +12,6 @@
 import { useMemo, useState } from 'react';
 import App from 'antd/es/app';
 import Button from 'antd/es/button';
-import Card from 'antd/es/card';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import InputNumber from 'antd/es/input-number';
@@ -41,8 +40,10 @@ import {
   attachPendingLabels,
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const TYPE_LABELS: Record<string, string> = {
   liquid_container: 'Liquid container',
@@ -170,45 +171,50 @@ export function CategoryList() {
     });
   };
 
-  return (
-    <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <Title level={2} style={{ margin: 0 }}>
-          Categories
-        </Title>
-        <Space>
-          <Select
-            value={typeFilter ?? ''}
-            onChange={(v) => setTypeFilter(v ? v : undefined)}
-            options={filterOptions}
-            style={{ width: 200 }}
-            aria-label="Filter by category type"
-          />
-          <RoleGuard roles={['admin', 'editor']}>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-              New Category
-            </Button>
-          </RoleGuard>
-        </Space>
-      </div>
+  const rows = categories ?? [];
+  const filtersActive = !!typeFilter;
 
-      <Card>
+  return (
+    <>
+      <ListPageShell
+        testId="category-list-page"
+        title="Categories"
+        count={rows.length}
+        countTestId="category-list-count"
+        primaryAction={
+          <Space>
+            <Select
+              value={typeFilter ?? ''}
+              onChange={(v) => setTypeFilter(v ? v : undefined)}
+              options={filterOptions}
+              style={{ width: 200 }}
+              aria-label="Filter by category type"
+            />
+            <RoleGuard roles={['admin', 'editor']}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                New Category
+              </Button>
+            </RoleGuard>
+          </Space>
+        }
+      >
         <Table<CategoryResponse>
           rowKey="id"
-          dataSource={categories ?? []}
+          dataSource={rows}
           loading={isLoading}
           pagination={{ pageSize: 25 }}
           locale={{
-            emptyText: typeFilter
-              ? `No categories of type "${TYPE_LABELS[typeFilter] ?? typeFilter}".`
-              : 'No categories yet. Create one to start grouping assets.',
+            emptyText: filtersActive ? (
+              <EmptyState
+                title="No categories match the filter"
+                description={`No categories of type "${TYPE_LABELS[typeFilter!] ?? typeFilter}".`}
+              />
+            ) : (
+              <EmptyState
+                title="No categories yet"
+                description="Create one to start grouping assets."
+              />
+            ),
           }}
           columns={[
             { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
@@ -264,7 +270,7 @@ export function CategoryList() {
             },
           ]}
         />
-      </Card>
+      </ListPageShell>
 
       {/* Create modal */}
       <Modal
@@ -378,6 +384,6 @@ export function CategoryList() {
           </div>
         )}
       </Modal>
-    </div>
+    </>
   );
 }

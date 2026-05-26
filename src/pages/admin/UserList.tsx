@@ -2,15 +2,15 @@ import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Button from 'antd/es/button';
 import Space from 'antd/es/space';
-import Typography from 'antd/es/typography';
 import App from 'antd/es/app';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useUsers, useUpdateUser } from '@/hooks/useUsers';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
+import { RoleGuard } from '@/components/RoleGuard';
 import type { UserResponse } from '@/types';
-
-const { Title } = Typography;
 
 export function UserList() {
   const navigate = useNavigate();
@@ -77,15 +77,37 @@ export function UserList() {
     },
   ];
 
+  const rows = data ?? [];
+
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Users</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/users/new')}>
-          Create User
-        </Button>
-      </div>
-      <Table rowKey="id" columns={columns} dataSource={data} loading={isLoading} pagination={{ pageSize: 20 }} />
-    </div>
+    <ListPageShell
+      testId="user-list-page"
+      title="Users"
+      count={rows.length}
+      countTestId="user-list-count"
+      primaryAction={
+        <RoleGuard roles={['admin']}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/users/new')}>
+            Create User
+          </Button>
+        </RoleGuard>
+      }
+    >
+      <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={isLoading}
+        pagination={{ pageSize: 20 }}
+        locale={{
+          emptyText: (
+            <EmptyState
+              title="No users yet"
+              description="Create the first user to grant access to this tenant."
+            />
+          ),
+        }}
+      />
+    </ListPageShell>
   );
 }

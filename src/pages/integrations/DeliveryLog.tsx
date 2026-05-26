@@ -1,13 +1,11 @@
 import { useParams } from 'react-router-dom';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
-import Typography from 'antd/es/typography';
-import Spin from 'antd/es/spin';
 import type { ColumnsType } from 'antd/es/table';
 import { useDeliveries } from '@/hooks/useIntegrations';
+import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import type { DeliveryResponse } from '@/types';
-
-const { Title } = Typography;
 
 const columns: ColumnsType<DeliveryResponse> = [
   {
@@ -41,13 +39,30 @@ const columns: ColumnsType<DeliveryResponse> = [
 export function DeliveryLog() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading } = useDeliveries(id!);
-
-  if (isLoading) return <Spin size="large" />;
+  const rows = data ?? [];
 
   return (
-    <div>
-      <Title level={2}>Delivery Log</Title>
-      <Table rowKey="id" columns={columns} dataSource={data} pagination={{ pageSize: 20 }} />
-    </div>
+    <ListPageShell
+      testId="delivery-log-page"
+      title="Delivery Log"
+      count={rows.length}
+      countTestId="delivery-log-count"
+    >
+      <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={rows}
+        loading={isLoading}
+        pagination={{ pageSize: 20 }}
+        locale={{
+          emptyText: (
+            <EmptyState
+              title="No deliveries yet"
+              description="Webhook deliveries appear here once this integration starts processing events."
+            />
+          ),
+        }}
+      />
+    </ListPageShell>
   );
 }
