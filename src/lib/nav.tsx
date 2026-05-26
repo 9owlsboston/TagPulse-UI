@@ -145,6 +145,7 @@ export const NAV_UNROUTED_ALLOWLIST: readonly string[] = [
   '/admin/tag-data-mappings',
   // Dev-only
   '/dev/tokens',
+  '/dev/charts',
 ];
 
 /**

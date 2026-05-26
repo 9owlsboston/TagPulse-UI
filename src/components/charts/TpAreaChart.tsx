@@ -212,6 +212,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                 optionFilterProp="label"
                 virtual
                 allowClear
+                aria-label="Filter chart series"
               />
               {hiddenCount > 0 && (
                 <span

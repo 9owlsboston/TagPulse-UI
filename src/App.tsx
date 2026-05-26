@@ -61,6 +61,7 @@ const TagImport = lazy(() => import('@/pages/tags/TagImport').then((m) => ({ def
 const TransferList = lazy(() => import('@/pages/transfers/TransferList').then((m) => ({ default: m.TransferList })));
 const ReconciliationPage = lazy(() => import('@/pages/reconciliation/ReconciliationPage').then((m) => ({ default: m.ReconciliationPage })));
 const TokensPage = lazy(() => import('@/pages/dev/TokensPage').then((m) => ({ default: m.TokensPage })));
+const ChartsPlayground = lazy(() => import('@/pages/dev/ChartsPlayground').then((m) => ({ default: m.ChartsPlayground })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -171,6 +172,7 @@ export function AppRoutes() {
               <Route path="/admin/dead-letters" element={<DeadLetters />} />
               <Route path="/admin/pending-bulk-operations" element={<PendingBulkOperations />} />
               <Route path="/dev/tokens" element={<TokensPage />} />
+              <Route path="/dev/charts" element={<ChartsPlayground />} />
             </Route>
           </Routes>
         </Suspense>
