@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Sprint 55 audit follow-up — TagList empty state normalized.** [src/pages/tags/TagList.tsx](src/pages/tags/TagList.tsx) — replaces the inline plain-string `emptyText` with the shared [`<EmptyState>`](src/components/EmptyState.tsx) component, matching the filter-aware two-branch pattern adopted by the other five list pages in Phase 55.B. Filters-active branch: "No tags match these filters" / "Try clearing the status, EPC prefix, or binding filters." Truly-empty branch: "No tags registered yet" / "Import a CSV or wait for the registrar to classify reads." No CTA (TagList has no inline create flow — tags are import- or registrar-driven). Existing test in [src/pages/tags/TagList.test.tsx](src/pages/tags/TagList.test.tsx) still passes (asserts on the truly-empty title text).
+
 ### Added
 
 - **Sprint 55 Phase 55.0 — `<ListPageShell>` shared layout component.** [src/components/ListPageShell.tsx](src/components/ListPageShell.tsx) — single source of truth for list-page chrome (title row with optional count badge + primaryAction, optional description, Card with optional toolbar + optional aside slot for side-by-side filter panels). Eleven tests in [src/components/ListPageShell.test.tsx](src/components/ListPageShell.test.tsx) cover all slot permutations. Designed so adopting pages keep their Modals/Drawers outside the shell in a Fragment without behavioural change.

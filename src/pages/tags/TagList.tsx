@@ -9,6 +9,7 @@ import Tag from 'antd/es/tag';
 import Typography from 'antd/es/typography';
 import { useTags, type TagListParams } from '@/hooks/useTags';
 import { ListPageShell } from '@/components/ListPageShell';
+import { EmptyState } from '@/components/EmptyState';
 import { TagResponse } from '@/api/generated/models/TagResponse';
 
 const { Text } = Typography;
@@ -205,9 +206,17 @@ export function TagList() {
           })}
         locale={{
           emptyText:
-            status || epcPrefix || bound !== 'all'
-              ? 'No tags match the current filters.'
-              : 'No tags registered yet. Import a CSV or wait for the registrar to classify reads.',
+            status || epcPrefix || bound !== 'all' ? (
+              <EmptyState
+                title="No tags match these filters"
+                description="Try clearing the status, EPC prefix, or binding filters."
+              />
+            ) : (
+              <EmptyState
+                title="No tags registered yet"
+                description="Import a CSV or wait for the registrar to classify reads."
+              />
+            ),
         }}
       />
     </ListPageShell>
