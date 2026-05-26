@@ -5,6 +5,18 @@ import { MemoryRouter } from 'react-router-dom';
 import { Dashboard } from '@/pages/Dashboard';
 import type { DashboardSummary } from '@/types';
 
+// Stub recharts — see KpiTile.test.tsx for context (ResizeObserver missing
+// in jsdom; we only assert on chip presence here, not the SVG line).
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="rc-responsive">{children}</div>
+  ),
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <svg data-testid="rc-svg">{children}</svg>
+  ),
+  Line: () => <g />,
+}));
+
 const FIXTURE: DashboardSummary = {
   devices_online: 12,
   devices_total: 20,
@@ -22,6 +34,14 @@ const FIXTURE: DashboardSummary = {
 
 vi.mock('@/hooks/useDashboardSummary', () => ({
   useDashboardSummary: () => ({ data: FIXTURE, isLoading: false, error: null }),
+}));
+
+// Sprint 57 Phase F — Dashboard now also calls useDashboardSparklines.
+// Default mock returns no data so existing assertions are unaffected;
+// the dedicated Phase-F test overrides via vi.mocked(...).mockReturnValue.
+import { useDashboardSparklines } from '@/hooks/useDashboardSparklines';
+vi.mock('@/hooks/useDashboardSparklines', () => ({
+  useDashboardSparklines: vi.fn(() => ({ data: undefined, isLoading: false, error: null })),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -125,5 +145,53 @@ describe('Dashboard (Sprint 54.4)', () => {
     render(<Dashboard />, { wrapper });
     expect(screen.queryByTestId('tile-low-stock')).not.toBeInTheDocument();
     expect(screen.getByTestId('tile-alerts-open')).toBeInTheDocument();
+  });
+
+  it('renders inline sparkline chips on tiles that have sparkline data (Phase F)', () => {
+    vi.mocked(useDashboardSparklines).mockReturnValueOnce({
+      data: {
+        generated_at: '2026-06-01T12:00:00Z',
+        bucket_hours: 6,
+        days: 7,
+        tiles: {
+          devices: {
+            series: [
+              { t: '2026-05-25T00:00:00Z', v: 10 },
+              { t: '2026-05-26T00:00:00Z', v: 12 },
+              { t: '2026-05-27T00:00:00Z', v: 14 },
+            ],
+            trend: 'up',
+          },
+          'reads-per-hour': {
+            series: [
+              { t: '2026-05-25T00:00:00Z', v: 400 },
+              { t: '2026-05-26T00:00:00Z', v: 451 },
+            ],
+            trend: 'flat',
+          },
+          // Intentionally empty — must NOT render a chip.
+          'alerts-open': { series: [], trend: 'flat' },
+        },
+      },
+      isLoading: false,
+      error: null,
+      // Vitest's strict typing on useQuery result; cast is fine for the mock.
+    } as unknown as ReturnType<typeof useDashboardSparklines>);
+
+    render(<Dashboard />, { wrapper });
+
+    expect(
+      within(screen.getByTestId('tile-devices')).getByTestId('kpi-tile-sparkline'),
+    ).toHaveAttribute('data-trend', 'up');
+    expect(
+      within(screen.getByTestId('tile-reads-per-hour')).getByTestId('kpi-tile-sparkline'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('tile-alerts-open')).queryByTestId('kpi-tile-sparkline'),
+    ).not.toBeInTheDocument();
+    // Tile without an entry in the dict also skips the chip.
+    expect(
+      within(screen.getByTestId('tile-low-stock')).queryByTestId('kpi-tile-sparkline'),
+    ).not.toBeInTheDocument();
   });
 });

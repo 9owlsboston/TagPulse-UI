@@ -1,7 +1,9 @@
 import Card from 'antd/es/card';
 import Statistic from 'antd/es/statistic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { TpSparkline } from '@/components/charts/TpSparkline';
+import type { SparklineSeries } from '@/types';
 
 const ANIMATION_DURATION = 800; // ms for count-up animation
 const FRAME_INTERVAL = 16; // ~60fps
@@ -49,6 +51,14 @@ interface KpiTileProps {
   interactive?: boolean;
   /** Visually de-emphasize when hidden during dashboard customization. */
   dimmed?: boolean;
+  /**
+   * Sprint 57 Phase F — optional 7-day trend chip rendered under the value.
+   * Omitted while the tile is loading or when the sparkline payload is
+   * missing for this tile (graceful degradation per backend contract).
+   */
+  sparkline?: SparklineSeries;
+  /** Accessible label prefix for the sparkline (e.g. tile title). */
+  sparklineLabel?: string;
 }
 
 export function KpiTile({
@@ -59,10 +69,22 @@ export function KpiTile({
   loading,
   interactive,
   dimmed,
+  sparkline,
+  sparklineLabel,
 }: KpiTileProps) {
   const numericValue = typeof value === 'number' ? value : 0;
   const animated = useAnimatedCounter(numericValue);
   const displayValue = typeof value === 'number' ? animated : value;
+
+  // Map {t,v}[] → rows the chart wrapper expects.
+  const sparkRows = useMemo(
+    () => (sparkline ? sparkline.series.map((p) => ({ t: p.t, v: p.v })) : []),
+    [sparkline],
+  );
+  const showSparkline = !loading && sparkline !== undefined && sparkRows.length > 0;
+  const sparkAriaLabel = sparklineLabel
+    ? `${sparklineLabel} 7-day trend (${sparkline?.trend ?? 'flat'})`
+    : undefined;
 
   return (
     <Card hoverable={interactive} style={dimmed ? { opacity: 0.45 } : undefined}>
@@ -73,6 +95,11 @@ export function KpiTile({
         suffix={suffix}
         loading={loading}
       />
+      {showSparkline && (
+        <div data-testid="kpi-tile-sparkline" data-trend={sparkline?.trend} style={{ marginTop: 8 }}>
+          <TpSparkline data={sparkRows} dataKey="v" xKey="t" height={32} ariaLabel={sparkAriaLabel} />
+        </div>
+      )}
     </Card>
   );
 }

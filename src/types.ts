@@ -415,3 +415,35 @@ export interface DashboardSummary {
   zones_total: number;
   generated_at: string;
 }
+
+// ── Dashboard sparklines (Sprint 57 Phase F / backend Phase 57.6) ──
+//
+// Companion to /dashboard/summary. One round-trip returns a downsampled
+// trend series per KPI tile, keyed by the same tile `id` strings used in
+// src/pages/Dashboard.tsx so the client wire-up is a direct lookup.
+//
+// Tiles whose underlying schema is point-in-time only (e.g. devices total,
+// tags, locations) return a "flat" series — every bucket repeats the current
+// value and `trend === 'flat'`. Only `reads-per-hour` and `alerts-open` are
+// true time-bucketed counts. Note that `alerts-open` is volume (alerts
+// triggered per bucket), not the historical open count, because AlertModel
+// has no resolved_at.
+
+export interface SparklinePoint {
+  t: string;
+  v: number;
+}
+
+export type SparklineTrend = 'up' | 'down' | 'flat';
+
+export interface SparklineSeries {
+  series: SparklinePoint[];
+  trend: SparklineTrend;
+}
+
+export interface DashboardSparklines {
+  generated_at: string;
+  bucket_hours: number;
+  days: number;
+  tiles: Record<string, SparklineSeries>;
+}
