@@ -10,14 +10,12 @@ import Segmented from 'antd/es/segmented';
 import Checkbox from 'antd/es/checkbox';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
-import { useThemeMode } from '@/theme/ThemeProvider';
-import { tokens } from '@/theme/tokens';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
 import type { TagReadResponse } from '@/types';
 
@@ -32,9 +30,9 @@ const FLASH_DURATION_MS = 900;
 const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
+const SIGNAL_SERIES: TpSeries[] = [{ key: 'signal', label: 'Signal' }];
+
 export function DataExplorer() {
-  const { mode } = useThemeMode();
-  const t = tokens[mode];
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
@@ -177,7 +175,7 @@ export function DataExplorer() {
 
   const chartData = useMemo(
     () => (data ?? []).map((r) => ({
-      time: new Date(r.timestamp).toLocaleString(),
+      time: r.timestamp,
       signal: r.signal_strength ?? 0,
     })),
     [data],
@@ -290,17 +288,15 @@ export function DataExplorer() {
           pagination={{ pageSize: 20 }}
         />
       ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis
-              label={{ value: 'Signal strength (dBm)', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
-            />
-            <Tooltip formatter={(value: number) => [`${value} dBm`, 'Signal']} />
-            <Line type="monotone" dataKey="signal" stroke={t.colorAccent} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <TpLineChart
+          data={chartData}
+          series={SIGNAL_SERIES}
+          xKey="time"
+          height={400}
+          yLabel="Signal strength (dBm)"
+          loading={isLoading}
+          ariaLabel="Signal strength over time"
+        />
       )}
     </div>
   );

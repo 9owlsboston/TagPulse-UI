@@ -3,14 +3,12 @@ import Select from 'antd/es/select';
 import Typography from 'antd/es/typography';
 import Button from 'antd/es/button';
 import { SearchOutlined } from '@ant-design/icons';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useReadsPerHour } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
-import { useThemeMode } from '@/theme/ThemeProvider';
-import { tokens } from '@/theme/tokens';
 
 const { Title } = Typography;
 
@@ -19,8 +17,6 @@ const SSE_KEYS = [['tag-reads']];
 
 export function TelemetryDashboard() {
   const navigate = useNavigate();
-  const { mode } = useThemeMode();
-  const COLORS = tokens[mode].chartSeries;
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
@@ -47,15 +43,13 @@ export function TelemetryDashboard() {
   const chartData = useMemo(() => {
     const bucketMap = new Map<string, Record<string, number>>();
     for (const r of readsPerHour ?? []) {
-      const key = new Date(r.bucket).toLocaleString();
-      const entry = bucketMap.get(key) ?? {};
+      const entry = bucketMap.get(r.bucket) ?? {};
       entry[r.device_id] = r.read_count;
-      bucketMap.set(key, entry);
+      bucketMap.set(r.bucket, entry);
     }
-    return Array.from(bucketMap.entries()).map(([bucket, counts]) => ({
-      bucket,
-      ...counts,
-    }));
+    return Array.from(bucketMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([bucket, counts]) => ({ bucket, ...counts }));
   }, [readsPerHour]);
 
   const deviceNameMap = useMemo(() => {
@@ -63,6 +57,11 @@ export function TelemetryDashboard() {
     for (const d of devices ?? []) map.set(d.id, d.name);
     return map;
   }, [devices]);
+
+  const series = useMemo<TpSeries[]>(
+    () => deviceIds.map((id) => ({ key: id, label: deviceNameMap.get(id) ?? id })),
+    [deviceIds, deviceNameMap],
+  );
 
   return (
     <div>
@@ -82,29 +81,17 @@ export function TelemetryDashboard() {
         />
         <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
       </div>
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="bucket" />
-          <YAxis
-            allowDecimals={false}
-            label={{ value: 'Reads / hour', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
-          />
-          <Tooltip formatter={(value: number) => [`${value} reads`, undefined]} />
-          <Legend />
-          {deviceIds.map((id, i) => (
-            <Line
-              key={id}
-              type="monotone"
-              dataKey={id}
-              name={deviceNameMap.get(id) ?? id}
-              stroke={COLORS[i % COLORS.length]}
-              dot={false}
-              isAnimationActive={!isLoading}
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+      <TpLineChart
+        data={chartData}
+        series={series}
+        xKey="bucket"
+        height={400}
+        yLabel="Reads / hour"
+        loading={isLoading}
+        ariaLabel="Reads per device over time"
+        showExport
+        exportFileName="telemetry-reads"
+      />
     </div>
   );
 }
