@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
+import { useDashboardSparklines } from '@/hooks/useDashboardSparklines';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import type { DashboardSummary } from '@/types';
 
@@ -78,7 +79,7 @@ const TILES: TileDef[] = [
   {
     id: 'reads-per-hour',
     title: 'Reads / hour',
-    to: '/telemetry',
+    to: '/tag-reads',
     prefix: <ReadOutlined />,
     value: (s) => s.reads_per_hour_now,
   },
@@ -148,6 +149,10 @@ function saveIds(key: string, value: string[]): void {
 
 export function Dashboard() {
   const { data, isLoading, error } = useDashboardSummary();
+  // Sprint 57 Phase F — companion fetch for inline trend chips. Errors are
+  // intentionally swallowed: a sparkline outage must not block the headline
+  // KPI numbers (graceful degradation per backend contract).
+  const { data: sparklines } = useDashboardSparklines();
   const { brandColor } = useThemeMode();
   const [orderState, setOrderState] = useState<string[]>(() => loadIds(ORDER_KEY));
   const [hiddenState, setHiddenState] = useState<string[]>(() => loadIds(HIDDEN_KEY));
@@ -248,6 +253,7 @@ export function Dashboard() {
           const isHidden = hidden.has(tile.id);
           const tileValue = data ? tile.value(data) : 0;
           const tileSuffix = data && tile.suffix ? tile.suffix(data) : undefined;
+          const tileSpark = sparklines?.tiles[tile.id];
           const card = (
             <KpiTile
               title={tile.title}
@@ -257,6 +263,8 @@ export function Dashboard() {
               loading={isLoading}
               interactive={!customizing}
               dimmed={customizing && isHidden}
+              sparkline={tileSpark}
+              sparklineLabel={tile.title}
             />
           );
           return (

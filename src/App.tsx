@@ -25,7 +25,7 @@ const DeviceList = lazy(() => import('@/pages/devices/DeviceList').then((m) => (
 const DeviceDetail = lazy(() => import('@/pages/devices/DeviceDetail').then((m) => ({ default: m.DeviceDetail })));
 const DeviceRegister = lazy(() => import('@/pages/devices/DeviceRegister').then((m) => ({ default: m.DeviceRegister })));
 const TelemetryDashboard = lazy(() => import('@/pages/telemetry/TelemetryDashboard').then((m) => ({ default: m.TelemetryDashboard })));
-const DataExplorer = lazy(() => import('@/pages/telemetry/DataExplorer').then((m) => ({ default: m.DataExplorer })));
+const TagReads = lazy(() => import('@/pages/telemetry/TagReads').then((m) => ({ default: m.TagReads })));
 const TelemetryModels = lazy(() => import('@/pages/telemetry-models/TelemetryModels').then((m) => ({ default: m.TelemetryModels })));
 const RuleList = lazy(() => import('@/pages/rules/RuleList').then((m) => ({ default: m.RuleList })));
 const RuleEditor = lazy(() => import('@/pages/rules/RuleEditor').then((m) => ({ default: m.RuleEditor })));
@@ -61,6 +61,7 @@ const TagImport = lazy(() => import('@/pages/tags/TagImport').then((m) => ({ def
 const TransferList = lazy(() => import('@/pages/transfers/TransferList').then((m) => ({ default: m.TransferList })));
 const ReconciliationPage = lazy(() => import('@/pages/reconciliation/ReconciliationPage').then((m) => ({ default: m.ReconciliationPage })));
 const TokensPage = lazy(() => import('@/pages/dev/TokensPage').then((m) => ({ default: m.TokensPage })));
+const ChartsPlayground = lazy(() => import('@/pages/dev/ChartsPlayground').then((m) => ({ default: m.ChartsPlayground })));
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleGlobal401 }),
@@ -133,7 +134,7 @@ export function AppRoutes() {
               <Route path="/devices/register" element={<DeviceRegister />} />
               <Route path="/devices/:id" element={<DeviceDetail />} />
               <Route path="/telemetry" element={<TelemetryDashboard />} />
-              <Route path="/telemetry/explore" element={<DataExplorer />} />
+              <Route path="/tag-reads" element={<TagReads />} />
               <Route path="/telemetry-models" element={<TelemetryModels />} />
               <Route path="/rules" element={<RuleList />} />
               <Route path="/rules/new" element={<RuleEditor />} />
@@ -171,6 +172,7 @@ export function AppRoutes() {
               <Route path="/admin/dead-letters" element={<DeadLetters />} />
               <Route path="/admin/pending-bulk-operations" element={<PendingBulkOperations />} />
               <Route path="/dev/tokens" element={<TokensPage />} />
+              <Route path="/dev/charts" element={<ChartsPlayground />} />
             </Route>
           </Routes>
         </Suspense>

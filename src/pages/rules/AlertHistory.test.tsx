@@ -26,7 +26,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('AlertHistory', () => {
   it('renders the title', () => {
     render(<AlertHistory />, { wrapper });
-    expect(screen.getByText('Alert History')).toBeInTheDocument();
+    expect(screen.getByText('Alerts')).toBeInTheDocument();
   });
 
   it('renders alert message', () => {

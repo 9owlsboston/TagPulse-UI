@@ -2,16 +2,13 @@ import { useMemo, useState } from 'react';
 import Empty from 'antd/es/empty';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
-import Spin from 'antd/es/spin';
 import Tag from 'antd/es/tag';
 import AntTooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTelemetryModels } from '@/hooks/useTelemetryModels';
 import { useDeviceTelemetry } from '@/hooks/useTelemetry';
-import { useThemeMode } from '@/theme/ThemeProvider';
-import { tokens } from '@/theme/tokens';
 import type { DeviceTelemetryReading, MetricDefinition } from '@/types';
 
 const { Text, Title } = Typography;
@@ -22,8 +19,6 @@ interface Props {
 }
 
 export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
-  const { mode } = useThemeMode();
-  const t = tokens[mode];
   const { data: models } = useTelemetryModels();
   const model = models?.find((m) => m.device_type === deviceType);
   const metrics: MetricDefinition[] = model?.metrics ?? [];
@@ -67,10 +62,15 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
       [...(readings ?? [])]
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
         .map((r) => ({
-          time: new Date(r.timestamp).toLocaleString(),
+          time: r.timestamp,
           value: r.metric_value,
         })),
     [readings],
+  );
+
+  const series = useMemo<TpSeries[]>(
+    () => [{ key: 'value', label: effectiveMetric ?? 'value' }],
+    [effectiveMetric],
   );
 
   const tagSourceCount = useMemo(
@@ -135,25 +135,18 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
         {unit && <Text type="secondary"> ({unit})</Text>}
       </Title>
       {isLoading ? (
-        <Spin />
-      ) : chartData.length === 0 ? (
-        <Empty description="No readings in this range" />
+        <TpLineChart data={[]} series={series} xKey="time" height={320} loading />
       ) : (
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis
-              label={unit ? { value: unit, angle: -90, position: 'insideLeft' } : undefined}
-              domain={[
-                metricDef?.min_value ?? 'auto',
-                metricDef?.max_value ?? 'auto',
-              ]}
-            />
-            <Tooltip />
-            <Line type="monotone" dataKey="value" stroke={t.colorAccent} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <TpLineChart
+          data={chartData}
+          series={series}
+          xKey="time"
+          height={320}
+          yLabel={unit || undefined}
+          ariaLabel={`${effectiveMetric} over time`}
+          showExport
+          exportFileName={`device-${deviceId}-${effectiveMetric}`}
+        />
       )}
     </div>
   );

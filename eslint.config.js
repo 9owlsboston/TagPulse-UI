@@ -53,6 +53,13 @@ export default [
         File: 'readonly',
         FileReader: 'readonly',
         FormData: 'readonly',
+        HTMLAnchorElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
+        BlobCallback: 'readonly',
+        SVGSVGElement: 'readonly',
+        XMLSerializer: 'readonly',
+        Image: 'readonly',
+        MouseEvent: 'readonly',
       },
     },
     plugins: {

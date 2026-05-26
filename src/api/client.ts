@@ -362,4 +362,8 @@ export const tagDataMappingsApi = {
 
 export const dashboardApi = {
   summary: () => request<import('@/types').DashboardSummary>('/dashboard/summary'),
+  sparklines: (days = 7, bucketHours = 6) =>
+    request<import('@/types').DashboardSparklines>(
+      `/dashboard/sparklines?days=${days}&bucket_hours=${bucketHours}`,
+    ),
 };

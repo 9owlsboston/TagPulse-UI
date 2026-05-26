@@ -13,22 +13,11 @@ import Alert from 'antd/es/alert';
 import Empty from 'antd/es/empty';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
-import Spin from 'antd/es/spin';
 import Typography from 'antd/es/typography';
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useSubjectTelemetry, type SubjectKind } from '@/hooks/useTelemetry';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
-import { useThemeMode } from '@/theme/ThemeProvider';
-import { tokens } from '@/theme/tokens';
 import type { LatestTelemetryEntry } from '@/api/generated/models/LatestTelemetryEntry';
 
 const { Text } = Typography;
@@ -41,8 +30,6 @@ interface Props {
 }
 
 export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
-  const { mode } = useThemeMode();
-  const t = tokens[mode];
   const { data: tenant } = useTenantConfig();
   const optedIn = (tenant?.telemetry_subject_kinds ?? []).includes(subjectKind);
 
@@ -73,8 +60,13 @@ export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
     () =>
       [...(readings ?? [])]
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .map((r) => ({ time: new Date(r.timestamp).toLocaleString(), value: r.metric_value })),
+        .map((r) => ({ time: r.timestamp, value: r.metric_value })),
     [readings],
+  );
+
+  const series = useMemo<TpSeries[]>(
+    () => [{ key: 'value', label: effectiveMetric ?? 'value' }],
+    [effectiveMetric],
   );
 
   if (!optedIn) {
@@ -112,19 +104,17 @@ export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
       </Space>
 
       {isLoading ? (
-        <Spin />
-      ) : chartData.length === 0 ? (
-        <Empty description="No readings in selected range." />
+        <TpLineChart data={[]} series={series} xKey="time" height={320} loading />
       ) : (
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" hide />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="value" stroke={t.colorAccent} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <TpLineChart
+          data={chartData}
+          series={series}
+          xKey="time"
+          height={320}
+          ariaLabel={`${effectiveMetric} over time`}
+          showExport
+          exportFileName={`${subjectKind}-${subjectId}-${effectiveMetric}`}
+        />
       )}
     </div>
   );

@@ -79,7 +79,7 @@ beforeEach(() => {
     });
   }) as unknown as typeof fetch;
 
-  // Dashboard / DataExplorer subscribe to `/integrations/stream` via
+  // Dashboard / TagReads subscribe to `/integrations/stream` via
   // EventSource for live row-flash. jsdom does not implement
   // EventSource, so installing a no-op stub keeps the useEffect from
   // throwing a ReferenceError mid-mount.

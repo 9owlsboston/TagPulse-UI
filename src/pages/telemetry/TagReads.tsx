@@ -10,14 +10,13 @@ import Segmented from 'antd/es/segmented';
 import Checkbox from 'antd/es/checkbox';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
+import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
-import { useThemeMode } from '@/theme/ThemeProvider';
-import { tokens } from '@/theme/tokens';
+import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
 import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
@@ -31,9 +30,17 @@ const FLASH_DURATION_MS = 900;
 const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
-export function DataExplorer() {
-  const { mode } = useThemeMode();
-  const t = tokens[mode];
+const SIGNAL_SERIES: TpSeries[] = [{ key: 'signal', label: 'Signal' }];
+
+// Sprint 57 Phase D — virtualize the table once filtered rows exceed this
+// threshold. Below the threshold we keep the paginated layout so the
+// typical small-result UX is unchanged; above it we switch to a single
+// scroll viewport so high-`limit` exploratory queries don't render
+// thousands of DOM nodes.
+const VIRTUAL_ROW_THRESHOLD = 500;
+const VIRTUAL_SCROLL_HEIGHT = 480;
+
+export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
@@ -176,57 +183,30 @@ export function DataExplorer() {
 
   const chartData = useMemo(
     () => (data ?? []).map((r) => ({
-      time: new Date(r.timestamp).toLocaleString(),
+      time: r.timestamp,
       signal: r.signal_strength ?? 0,
     })),
     [data],
   );
 
+  const isVirtual = (data?.length ?? 0) > VIRTUAL_ROW_THRESHOLD;
+
   const handleExportCsv = () => {
     if (!data?.length) return;
-    const headers = [
-      'tag_id',
-      'epc',
-      'epc_scheme',
-      'tid',
-      'device_id',
-      'timestamp',
-      'signal_strength',
-      'latitude',
-      'longitude',
-      'location_accuracy_m',
-      'location_source',
+    const columns: CsvColumn<TagReadResponse>[] = [
+      { header: 'tag_id', accessor: (r) => r.tag_id },
+      { header: 'epc', accessor: (r) => r.epc },
+      { header: 'epc_scheme', accessor: (r) => r.epc_scheme },
+      { header: 'tid', accessor: (r) => r.tid },
+      { header: 'device_id', accessor: (r) => r.device_id },
+      { header: 'timestamp', accessor: (r) => r.timestamp },
+      { header: 'signal_strength', accessor: (r) => r.signal_strength },
+      { header: 'latitude', accessor: (r) => r.latitude },
+      { header: 'longitude', accessor: (r) => r.longitude },
+      { header: 'location_accuracy_m', accessor: (r) => r.location_accuracy_m },
+      { header: 'location_source', accessor: (r) => r.location_source },
     ];
-    const escape = (v: unknown): string => {
-      if (v == null) return '';
-      const s = String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const rows = data.map((r) =>
-      [
-        r.tag_id,
-        r.epc ?? '',
-        r.epc_scheme ?? '',
-        r.tid ?? '',
-        r.device_id,
-        r.timestamp,
-        r.signal_strength ?? '',
-        r.latitude ?? '',
-        r.longitude ?? '',
-        r.location_accuracy_m ?? '',
-        r.location_source ?? '',
-      ]
-        .map(escape)
-        .join(','),
-    );
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tag-reads.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv('tag-reads.csv', toCsv(data, columns));
   };
 
   return (
@@ -255,7 +235,7 @@ export function DataExplorer() {
           .tagpulse-cell-pop { animation: none; }
         }
       `}</style>
-      <Title level={2}>Data Explorer</Title>
+      <Title level={2}>Tag Reads</Title>
       <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <Form.Item label="Device">
           <Select
@@ -296,8 +276,19 @@ export function DataExplorer() {
           </Checkbox>
         </Form.Item>
       </Form>
-      <Space style={{ marginBottom: 16 }}>
-        <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+      <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap' }}>
+        <Space wrap>
+          <TimeRangePicker onChange={(s, e) => { setStart(s); setEnd(e); }} />
+          {viewMode === 'table' && (
+            <Button
+              onClick={handleExportCsv}
+              disabled={!data?.length}
+              data-testid="tag-reads-export-rows-csv"
+            >
+              Export rows CSV
+            </Button>
+          )}
+        </Space>
         <Segmented
           options={[
             { label: <><TableOutlined /> Table</>, value: 'table' },
@@ -306,29 +297,43 @@ export function DataExplorer() {
           value={viewMode}
           onChange={(v) => setViewMode(v as 'table' | 'chart')}
         />
-        <Button onClick={handleExportCsv} disabled={!data?.length}>Export CSV</Button>
       </Space>
       {viewMode === 'table' ? (
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          loading={isLoading}
-          rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
-          pagination={{ pageSize: 20 }}
-        />
+        isVirtual ? (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={isLoading}
+            rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
+            virtual
+            scroll={{ y: VIRTUAL_SCROLL_HEIGHT, x: 1200 }}
+            pagination={false}
+            data-testid="tag-reads-table-virtual"
+          />
+        ) : (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={isLoading}
+            rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
+            pagination={{ pageSize: 20 }}
+            data-testid="tag-reads-table-paginated"
+          />
+        )
       ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis
-              label={{ value: 'Signal strength (dBm)', angle: -90, position: 'insideLeft', offset: 0, style: { textAnchor: 'middle' } }}
-            />
-            <Tooltip formatter={(value: number) => [`${value} dBm`, 'Signal']} />
-            <Line type="monotone" dataKey="signal" stroke={t.colorAccent} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <TpLineChart
+          data={chartData}
+          series={SIGNAL_SERIES}
+          xKey="time"
+          height={400}
+          yLabel="Signal strength (dBm)"
+          loading={isLoading}
+          ariaLabel="Signal strength over time"
+          exportFileName="tag-reads"
+          showExport
+        />
       )}
     </div>
   );
