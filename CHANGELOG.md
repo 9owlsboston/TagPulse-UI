@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- **Sprint 57 Phase A — telemetry & charting kickoff decisions** ([docs/sprint-57-telemetry-charting.md](docs/sprint-57-telemetry-charting.md)). Phase A locks the four kickoff decisions required before any other phase of Sprint 57 can start: **chart library** (stay on Recharts; wrap with `<TpLineChart>`/`<TpSparkline>`/`<TpAreaChart>` so library can be swapped later behind a stable contract), **time-range picker spec** (unified `15m / 1h / 24h / 7d / 30d / Custom` presets + timezone display; unchanged ISO callback so all 4 callers compile without edits), **rename inventory** (Nav "Devices & Connections" → "Devices & Telemetry" at [src/lib/nav.tsx](src/lib/nav.tsx) L114; page title "Alert History" → "Alerts" at [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) L202; plus 4 test/doc-comment touch points), and **backend scope** (Phases B–E are UI-only against existing endpoints; Phase F needs one new `GET /dashboard/sparklines?days=7` endpoint with tile-keyed downsampled series — paired backend PR opens when Phase F starts). Phase B (renames) is unblocked and ships next on this branch.
+
 ### Changed
 
 - **chore: raise vitest `testTimeout` / `hookTimeout` to 15s ([vitest.config.ts](vitest.config.ts)).** Parallel-load contention from heavy AntD/Recharts imports could exhaust vitest's default 5000ms per-test budget during the first render on a saturated thread pool, surfacing as `Test timed out in 5000ms` on otherwise healthy tests (backlog: 6–10 of 296 affected pages including `Assets.test.tsx`, `CategoryList.test.tsx`, `LabelChips.test.tsx`, `LabelManagement.test.tsx`, `DeviceList.test.tsx`, `Inventory.test.tsx`). Baseline on this branch reproduced 2/296 timeouts; with the bump two consecutive runs hit 296/296. No test logic changes — purely a budget bump for the import/render path. Hook timeout raised to match for symmetry.

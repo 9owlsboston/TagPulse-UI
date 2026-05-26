@@ -1,8 +1,8 @@
 # Sprint 57 — Telemetry & charting + minor renames
 
-> **Status:** planning (draft PR [#68](https://github.com/9owlsboston/TagPulse-UI/pull/68))
+> **Status:** Phase A complete; Phase B next (draft PR [#68](https://github.com/9owlsboston/TagPulse-UI/pull/68))
 > **Branch:** `sprint-57/telemetry-charting`
-> **Backend coordination:** TBD, locked during Phase A
+> **Backend coordination:** **single small backend PR required before Phase F** (new `/dashboard/sparklines` endpoint). Phases B–E are UI-only. See "Phase A — outcomes" below.
 > **Roadmap home:** to be added to `TagPulse/docs/roadmap.md` as Sprint 57 once Phase A finishes (Sprints 55 + 56 ship in between)
 
 ## Goal
@@ -94,3 +94,119 @@ This sprint **deliberately depends on Sprints 55 + 56 having shipped first** so 
 Locked in Phase A; until then, [PR #68](https://github.com/9owlsboston/TagPulse-UI/pull/68) `## Cross-repo plan` reads `TBD — pending Phase A scope lock`.
 
 If new endpoints are required, the backend ships them first under `sprint-57/telemetry-charting` in `TagPulse`, and this PR records the backend SHA + regenerates `src/api/generated/` before merging.
+
+---
+
+## Phase A — outcomes
+
+_Recorded 2026-05-25 during PR #68 rebase + kickoff. Phase B is unblocked._
+
+### A.1 — Chart library decision: **stay on Recharts**
+
+Surveyed callers (`grep "from 'recharts'"`):
+
+| File | Charts used |
+|---|---|
+| [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx) | LineChart |
+| [src/pages/telemetry/TelemetryDashboard.tsx](src/pages/telemetry/TelemetryDashboard.tsx) | LineChart |
+| [src/pages/devices/DeviceTelemetryTab.tsx](src/pages/devices/DeviceTelemetryTab.tsx) | LineChart |
+| [src/components/SubjectTelemetryTab.tsx](src/components/SubjectTelemetryTab.tsx) | LineChart |
+| [src/pages/inventory/ProductDetail.tsx](src/pages/inventory/ProductDetail.tsx) | BarChart |
+| [src/pages/admin/UsageDashboard.tsx](src/pages/admin/UsageDashboard.tsx) | BarChart |
+
+Recharts is already isolated in [vite.config.ts](vite.config.ts) `manualChunks` (Sprint 36 / #24); pinned at `^2.14` in [package.json](package.json).
+
+**Rationale for staying:**
+
+- **Switching cost is real, current pain is hypothetical.** Six call sites to rewrite, chunk strategy to retune, snapshot/component tests to redo, and we have no current bug, perf complaint, or a11y audit failure attributable to Recharts. The criteria in §A (bundle, perf @ 10k points, a11y, theming hook, PNG export, license) are all _potential_ asks against future use cases — every candidate (visx, ECharts, uPlot, AntD Charts) wins on at least one axis and loses on others; no clear dominator.
+- **The wrapper layer is the actual sprint deliverable.** `<TpLineChart>`, `<TpSparkline>`, `<TpAreaChart>` give us the contract (token-respecting palette, a11y description, empty/loading/error, export hook). Behind the contract we can swap libraries in a future sprint at the cost of one PR if a real driver appears (e.g. >10k-point series triggering jank — uPlot would be the obvious answer).
+- **Accessibility gap is addressable in-place.** Recharts ships ARIA props on `<LineChart>` / `<Bar>` (`accessibilityLayer`, `role`, `aria-label`) in 2.13+; we'll add a sibling `<figcaption>`-style data summary in the wrapper for SR users regardless of underlying library.
+
+**Decision:** retain Recharts. Phase C ships wrappers; revisit library choice only if a measured driver emerges.
+
+### A.2 — Time-range picker spec
+
+Current [src/components/TimeRangePicker.tsx](src/components/TimeRangePicker.tsx) has 4 callers, all using the same `(start: string, end: string) => void` ISO callback:
+
+- [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx)
+- [src/pages/telemetry/TelemetryDashboard.tsx](src/pages/telemetry/TelemetryDashboard.tsx)
+- [src/pages/devices/DeviceTelemetryTab.tsx](src/pages/devices/DeviceTelemetryTab.tsx)
+- [src/components/SubjectTelemetryTab.tsx](src/components/SubjectTelemetryTab.tsx)
+
+Current presets: `1h, 6h, 24h, 7d, Custom`. New unified presets per planning doc:
+
+| Value | Label |
+|---|---|
+| `15m` | Last 15 minutes |
+| `1h` | Last hour |
+| `24h` | Last 24 hours |
+| `7d` | Last 7 days |
+| `30d` | Last 30 days |
+| `custom` | Custom |
+
+Changes in Phase C:
+
+- Add `15m` and `30d`, drop `6h` (low signal; covered by 1h / 24h).
+- Display the active timezone next to the picker (e.g. `(UTC-05:00)`) sourced from `Intl.DateTimeFormat().resolvedOptions().timeZone`. ISO strings on the wire are unchanged.
+- Default preset stays `24h`.
+- Callback signature is unchanged → all 4 callers compile without edits.
+- Move presets into an exported constant so Storybook-style demo + tests share the source of truth.
+
+### A.3 — Rename inventory (Phase B input)
+
+**Nav: "Devices & Connections" → "Devices & Telemetry"**
+
+| File | Line | Change |
+|---|---|---|
+| [src/lib/nav.tsx](src/lib/nav.tsx) | 114 | `label: 'Devices & Connections'` → `'Devices & Telemetry'` |
+| [src/components/Layout.test.tsx](src/components/Layout.test.tsx) | 115 | `getByText('Devices & Connections')` → `'Devices & Telemetry'` |
+| [src/components/Layout.tsx](src/components/Layout.tsx) | 35 | doc comment — update for consistency |
+| [src/components/Layout.test.tsx](src/components/Layout.test.tsx) | 8 | doc comment — update for consistency |
+
+Section key `sec-devices-connections` is internal (URL-invisible) — left as-is to avoid touching `defaultOpenKeys` localStorage lookups in `<Layout>`. No deep-link redirect needed (label-only change).
+
+**Page: "Alert History" → "Alerts"**
+
+| File | Line | Change |
+|---|---|---|
+| [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) | 202 | `title="Alert History"` → `title="Alerts"` |
+| [src/pages/rules/AlertHistory.test.tsx](src/pages/rules/AlertHistory.test.tsx) | 29 | `getByText('Alert History')` → `'Alerts'` |
+
+The nav already shows "Alerts" ([src/lib/nav.tsx](src/lib/nav.tsx) L71); the page title was the only mismatch. `countTestId="alert-history-title-count"` and the component/file name `AlertHistory` stay (internal identifiers; renaming the file would inflate the diff with no operator-visible benefit). Route `/alerts` is unchanged.
+
+### A.4 — Backend scope lock
+
+| Phase | Endpoints needed | Backend PR? |
+|---|---|---|
+| B (renames) | none | no |
+| C (TimeRangePicker + chart primitives) | none | no |
+| D (Data Explorer revamp) | existing `/telemetry/readings`, `/telemetry/aggregates`, `/tag-reads/reads-per-hour` | no |
+| E (Telemetry Dashboard + asset/device tabs) | existing `/telemetry/aggregates`, `/telemetry/{device_id}/recent-reads`, `/device-health/{device_id}` | no |
+| **F (Dashboard KPI sparklines)** | **new** `GET /dashboard/sparklines?days=7` | **yes — small backend PR** |
+| G (polish) | none | no |
+
+**Phase F endpoint shape (proposed; finalise in backend sprint-57 PR):**
+
+```
+GET /dashboard/sparklines?days=7
+→ {
+    "devices_online":   { "series": [{ "t": "ISO8601", "v": int }, ...], "trend": "up"|"down"|"flat" },
+    "open_alerts":      { "series": [...], "trend": "..." },
+    "reads_per_hour":   { "series": [...], "trend": "..." },
+    "assets":           { ... },
+    "tags":             { ... },
+    "locations":        { ... },
+    "low_stock":        { ... },
+    "integrations":     { ... }
+  }
+```
+
+Each series is downsampled to ~24 points (4-hour buckets × 7 days). One round-trip per Dashboard load, cacheable backend-side for ~5 min. Tile keys exactly match the existing [src/pages/Dashboard.tsx](src/pages/Dashboard.tsx) `TILES` ids so the client wire-up is trivial.
+
+**Why not fan-out client-side from existing endpoints:** would mean 8 concurrent queries on Dashboard mount (`/tag-reads/reads-per-hour` for 7-day windows × 8 tiles, with different aggregation shapes per tile). Heavier on the network, harder to cache, and `low_stock_count` / `integrations_active` have no time-series endpoint at all — they'd require new backend work either way.
+
+**Coordination:** when Phase F starts, open paired backend PR `sprint-57/telemetry-charting` in `TagPulse`. Backend merges first; this PR records the backend SHA in PR #68 description and regenerates `src/api/generated/`.
+
+### A.5 — Phase B unblocked
+
+Phase B (renames) ships immediately as a small focused commit on this branch. Then Phase C (chart primitives) lands without backend dependency. Phase F waits on the backend PR.
