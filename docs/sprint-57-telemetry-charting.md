@@ -124,6 +124,26 @@ Recharts is already isolated in [vite.config.ts](vite.config.ts) `manualChunks` 
 
 **Decision:** retain Recharts. Phase C ships wrappers; revisit library choice only if a measured driver emerges.
 
+#### A.1.1 — Amendment (2026-05-25, post-review)
+
+User compared the current Telemetry page (cluttered date axis, every-device-as-legend-row at the bottom, no time-window navigation) to Azure Monitor's metric chart (hierarchical "6 PM / May 24 / 6 AM / 12 PM / `UTC-07:00`" axis, side arrows to step the window, chip filter up top). Three concrete asks:
+
+1. Cleaner axis labels (breadcrumb style; don't repeat the date on every tick).
+2. Prev/next arrows around the time window.
+3. Filter UI at the top that scales to thousands of devices (current bottom legend doesn't).
+
+**Honest read:** none of these force a library swap — all three are wrapper / chrome work on top of Recharts. But they are real UX gaps in current code, so they get pulled into the wrapper contract here rather than discovered ad-hoc in Phase C:
+
+| Ask | Recharts mechanism | Goes in |
+|---|---|---|
+| Hierarchical axis | `tickFormatter` + custom `interval` that emits time-of-day for intra-day ticks and date-only on day boundaries; static `UTC±HH:MM` label in chart corner | `<TpLineChart>` axis preset |
+| Prev/next time stepper | `<TimeRangePicker>` chrome — buttons shift `(start, end)` by the active window width; disabled when stepping past "now" | A.2 spec (added below) |
+| High-cardinality device filter | Replace `<Legend>` with a top-of-chart AntD `Select mode="multiple"` (virtualized, searchable). Chart renders only selected series; small "+N more" overflow chip in chart corner shows hidden series count | `<TpLineChart>` `seriesFilter` prop |
+
+**Performance budget added to Phase C.** Before merging wrappers, run a Phase C spike with synthetic data at **50 visible series × 720 points (15-min buckets × 7 days)** and require sustained 60fps on hover/pan in Chrome on the dev laptop. If Recharts (SVG) fails this budget, swap to **uPlot** (canvas, ~50× faster on multi-series) behind the same wrapper contract before Phase D starts. This makes the library decision _measurable_ instead of speculative — and we still pay the swap cost only if real data demands it.
+
+**Out of scope for this sprint** (parked for a future sprint, not a library issue either): drag-to-zoom brush selection (`dataZoom`-style) and shared-crosshair "hover-anywhere-see-all-values" tooltips. Both are doable on Recharts but expand Phase C beyond what the sprint window absorbs. Filed in [docs/backlog.md](docs/backlog.md) when Phase C lands.
+
 ### A.2 — Time-range picker spec
 
 Current [src/components/TimeRangePicker.tsx](src/components/TimeRangePicker.tsx) has 4 callers, all using the same `(start: string, end: string) => void` ISO callback:
@@ -151,6 +171,7 @@ Changes in Phase C:
 - Default preset stays `24h`.
 - Callback signature is unchanged → all 4 callers compile without edits.
 - Move presets into an exported constant so Storybook-style demo + tests share the source of truth.
+- **Prev/next stepper buttons** (added per A.1.1): two arrow buttons flanking the preset selector that shift the active window by its own width (e.g. on 24h, jump back / forward 24h). Disabled forward arrow when stepping would cross `now`. Custom range steps by `(end - start)`. Emits the same `(start, end)` callback; no new prop on the callback contract.
 
 ### A.3 — Rename inventory (Phase B input)
 
