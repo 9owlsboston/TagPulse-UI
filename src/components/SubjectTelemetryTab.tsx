@@ -112,6 +112,8 @@ export function SubjectTelemetryTab({ subjectKind, subjectId, latest }: Props) {
           xKey="time"
           height={320}
           ariaLabel={`${effectiveMetric} over time`}
+          showExport
+          exportFileName={`${subjectKind}-${subjectId}-${effectiveMetric}`}
         />
       )}
     </div>

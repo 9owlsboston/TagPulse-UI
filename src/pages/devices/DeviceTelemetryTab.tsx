@@ -144,6 +144,8 @@ export function DeviceTelemetryTab({ deviceId, deviceType }: Props) {
           height={320}
           yLabel={unit || undefined}
           ariaLabel={`${effectiveMetric} over time`}
+          showExport
+          exportFileName={`device-${deviceId}-${effectiveMetric}`}
         />
       )}
     </div>
