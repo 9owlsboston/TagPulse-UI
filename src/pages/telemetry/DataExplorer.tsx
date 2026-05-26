@@ -18,6 +18,7 @@ import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
+import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
 import type { TagReadResponse } from '@/types';
 
 const { Title } = Typography;
@@ -184,49 +185,20 @@ export function DataExplorer() {
 
   const handleExportCsv = () => {
     if (!data?.length) return;
-    const headers = [
-      'tag_id',
-      'epc',
-      'epc_scheme',
-      'tid',
-      'device_id',
-      'timestamp',
-      'signal_strength',
-      'latitude',
-      'longitude',
-      'location_accuracy_m',
-      'location_source',
+    const columns: CsvColumn<TagReadResponse>[] = [
+      { header: 'tag_id', accessor: (r) => r.tag_id },
+      { header: 'epc', accessor: (r) => r.epc },
+      { header: 'epc_scheme', accessor: (r) => r.epc_scheme },
+      { header: 'tid', accessor: (r) => r.tid },
+      { header: 'device_id', accessor: (r) => r.device_id },
+      { header: 'timestamp', accessor: (r) => r.timestamp },
+      { header: 'signal_strength', accessor: (r) => r.signal_strength },
+      { header: 'latitude', accessor: (r) => r.latitude },
+      { header: 'longitude', accessor: (r) => r.longitude },
+      { header: 'location_accuracy_m', accessor: (r) => r.location_accuracy_m },
+      { header: 'location_source', accessor: (r) => r.location_source },
     ];
-    const escape = (v: unknown): string => {
-      if (v == null) return '';
-      const s = String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const rows = data.map((r) =>
-      [
-        r.tag_id,
-        r.epc ?? '',
-        r.epc_scheme ?? '',
-        r.tid ?? '',
-        r.device_id,
-        r.timestamp,
-        r.signal_strength ?? '',
-        r.latitude ?? '',
-        r.longitude ?? '',
-        r.location_accuracy_m ?? '',
-        r.location_source ?? '',
-      ]
-        .map(escape)
-        .join(','),
-    );
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tag-reads.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv('tag-reads.csv', toCsv(data, columns));
   };
 
   return (
