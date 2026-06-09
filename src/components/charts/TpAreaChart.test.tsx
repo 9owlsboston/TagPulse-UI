@@ -148,4 +148,29 @@ describe('TpAreaChart', () => {
     const fig = screen.getByRole('img');
     expect(fig.getAttribute('aria-label')).toMatch(/^Area chart with 1 series/);
   });
+
+  it('renders per-series gradient defs in overlay mode', () => {
+    const { container } = render(
+      <TpAreaChart
+        data={makeData(3, ['a', 'b'])}
+        series={[{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }]}
+        xKey="t"
+      />,
+    );
+    expect(container.querySelector('#tp-area-grad-a')).toBeInTheDocument();
+    expect(container.querySelector('#tp-area-grad-b')).toBeInTheDocument();
+  });
+
+  it('omits per-series gradients in stacked mode (solid fill reads cleaner)', () => {
+    const { container } = render(
+      <TpAreaChart
+        data={makeData(3, ['a', 'b'])}
+        series={[{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }]}
+        xKey="t"
+        stacked
+      />,
+    );
+    expect(container.querySelector('#tp-area-grad-a')).not.toBeInTheDocument();
+    expect(container.querySelector('#tp-area-grad-b')).not.toBeInTheDocument();
+  });
 });
