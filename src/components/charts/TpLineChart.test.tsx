@@ -14,8 +14,8 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="rc-responsive">{children}</div>
   ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
-    <svg data-testid="rc-svg">{children}</svg>
+  LineChart: ({ children, syncId }: { children: React.ReactNode; syncId?: string }) => (
+    <svg data-testid="rc-svg" data-syncid={syncId ?? ''}>{children}</svg>
   ),
   Line: ({ name }: { name?: string }) => (
     <g data-testid={`rc-line-${name}`} />
@@ -25,6 +25,33 @@ vi.mock('recharts', () => ({
   CartesianGrid: () => <g />,
   Tooltip: () => <g />,
   Legend: () => <g />,
+  ReferenceLine: ({
+    x,
+    y,
+    stroke,
+    label,
+    'data-testid': testId,
+  }: {
+    x?: number | string;
+    y?: number | string;
+    stroke?: string;
+    label?: { value?: string } | string;
+    'data-testid'?: string;
+  }) => {
+    const labelText = typeof label === 'object' ? label?.value : label;
+    return (
+      <g
+        data-testid={testId ?? 'rc-ref-line'}
+        data-axis={x !== undefined ? 'x' : 'y'}
+        data-value={String(x ?? y ?? '')}
+        data-stroke={stroke ?? ''}
+        data-label={labelText ?? ''}
+      />
+    );
+  },
+  Brush: ({ dataKey, 'data-testid': testId }: { dataKey?: string; 'data-testid'?: string }) => (
+    <g data-testid={testId ?? 'rc-brush'} data-datakey={dataKey ?? ''} />
+  ),
 }));
 
 const SERIES_3 = [
@@ -197,5 +224,108 @@ describe('TpLineChart', () => {
       />,
     );
     expect(screen.getByRole('img', { name: /Line chart with 1 series/ })).toBeInTheDocument();
+  });
+
+  // ---- Phase C interactivity follow-ups (syncId, referenceLines, enableBrush) ----
+
+  it('passes syncId through to the underlying chart for shared cursor sync', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        syncId="telemetry-dashboard"
+      />,
+    );
+    expect(screen.getByTestId('rc-svg')).toHaveAttribute('data-syncid', 'telemetry-dashboard');
+  });
+
+  it('omits syncId attribute when prop is not set (chart stays independent)', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+      />,
+    );
+    expect(screen.getByTestId('rc-svg')).toHaveAttribute('data-syncid', '');
+  });
+
+  it('renders one reference line per entry in referenceLines, with severity-coloured stroke', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        referenceLines={[
+          { value: 80, severity: 'danger', label: 'Hot' },
+          { value: 60, severity: 'warning' },
+          { value: 40 }, // defaults to neutral, no label
+        ]}
+      />,
+    );
+    const danger = screen.getByTestId('tp-line-chart-ref-0');
+    const warn = screen.getByTestId('tp-line-chart-ref-1');
+    const neutral = screen.getByTestId('tp-line-chart-ref-2');
+    expect(danger).toHaveAttribute('data-axis', 'y');
+    expect(danger).toHaveAttribute('data-value', '80');
+    expect(danger).toHaveAttribute('data-stroke', 'var(--color-danger)');
+    expect(danger).toHaveAttribute('data-label', 'Hot');
+    expect(warn).toHaveAttribute('data-stroke', 'var(--color-warning)');
+    expect(neutral).toHaveAttribute('data-stroke', 'var(--color-text-muted)');
+    expect(neutral).toHaveAttribute('data-label', '');
+  });
+
+  it('supports axis: "x" reference lines for timestamp annotations', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        referenceLines={[
+          { value: '2026-04-25T10:00:00Z', axis: 'x', severity: 'warning', label: 'Deploy' },
+        ]}
+      />,
+    );
+    const ref = screen.getByTestId('tp-line-chart-ref-0');
+    expect(ref).toHaveAttribute('data-axis', 'x');
+    expect(ref).toHaveAttribute('data-value', '2026-04-25T10:00:00Z');
+    expect(ref).toHaveAttribute('data-label', 'Deploy');
+  });
+
+  it('renders no reference lines when prop is omitted', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+      />,
+    );
+    expect(screen.queryByTestId('tp-line-chart-ref-0')).not.toBeInTheDocument();
+  });
+
+  it('renders a Brush strip when enableBrush is true', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        enableBrush
+      />,
+    );
+    const brush = screen.getByTestId('tp-line-chart-brush');
+    expect(brush).toBeInTheDocument();
+    expect(brush).toHaveAttribute('data-datakey', 't');
+  });
+
+  it('omits the Brush strip by default', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+      />,
+    );
+    expect(screen.queryByTestId('tp-line-chart-brush')).not.toBeInTheDocument();
   });
 });

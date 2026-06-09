@@ -60,6 +60,8 @@ vi.mock('recharts', () => ({
   YAxis: () => <div />,
   CartesianGrid: () => <div />,
   Tooltip: () => <div />,
+  ReferenceLine: () => <div />,
+  Brush: () => <div />,
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

@@ -25,7 +25,9 @@ import dayjs from 'dayjs';
 import {
   Area,
   AreaChart,
+  Brush,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,9 +44,15 @@ import { getTzLabel } from '@/components/TimeRangePicker.constants';
 import { TpTooltip } from '@/components/charts/TpTooltip';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
-import type { TpSeries } from '@/components/charts/TpLineChart';
+import type { TpSeries, TpReferenceLine } from '@/components/charts/TpLineChart';
 
-export type { TpSeries };
+export type { TpSeries, TpReferenceLine };
+
+const REFERENCE_LINE_STROKE: Record<NonNullable<TpReferenceLine['severity']>, string> = {
+  danger: 'var(--color-danger)',
+  warning: 'var(--color-warning)',
+  neutral: 'var(--color-text-muted)',
+};
 
 export interface TpAreaChartProps<TRow extends Record<string, unknown>> {
   data: TRow[];
@@ -65,6 +73,12 @@ export interface TpAreaChartProps<TRow extends Record<string, unknown>> {
   exportFileName?: string;
   showExport?: boolean;
   tzLabel?: string;
+  /** Shared cursor sync key — see `<TpLineChart>` syncId prop. */
+  syncId?: string;
+  /** Dashed reference lines for thresholds / annotations. See `<TpLineChart>` referenceLines prop. */
+  referenceLines?: TpReferenceLine[];
+  /** Render a Recharts `<Brush>` strip below the chart for drag-select time-range zoom. */
+  enableBrush?: boolean;
 }
 
 function chooseTickFormatter(values: ReadonlyArray<number>): (v: unknown) => string {
@@ -126,6 +140,9 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
   exportFileName = 'chart',
   showExport,
   tzLabel,
+  syncId,
+  referenceLines,
+  enableBrush,
 }: TpAreaChartProps<TRow>) {
   const { mode } = useThemeMode();
   const palette = tokens[mode].chartSeries;
@@ -274,7 +291,11 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
           <EmptyState title="No data" description="No points in the selected range." />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
+            <AreaChart
+              data={data}
+              margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
+              syncId={syncId}
+            >
               {/* Per-series gradient defs (overlay mode only — stacked
                   reads cleaner with solid fills since gradients on
                   stacked bands look like banding artefacts). */}
@@ -350,6 +371,41 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                   />
                 );
               })}
+              {referenceLines?.map((ref, i) => {
+                const stroke = REFERENCE_LINE_STROKE[ref.severity ?? 'neutral'];
+                const isVertical = ref.axis === 'x';
+                return (
+                  <ReferenceLine
+                    key={`tp-ref-${i}`}
+                    {...(isVertical ? { x: ref.value } : { y: ref.value })}
+                    stroke={stroke}
+                    strokeDasharray="4 4"
+                    strokeWidth={1}
+                    label={
+                      ref.label
+                        ? {
+                            value: ref.label,
+                            position: isVertical ? 'top' : 'insideTopRight',
+                            fill: stroke,
+                            fontSize: 11,
+                          }
+                        : undefined
+                    }
+                    data-testid={`tp-area-chart-ref-${i}`}
+                  />
+                );
+              })}
+              {enableBrush && (
+                <Brush
+                  dataKey={xKey}
+                  height={28}
+                  stroke="var(--color-accent)"
+                  fill="var(--color-surface)"
+                  travellerWidth={8}
+                  tickFormatter={tickFormatter}
+                  data-testid="tp-area-chart-brush"
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         )}

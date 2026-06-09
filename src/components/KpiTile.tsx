@@ -89,11 +89,25 @@ export function KpiTile({
   return (
     <Card
       hoverable={interactive}
-      style={dimmed ? { opacity: 0.45 } : undefined}
+      // height:100% lets the card fill its grid <Col> so every tile in a row
+      // reaches the same bottom edge — without this, AntD Cards hug their
+      // content and short labels / shorter values produce uneven sparkline
+      // baselines across the row.
+      style={{ height: '100%', ...(dimmed ? { opacity: 0.45 } : null) }}
       styles={{
         body: {
           padding: '10px 14px',
           paddingBottom: showSparkline ? 0 : '10px',
+          // Flex column so we can pin the sparkline to the bottom regardless
+          // of how tall the header/value block ends up.
+          display: 'flex',
+          flexDirection: 'column',
+          // Minimum vertical envelope picked to fit: title (~22px) + value
+          // (28px * 1.2 ≈ 34px) + sparkline (28px) + ~16px of breathing room.
+          // Tiles that wrap their label or render a taller icon will grow
+          // beyond this, and AntD Row stretches the row so neighbours follow.
+          minHeight: 108,
+          height: '100%',
         },
       }}
     >
@@ -114,7 +128,9 @@ export function KpiTile({
         <div
           data-testid="kpi-tile-sparkline"
           data-trend={sparkline?.trend}
-          style={{ marginTop: 6 }}
+          // marginTop:auto pushes the sparkline to the bottom of the flex
+          // column so its top edge sits at a consistent y across the row.
+          style={{ marginTop: 'auto', paddingTop: 6 }}
         >
           <TpSparkline
             data={sparkRows}

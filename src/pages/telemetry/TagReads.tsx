@@ -333,6 +333,8 @@ export function TagReads() {
           ariaLabel="Signal strength over time"
           exportFileName="tag-reads"
           showExport
+          syncId="tag-reads"
+          enableBrush
         />
       )}
     </div>

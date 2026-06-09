@@ -18,7 +18,7 @@ import Space from 'antd/es/space';
 import Button from 'antd/es/button';
 import Statistic from 'antd/es/statistic';
 import Typography from 'antd/es/typography';
-import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
+import { TpLineChart, type TpSeries, type TpReferenceLine } from '@/components/charts/TpLineChart';
 import { TpAreaChart } from '@/components/charts/TpAreaChart';
 import { TpSparkline } from '@/components/charts/TpSparkline';
 
@@ -180,6 +180,66 @@ export function ChartsPlayground() {
         description="Stacked areas at fillOpacity=0.65; summary text switches to 'Stacked area chart'."
       >
         <TpAreaChart data={shortData} series={FEW_SERIES} xKey="t" height={280} showExport stacked />
+      </Section>
+
+      <Section
+        id="sync-pair"
+        title="<TpLineChart> — synced cursor (syncId)"
+        description="Two charts that share syncId='playground-pair' — hover one and the other highlights the same timestamp. Use on dashboards where multiple panes share a time axis."
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <TpLineChart
+            data={shortData}
+            series={[{ key: 'a', label: 'Reader 01' }]}
+            xKey="t"
+            height={220}
+            syncId="playground-pair"
+            ariaLabel="Reader 01 reads (synced)"
+          />
+          <TpLineChart
+            data={shortData}
+            series={[{ key: 'b', label: 'Reader 02' }]}
+            xKey="t"
+            height={220}
+            syncId="playground-pair"
+            ariaLabel="Reader 02 reads (synced)"
+          />
+        </div>
+      </Section>
+
+      <Section
+        id="reference-lines"
+        title="<TpLineChart> — reference lines (thresholds + annotations)"
+        description="Dashed horizontal lines for y-axis thresholds (severity → semantic token colour) plus a vertical x-axis marker for a deployment timestamp."
+      >
+        <TpLineChart
+          data={shortData}
+          series={FEW_SERIES}
+          xKey="t"
+          height={280}
+          referenceLines={
+            [
+              { value: 85, severity: 'danger', label: 'Hot' },
+              { value: 70, severity: 'warning', label: 'Warn' },
+              { value: 30, severity: 'neutral', label: 'Floor' },
+              { value: '2026-04-25T10:30:00Z', axis: 'x', severity: 'neutral', label: 'Deploy v1.4' },
+            ] satisfies TpReferenceLine[]
+          }
+        />
+      </Section>
+
+      <Section
+        id="brush-zoom"
+        title="<TpLineChart> — brush zoom (enableBrush)"
+        description="Drag the strip below the chart to narrow the visible domain. Used on Tag Reads (chart view) and the Telemetry Dashboard to inspect a slice without rebuilding URL state."
+      >
+        <TpLineChart
+          data={longData}
+          series={FEW_SERIES}
+          xKey="t"
+          height={280}
+          enableBrush
+        />
       </Section>
 
       <Section

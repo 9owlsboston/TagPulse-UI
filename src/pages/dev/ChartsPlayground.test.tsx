@@ -26,6 +26,8 @@ vi.mock('recharts', () => ({
   YAxis: () => <g />,
   CartesianGrid: () => <g />,
   Tooltip: () => <g />,
+  ReferenceLine: () => <g />,
+  Brush: () => <g />,
 }));
 
 describe('ChartsPlayground', () => {
@@ -41,6 +43,9 @@ describe('ChartsPlayground', () => {
       'line-error',
       'area-overlay',
       'area-stacked',
+      'sync-pair',
+      'reference-lines',
+      'brush-zoom',
       'perf-spike',
       'sparkline-row',
     ]) {
