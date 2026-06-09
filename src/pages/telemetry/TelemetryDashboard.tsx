@@ -91,6 +91,8 @@ export function TelemetryDashboard() {
         ariaLabel="Reads per device over time"
         showExport
         exportFileName="telemetry-reads"
+        syncId="telemetry-dashboard"
+        enableBrush
       />
     </div>
   );

@@ -27,9 +27,11 @@ import Spin from 'antd/es/spin';
 import { DownloadOutlined, FileImageOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
+  Brush,
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -55,6 +57,34 @@ export interface TpSeries {
   /** Override default token palette colour. */
   color?: string;
 }
+
+/**
+ * Threshold / annotation marker rendered as a dashed reference line.
+ * Severity drives the stroke colour via semantic tokens; default is
+ * `neutral` (muted grey) so a bare `{value: 42}` is unobtrusive.
+ *
+ * `axis: 'y'` (default) draws a horizontal line at the given y-value —
+ * use for alert thresholds, capacity caps, target lines. `axis: 'x'`
+ * draws a vertical line at the given x-value (ISO timestamp or numeric
+ * epoch ms must match the chart's xKey value type) — use for incident
+ * markers, deployment timestamps, sprint boundaries.
+ */
+export interface TpReferenceLine {
+  /** Numeric y-value (axis='y') or x-value (axis='x'). For x, an ISO string is also accepted. */
+  value: number | string;
+  /** Optional inline label rendered at the line's end. */
+  label?: string;
+  /** Stroke colour intent. Default 'neutral'. */
+  severity?: 'danger' | 'warning' | 'neutral';
+  /** Which axis to draw against. Default 'y'. */
+  axis?: 'y' | 'x';
+}
+
+const REFERENCE_LINE_STROKE: Record<NonNullable<TpReferenceLine['severity']>, string> = {
+  danger: 'var(--color-danger)',
+  warning: 'var(--color-warning)',
+  neutral: 'var(--color-text-muted)',
+};
 
 export interface TpLineChartProps<TRow extends Record<string, unknown>> {
   data: TRow[];
@@ -90,6 +120,32 @@ export interface TpLineChartProps<TRow extends Record<string, unknown>> {
   showExport?: boolean;
   /** Override the auto-detected timezone corner badge. */
   tzLabel?: string;
+  /**
+   * Shared cursor sync key (Recharts `syncId`). Charts on the same
+   * page that pass the same string share a hover cursor — when the
+   * operator hovers chart A at timestamp T, chart B highlights T as
+   * well. Omit to keep the chart independent.
+   *
+   * Convention: use a stable per-page identifier such as
+   * `"telemetry-dashboard"` or `"asset-{id}-detail"`. Charts that
+   * should NOT participate in the sync (e.g. an unrelated histogram
+   * on the same page) simply omit the prop.
+   */
+  syncId?: string;
+  /**
+   * Render dashed reference lines for thresholds / annotations.
+   * Coloured by `severity` via semantic tokens; survives the wrapper's
+   * `axisLine={false}` cleanup because it draws as a chart-area
+   * primitive rather than as axis chrome.
+   */
+  referenceLines?: TpReferenceLine[];
+  /**
+   * Render a Recharts `<Brush>` strip below the chart for drag-select
+   * time-range zoom. Useful on high-cardinality views (Tag Reads, the
+   * Telemetry Dashboard 24h reads/hour line) where the operator wants
+   * to inspect a small slice without rebuilding the URL state.
+   */
+  enableBrush?: boolean;
 }
 
 /**
@@ -156,6 +212,9 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
   exportFileName = 'chart',
   showExport,
   tzLabel,
+  syncId,
+  referenceLines,
+  enableBrush,
 }: TpLineChartProps<TRow>) {
   const { mode } = useThemeMode();
   const palette = tokens[mode].chartSeries;
@@ -308,7 +367,11 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
           <EmptyState title="No data" description="No points in the selected range." />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
+            <LineChart
+              data={data}
+              margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
+              syncId={syncId}
+            >
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--color-border)"
@@ -356,6 +419,41 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                   />
                 );
               })}
+              {referenceLines?.map((ref, i) => {
+                const stroke = REFERENCE_LINE_STROKE[ref.severity ?? 'neutral'];
+                const isVertical = ref.axis === 'x';
+                return (
+                  <ReferenceLine
+                    key={`tp-ref-${i}`}
+                    {...(isVertical ? { x: ref.value } : { y: ref.value })}
+                    stroke={stroke}
+                    strokeDasharray="4 4"
+                    strokeWidth={1}
+                    label={
+                      ref.label
+                        ? {
+                            value: ref.label,
+                            position: isVertical ? 'top' : 'insideTopRight',
+                            fill: stroke,
+                            fontSize: 11,
+                          }
+                        : undefined
+                    }
+                    data-testid={`tp-line-chart-ref-${i}`}
+                  />
+                );
+              })}
+              {enableBrush && (
+                <Brush
+                  dataKey={xKey}
+                  height={28}
+                  stroke="var(--color-accent)"
+                  fill="var(--color-surface)"
+                  travellerWidth={8}
+                  tickFormatter={tickFormatter}
+                  data-testid="tp-line-chart-brush"
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         )}

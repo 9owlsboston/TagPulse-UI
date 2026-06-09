@@ -11,8 +11,8 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="rc-responsive">{children}</div>
   ),
-  AreaChart: ({ children }: { children: React.ReactNode }) => (
-    <svg data-testid="rc-svg">{children}</svg>
+  AreaChart: ({ children, syncId }: { children: React.ReactNode; syncId?: string }) => (
+    <svg data-testid="rc-svg" data-syncid={syncId ?? ''}>{children}</svg>
   ),
   Area: ({ name, stackId }: { name?: string; stackId?: string }) => (
     <g data-testid={`rc-area-${name}`} data-stackid={stackId ?? ''} />
@@ -21,6 +21,33 @@ vi.mock('recharts', () => ({
   YAxis: () => <g />,
   CartesianGrid: () => <g />,
   Tooltip: () => <g />,
+  ReferenceLine: ({
+    x,
+    y,
+    stroke,
+    label,
+    'data-testid': testId,
+  }: {
+    x?: number | string;
+    y?: number | string;
+    stroke?: string;
+    label?: { value?: string } | string;
+    'data-testid'?: string;
+  }) => {
+    const labelText = typeof label === 'object' ? label?.value : label;
+    return (
+      <g
+        data-testid={testId ?? 'rc-ref-line'}
+        data-axis={x !== undefined ? 'x' : 'y'}
+        data-value={String(x ?? y ?? '')}
+        data-stroke={stroke ?? ''}
+        data-label={labelText ?? ''}
+      />
+    );
+  },
+  Brush: ({ dataKey, 'data-testid': testId }: { dataKey?: string; 'data-testid'?: string }) => (
+    <g data-testid={testId ?? 'rc-brush'} data-datakey={dataKey ?? ''} />
+  ),
 }));
 
 const SERIES_3 = [
@@ -172,5 +199,52 @@ describe('TpAreaChart', () => {
     );
     expect(container.querySelector('#tp-area-grad-a')).not.toBeInTheDocument();
     expect(container.querySelector('#tp-area-grad-b')).not.toBeInTheDocument();
+  });
+
+  // ---- Phase C interactivity follow-ups (syncId, referenceLines, enableBrush) ----
+
+  it('passes syncId through for shared cursor sync with sibling charts', () => {
+    render(
+      <TpAreaChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        syncId="asset-detail"
+      />,
+    );
+    expect(screen.getByTestId('rc-svg')).toHaveAttribute('data-syncid', 'asset-detail');
+  });
+
+  it('renders reference lines coloured by severity', () => {
+    render(
+      <TpAreaChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        referenceLines={[
+          { value: 100, severity: 'danger', label: 'SLO' },
+          { value: '2026-04-25T10:00:00Z', axis: 'x', severity: 'neutral' },
+        ]}
+      />,
+    );
+    const ref0 = screen.getByTestId('tp-area-chart-ref-0');
+    const ref1 = screen.getByTestId('tp-area-chart-ref-1');
+    expect(ref0).toHaveAttribute('data-axis', 'y');
+    expect(ref0).toHaveAttribute('data-stroke', 'var(--color-danger)');
+    expect(ref0).toHaveAttribute('data-label', 'SLO');
+    expect(ref1).toHaveAttribute('data-axis', 'x');
+    expect(ref1).toHaveAttribute('data-stroke', 'var(--color-text-muted)');
+  });
+
+  it('renders a Brush strip when enableBrush is true', () => {
+    render(
+      <TpAreaChart
+        data={makeData(2, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+        enableBrush
+      />,
+    );
+    expect(screen.getByTestId('tp-area-chart-brush')).toHaveAttribute('data-datakey', 't');
   });
 });
