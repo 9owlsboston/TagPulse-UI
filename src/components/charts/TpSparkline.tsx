@@ -12,7 +12,7 @@
  * for screen-reader users.
  */
 import { useMemo } from 'react';
-import { Line, LineChart, ResponsiveContainer } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
 
@@ -78,6 +78,35 @@ export function TpSparkline<TRow extends Record<string, unknown>>({
   );
   const resolvedAriaLabel = ariaLabel ?? captionText;
 
+  // Render a single 3px dot on the last data point so the tile reads
+  // as "trend ending here" instead of trailing off into the gradient.
+  // Returning an empty <g/> for every other index keeps the Recharts
+  // `dot` contract happy (it expects an SVGElement, not null).
+  const lastIndex = data.length - 1;
+  const renderLastPointDot = (dotProps: {
+    cx?: number;
+    cy?: number;
+    index?: number;
+    key?: string | number;
+  }) => {
+    const { cx, cy, index, key } = dotProps;
+    if (index !== lastIndex || cx == null || cy == null) {
+      return <g key={key ?? `pt-${index}`} />;
+    }
+    return (
+      <circle
+        key={key ?? `pt-${index}`}
+        data-testid="tp-sparkline-last-dot"
+        cx={cx}
+        cy={cy}
+        r={3}
+        fill={stroke}
+        stroke="var(--color-surface)"
+        strokeWidth={1}
+      />
+    );
+  };
+
   return (
     <div
       data-testid="tp-sparkline"
@@ -90,18 +119,25 @@ export function TpSparkline<TRow extends Record<string, unknown>>({
       </span>
       {data.length === 0 ? null : (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+          <AreaChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+            <defs>
+              <linearGradient id={`sparkGrad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity={0.25} />
+                <stop offset="100%" stopColor={stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
             {/* xKey is accepted for API symmetry with TpLineChart but
                 only affects row ordering, which the caller controls. */}
-            <Line
+            <Area
               type="monotone"
               dataKey={dataKey}
               stroke={stroke}
               strokeWidth={1.5}
-              dot={false}
+              fill={`url(#sparkGrad-${dataKey})`}
+              dot={renderLastPointDot}
               isAnimationActive={false}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </div>

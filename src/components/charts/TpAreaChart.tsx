@@ -39,6 +39,7 @@ import {
   type CsvColumn,
 } from '@/lib/chartExport';
 import { getTzLabel } from '@/components/TimeRangePicker.constants';
+import { TpTooltip } from '@/components/charts/TpTooltip';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
 import type { TpSeries } from '@/components/charts/TpLineChart';
@@ -274,10 +275,47 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 8, right: 24, left: 16, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} tickFormatter={tickFormatter} />
+              {/* Per-series gradient defs (overlay mode only — stacked
+                  reads cleaner with solid fills since gradients on
+                  stacked bands look like banding artefacts). */}
+              {!stacked && (
+                <defs>
+                  {visibleSeries.map((s) => {
+                    const idx = series.findIndex((x) => x.key === s.key);
+                    const c = colorFor(s, idx);
+                    return (
+                      <linearGradient
+                        key={s.key}
+                        id={`tp-area-grad-${s.key}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="0%" stopColor={c} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={c} stopOpacity={0} />
+                      </linearGradient>
+                    );
+                  })}
+                </defs>
+              )}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border)"
+                strokeOpacity={0.4}
+              />
+              <XAxis
+                dataKey={xKey}
+                tickFormatter={tickFormatter}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
+              />
               <YAxis
                 allowDecimals={false}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
                 label={
                   yLabel
                     ? {
@@ -290,7 +328,10 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                     : undefined
                 }
               />
-              <Tooltip labelFormatter={(label) => tickFormatter(label)} />
+              <Tooltip
+                content={<TpTooltip labelFormatter={(label) => tickFormatter(label)} />}
+                cursor={{ stroke: 'var(--color-accent)', strokeWidth: 1, strokeOpacity: 0.5 }}
+              />
               {visibleSeries.map((s) => {
                 const idx = series.findIndex((x) => x.key === s.key);
                 const c = colorFor(s, idx);
@@ -301,8 +342,9 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                     dataKey={s.key}
                     name={s.label}
                     stroke={c}
-                    fill={c}
-                    fillOpacity={stacked ? 0.65 : 0.25}
+                    strokeWidth={2}
+                    fill={stacked ? c : `url(#tp-area-grad-${s.key})`}
+                    fillOpacity={stacked ? 0.65 : 1}
                     stackId={stacked ? '1' : undefined}
                     isAnimationActive={!loading}
                   />

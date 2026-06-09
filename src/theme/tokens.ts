@@ -42,14 +42,14 @@ const palette = {
   light: {
     bg: '#F5F5F5',
     surface: '#FFFFFF',
-    surfaceRaised: '#FFFFFF',
+    surfaceRaised: '#F5F7FA',
     accent: '#0078D4',
     success: '#107C10',
     warning: '#D88C1A',
     danger: '#C42B1C',
     text: 'rgba(0, 0, 0, 0.88)',
     textMuted: 'rgba(0, 0, 0, 0.55)',
-    border: '#F0F0F0',
+    border: '#D0D0D0',
     chart: ['#0078D4', '#107C10', '#D88C1A', '#C42B1C', '#7B1FA2', '#0097A7'] as const,
   },
 } as const;

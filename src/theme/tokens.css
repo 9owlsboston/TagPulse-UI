@@ -37,14 +37,14 @@
 [data-theme='light'] {
   --color-bg: #f5f5f5;
   --color-surface: #ffffff;
-  --color-surface-raised: #ffffff;
+  --color-surface-raised: #f5f7fa;
   --color-accent: #0078d4;
   --color-success: #107c10;
   --color-warning: #d88c1a;
   --color-danger: #c42b1c;
   --color-text: rgba(0, 0, 0, 0.88);
   --color-text-muted: rgba(0, 0, 0, 0.55);
-  --color-border: #f0f0f0;
+  --color-border: #d0d0d0;
 
   --color-chart-1: #0078d4;
   --color-chart-2: #107c10;

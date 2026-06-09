@@ -10,11 +10,15 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="rc-responsive">{children}</div>
   ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
     <svg data-testid="rc-svg">{children}</svg>
   ),
-  Line: ({ stroke }: { stroke?: string }) => (
-    <g data-testid="rc-line" data-stroke={stroke} />
+  Area: ({ stroke, dot }: { stroke?: string; dot?: unknown }) => (
+    <g
+      data-testid="rc-line"
+      data-stroke={stroke}
+      data-has-dot-fn={typeof dot === 'function' ? 'true' : 'false'}
+    />
   ),
 }));
 
@@ -70,5 +74,10 @@ describe('TpSparkline', () => {
       />,
     );
     expect(screen.getByRole('img').getAttribute('aria-label')).toBe('Reads last 24h');
+  });
+
+  it('passes a custom dot renderer (for the last-point dot affordance)', () => {
+    render(<TpSparkline data={makeRows(4)} dataKey="v" />);
+    expect(screen.getByTestId('rc-line').getAttribute('data-has-dot-fn')).toBe('true');
   });
 });

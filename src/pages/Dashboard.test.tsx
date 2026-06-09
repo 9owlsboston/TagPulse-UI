@@ -6,15 +6,17 @@ import { Dashboard } from '@/pages/Dashboard';
 import type { DashboardSummary } from '@/types';
 
 // Stub recharts — see KpiTile.test.tsx for context (ResizeObserver missing
-// in jsdom; we only assert on chip presence here, not the SVG line).
+// in jsdom; we only assert on chip presence here, not the SVG line). Sprint
+// 58 round 1 switched <TpSparkline> from LineChart → AreaChart for the
+// gradient fill, so the stub mirrors KpiTile.test.tsx exactly.
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="rc-responsive">{children}</div>
   ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
     <svg data-testid="rc-svg">{children}</svg>
   ),
-  Line: () => <g />,
+  Area: () => <g />,
 }));
 
 const FIXTURE: DashboardSummary = {

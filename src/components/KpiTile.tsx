@@ -87,17 +87,42 @@ export function KpiTile({
     : undefined;
 
   return (
-    <Card hoverable={interactive} style={dimmed ? { opacity: 0.45 } : undefined}>
+    <Card
+      hoverable={interactive}
+      style={dimmed ? { opacity: 0.45 } : undefined}
+      styles={{
+        body: {
+          padding: '10px 14px',
+          paddingBottom: showSparkline ? 0 : '10px',
+        },
+      }}
+    >
       <Statistic
         title={title}
         value={displayValue}
         prefix={prefix}
         suffix={suffix}
         loading={loading}
+        valueStyle={{
+          fontSize: 28,
+          fontWeight: 700,
+          color: 'var(--color-accent)',
+          lineHeight: 1.2,
+        }}
       />
       {showSparkline && (
-        <div data-testid="kpi-tile-sparkline" data-trend={sparkline?.trend} style={{ marginTop: 8 }}>
-          <TpSparkline data={sparkRows} dataKey="v" xKey="t" height={32} ariaLabel={sparkAriaLabel} />
+        <div
+          data-testid="kpi-tile-sparkline"
+          data-trend={sparkline?.trend}
+          style={{ marginTop: 6 }}
+        >
+          <TpSparkline
+            data={sparkRows}
+            dataKey="v"
+            xKey="t"
+            height={28}
+            ariaLabel={sparkAriaLabel}
+          />
         </div>
       )}
     </Card>

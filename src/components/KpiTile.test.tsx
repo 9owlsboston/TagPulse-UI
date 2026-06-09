@@ -11,10 +11,10 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="rc-responsive">{children}</div>
   ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
     <svg data-testid="rc-svg">{children}</svg>
   ),
-  Line: () => <g />,
+  Area: () => <g />,
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {
