@@ -174,7 +174,10 @@ export function Layout() {
     ...sections.map((s) => ({
       key: s.key,
       icon: s.icon,
-      label: s.label,
+      // A section carrying a `skinLabel` renders the resolved label skin for
+      // its (composite) header, e.g. "Devices & Telemetry" → "Readers &
+      // Telemetry"; untagged sections keep their static label.
+      label: s.skinLabel ? s.skinLabel(labels) : s.label,
       children: s.items.map(navItemToMenuItem),
     })),
   ];
