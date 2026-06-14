@@ -47,6 +47,7 @@ const { RangePicker } = DatePicker;
 // further tailor the table — any column can be hidden/reordered/advanced.
 const ASSETS_PAGE = 'assets';
 const DEFAULT_ADVANCED_COLUMNS = ['created_at'];
+type AssetColumn = ColumnsType<AssetResponse>[number];
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -469,7 +470,7 @@ export function AssetList() {
               ),
           }}
           columns={applyDefaultSort(
-            applyColumnConfig(
+            applyColumnConfig<AssetColumn>(
               [
                 { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
             // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;

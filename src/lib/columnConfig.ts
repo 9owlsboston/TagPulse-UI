@@ -121,7 +121,7 @@ export interface DefaultSort {
  * No-op for a key that matches no column. Columns are shallow-cloned only where
  * the sort order changes, so referential identity is preserved elsewhere.
  */
-export function applyDefaultSort<T extends KeyedColumn>(
+export function applyDefaultSort<T>(
   columns: readonly T[],
   sort: DefaultSort | null,
 ): T[] {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { UiConfig } from '@/api/generated/models/UiConfig';
+import { SortSpec } from '@/api/generated/models/SortSpec';
 import {
   UiConfigProvider,
   useLabel,
@@ -101,7 +102,7 @@ describe('nav / cards / columns / theme leaf consumption', () => {
       nav: { hidden: ['sec-inventory'], order: ['/', '/alerts'] },
       cards: { dashboard: { hidden: ['low-stock'], order: ['devices'] } },
       columns: { tag_reads: { hidden: ['device_id'], advanced: ['tid', 'user_memory_hex'] } },
-      tables: { tag_reads: { defaultSort: { key: 'timestamp', dir: 'desc' } } },
+      tables: { tag_reads: { defaultSort: { key: 'timestamp', dir: SortSpec.dir.DESC } } },
       theme: { variant: 'operator', cardStyle: 'sparkline' },
     };
     mockUseUiConfig.mockReturnValue({ data });
