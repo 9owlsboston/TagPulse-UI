@@ -15,6 +15,10 @@
  *   - **`cards`** — per-page card visibility + ordering, via
  *     {@link useCardGroup} (applied in `Dashboard.tsx`) as the *default* layer
  *     beneath the existing device-local localStorage personalisation.
+ *   - **`columns`** — per-page list-column visibility / ordering / *advanced*
+ *     (default-OFF) keys, via {@link useColumnGroup} (applied in the list
+ *     pages). The `advanced` set drives the "Advanced columns" toggle that
+ *     hides plumbing columns (TID, raw memory) by default (ADR-032 §6.3).
  *   - **`theme`** — persona variant + card style, exposed via
  *     {@link useThemeConfig} and reflected onto `<html>` as
  *     `data-ui-variant` / `data-card-style` (the CSS seam ADR-029 tokens hook).
@@ -40,6 +44,13 @@ export interface ResolvedCardGroup {
   order: string[];
 }
 
+/** Normalised per-page column-group shape (lists always present). */
+export interface ResolvedColumnGroup {
+  hidden: string[];
+  order: string[];
+  advanced: string[];
+}
+
 /** Normalised theme-leaf shape (defaults = today's UI). */
 export interface ResolvedThemeConfig {
   variant: string;
@@ -53,6 +64,8 @@ interface UiConfigContextValue {
   nav: ResolvedNavConfig;
   /** Per-page card groups keyed by page name (e.g. `"dashboard"`). */
   cards: Record<string, ResolvedCardGroup>;
+  /** Per-page column groups keyed by page name (e.g. `"tag_reads"`). */
+  columns: Record<string, ResolvedColumnGroup>;
   /** Persona theme variant + card style. */
   theme: ResolvedThemeConfig;
 }
@@ -64,6 +77,7 @@ const DEFAULT_CONTEXT: UiConfigContextValue = {
   labels: { ...DEFAULT_LABELS },
   nav: EMPTY_NAV,
   cards: {},
+  columns: {},
   theme: DEFAULT_THEME,
 };
 
@@ -77,10 +91,19 @@ export function UiConfigProvider({ children }: { children: ReactNode }) {
     for (const [page, group] of Object.entries(data?.cards ?? {})) {
       cards[page] = { hidden: group?.hidden ?? [], order: group?.order ?? [] };
     }
+    const columns: Record<string, ResolvedColumnGroup> = {};
+    for (const [page, group] of Object.entries(data?.columns ?? {})) {
+      columns[page] = {
+        hidden: group?.hidden ?? [],
+        order: group?.order ?? [],
+        advanced: group?.advanced ?? [],
+      };
+    }
     return {
       labels: { ...DEFAULT_LABELS, ...(data?.labels ?? {}) },
       nav: { hidden: data?.nav?.hidden ?? [], order: data?.nav?.order ?? [] },
       cards,
+      columns,
       theme: {
         variant: data?.theme?.variant ?? DEFAULT_THEME.variant,
         cardStyle: data?.theme?.cardStyle ?? DEFAULT_THEME.cardStyle,
@@ -135,6 +158,16 @@ export function useNavConfig(): ResolvedNavConfig {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useCardGroup(page: string): ResolvedCardGroup {
   return useUiConfigContext().cards[page] ?? { hidden: [], order: [] };
+}
+
+/**
+ * The column-group config for a list page (e.g. `"tag_reads"`). Always returns
+ * a normalised shape so callers never branch on `undefined`. `advanced` lists
+ * the plumbing columns hidden behind the page's "Advanced columns" toggle.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useColumnGroup(page: string): ResolvedColumnGroup {
+  return useUiConfigContext().columns[page] ?? { hidden: [], order: [], advanced: [] };
 }
 
 /** Persona theme variant + card style. */
