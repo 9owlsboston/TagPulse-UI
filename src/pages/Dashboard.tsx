@@ -23,7 +23,8 @@ import {
 import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
 import { useDashboardSparklines } from '@/hooks/useDashboardSparklines';
-import { useCardGroup } from '@/lib/uiConfig';
+import { useCardGroup, useUiConfigContext } from '@/lib/uiConfig';
+import { pluralizeLabel, type LabelKey } from '@/lib/uiLabels';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import type { DashboardSummary } from '@/types';
 
@@ -49,6 +50,12 @@ const HIDDEN_KEY = 'tagpulse.dashboard.tileHidden';
 interface TileDef {
   id: string;
   title: string;
+  /**
+   * Sprint 60 (ADR-032 §4) — when set, the card title renders the resolved
+   * label skin (pluralized) instead of the static `title`, so `Device` →
+   * `Reader` is configuration, not a code edit. Untagged tiles keep `title`.
+   */
+  labelKey?: LabelKey;
   to: string;
   prefix: ReactNode;
   value: (s: DashboardSummary) => number;
@@ -65,6 +72,7 @@ const TILES: TileDef[] = [
   {
     id: 'devices',
     title: 'Devices',
+    labelKey: 'device',
     to: '/devices',
     prefix: <HddOutlined />,
     value: (s) => s.devices_online,
@@ -182,6 +190,18 @@ export function Dashboard() {
   // KPI numbers (graceful degradation per backend contract).
   const { data: sparklines } = useDashboardSparklines();
   const { brandColor } = useThemeMode();
+  // Sprint 60 (ADR-032 §4 `labels`) — resolve a tile's display title against
+  // the label skin so a `labelKey`-tagged card (e.g. devices → `Reader`)
+  // renders the configured term; untagged tiles keep their static title. The
+  // skin registry is *singular* ("Reader"), so we pluralize the skinned value;
+  // the static `title` is already plural ("Devices"), so the no-skin fallback
+  // returns it verbatim (never pluralize it → no "Deviceses").
+  const { labels } = useUiConfigContext();
+  const tileTitle = (tile: TileDef): string => {
+    if (!tile.labelKey) return tile.title;
+    const skin = labels[tile.labelKey];
+    return skin ? pluralizeLabel(skin) : tile.title;
+  };
   // Sprint 60 (ADR-032 §4 `cards`) — the tenant/role/user-server card config is
   // the *default* layer; the existing device-local localStorage personalisation
   // overrides it when the operator has made an explicit choice on this device.
@@ -299,9 +319,10 @@ export function Dashboard() {
           const tileValue = data ? tile.value(data) : 0;
           const tileSuffix = data && tile.suffix ? tile.suffix(data) : undefined;
           const tileSpark = sparklines?.tiles[tile.id];
+          const title = tileTitle(tile);
           const card = (
             <KpiTile
-              title={tile.title}
+              title={title}
               value={tileValue}
               prefix={<span style={{ color: brandColor }}>{tile.prefix}</span>}
               suffix={tileSuffix}
@@ -309,7 +330,7 @@ export function Dashboard() {
               interactive={!customizing}
               dimmed={customizing && isHidden}
               sparkline={tileSpark}
-              sparklineLabel={tile.title}
+              sparklineLabel={title}
             />
           );
           return (
@@ -320,7 +341,7 @@ export function Dashboard() {
                   <Space style={{ marginTop: 8 }} wrap>
                     <Button
                       size="small"
-                      aria-label={`Move ${tile.title} up`}
+                      aria-label={`Move ${title} up`}
                       disabled={idx === 0}
                       onClick={() => move(tile.id, -1)}
                     >
@@ -328,7 +349,7 @@ export function Dashboard() {
                     </Button>
                     <Button
                       size="small"
-                      aria-label={`Move ${tile.title} down`}
+                      aria-label={`Move ${title} down`}
                       disabled={idx === visibleTiles.length - 1}
                       onClick={() => move(tile.id, 1)}
                     >
@@ -337,7 +358,7 @@ export function Dashboard() {
                     <Button
                       size="small"
                       icon={isHidden ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                      aria-label={isHidden ? `Show ${tile.title}` : `Hide ${tile.title}`}
+                      aria-label={isHidden ? `Show ${title}` : `Hide ${title}`}
                       onClick={() => toggleHidden(tile.id)}
                     />
                   </Space>

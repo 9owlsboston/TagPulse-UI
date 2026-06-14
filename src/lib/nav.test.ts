@@ -87,3 +87,26 @@ describe('route-reachability smoke (Sprint 54.2)', () => {
     expect(NAV_TOP.length).toBeLessThanOrEqual(3);
   });
 });
+
+describe('label-skin section header (Sprint 60, ADR-032 §4)', () => {
+  const devicesSection = NAV_SECTIONS.find((s) => s.key === 'sec-devices-connections');
+
+  it('the Devices & Telemetry section carries a skinLabel', () => {
+    expect(devicesSection).toBeDefined();
+    expect(devicesSection!.skinLabel).toBeInstanceOf(Function);
+  });
+
+  it('reproduces the static label byte-for-byte under the default label map', () => {
+    // An empty override map resolves to DEFAULT_LABELS, so configuring nothing
+    // must render exactly the static header — no UI change for unskinned tenants.
+    expect(devicesSection!.skinLabel!({})).toBe(devicesSection!.label);
+    expect(devicesSection!.skinLabel!({})).toBe('Devices & Telemetry');
+  });
+
+  it('skins only the device entity, keeping "Telemetry" singular', () => {
+    // The WM skin (device → Reader) must yield "Readers & Telemetry", NOT a
+    // naive pluralization of the whole label (which would mangle "Telemetry").
+    expect(devicesSection!.skinLabel!({ device: 'Reader' })).toBe('Readers & Telemetry');
+  });
+});
+

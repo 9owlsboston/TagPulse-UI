@@ -49,6 +49,10 @@ vi.mock('@/hooks/useDashboardSparklines', () => ({
 let cardGroup: ResolvedCardGroup = { hidden: [], order: [] };
 vi.mock('@/lib/uiConfig', () => ({
   useCardGroup: () => cardGroup,
+  // Sprint 60 label skin — the Dashboard resolves tile titles through the
+  // label map; this suite only exercises card hide/order, so a default
+  // (empty) label map keeps titles at their static values.
+  useUiConfigContext: () => ({ labels: {} }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

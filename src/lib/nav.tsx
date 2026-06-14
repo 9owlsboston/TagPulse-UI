@@ -47,7 +47,7 @@ import {
   ThunderboltOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import type { LabelKey } from '@/lib/uiLabels';
+import { pluralizeLabel, resolveLabel, type LabelKey, type LabelMap } from '@/lib/uiLabels';
 
 export type MinRole = 'viewer' | 'editor' | 'admin';
 export type RequiredMode = 'asset' | 'inventory';
@@ -71,6 +71,16 @@ export interface NavSection {
   key: string;
   label: string;
   icon: ReactNode;
+  /**
+   * Configurable-UI label-skin hook (Sprint 60, ADR-032 §4). When set, the
+   * section header renders this function's result over the resolved label map
+   * instead of the static `label`. Used for composite headers (e.g.
+   * "Devices & Telemetry" → "Readers & Telemetry") where only part of the
+   * string is a skinnable entity, so naive pluralization can't be applied to
+   * the whole label. Unset sections render `label` verbatim. Under the default
+   * label map the function reproduces `label` byte-for-byte.
+   */
+  skinLabel?: (labels: LabelMap) => string;
   items: NavItem[];
 }
 
@@ -123,6 +133,7 @@ export const NAV_SECTIONS: NavSection[] = [
     key: 'sec-devices-connections',
     label: 'Devices & Telemetry',
     icon: <DeploymentUnitOutlined />,
+    skinLabel: (labels) => `${pluralizeLabel(resolveLabel(labels, 'device'))} & Telemetry`,
     items: [
       { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer', labelKey: 'device' },
       { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
