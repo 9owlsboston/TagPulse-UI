@@ -254,6 +254,7 @@ export function TagReads() {
       { header: 'epc', accessor: (r) => r.epc },
       { header: 'epc_scheme', accessor: (r) => r.epc_scheme },
       { header: 'tid', accessor: (r) => r.tid },
+      { header: 'user_memory_hex', accessor: (r) => r.user_memory_hex },
       { header: 'device_id', accessor: (r) => r.device_id },
       { header: 'timestamp', accessor: (r) => r.timestamp },
       { header: 'signal_strength', accessor: (r) => r.signal_strength },
