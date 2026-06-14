@@ -57,6 +57,11 @@ export interface ResolvedThemeConfig {
   cardStyle: string;
 }
 
+/** A resolved per-page default sort (`null` = no configured default). */
+export interface ResolvedTableConfig {
+  defaultSort: { key: string; dir: 'asc' | 'desc' } | null;
+}
+
 interface UiConfigContextValue {
   /** The resolved label map (canonical defaults overlaid with any skin). */
   labels: LabelMap;
@@ -66,6 +71,8 @@ interface UiConfigContextValue {
   cards: Record<string, ResolvedCardGroup>;
   /** Per-page column groups keyed by page name (e.g. `"tag_reads"`). */
   columns: Record<string, ResolvedColumnGroup>;
+  /** Per-page table defaults (default sort) keyed by page name. */
+  tables: Record<string, ResolvedTableConfig>;
   /** Persona theme variant + card style. */
   theme: ResolvedThemeConfig;
 }
@@ -78,6 +85,7 @@ const DEFAULT_CONTEXT: UiConfigContextValue = {
   nav: EMPTY_NAV,
   cards: {},
   columns: {},
+  tables: {},
   theme: DEFAULT_THEME,
 };
 
@@ -99,11 +107,19 @@ export function UiConfigProvider({ children }: { children: ReactNode }) {
         advanced: group?.advanced ?? [],
       };
     }
+    const tables: Record<string, ResolvedTableConfig> = {};
+    for (const [page, cfg] of Object.entries(data?.tables ?? {})) {
+      const sort = cfg?.defaultSort;
+      tables[page] = {
+        defaultSort: sort ? { key: sort.key, dir: sort.dir ?? 'asc' } : null,
+      };
+    }
     return {
       labels: { ...DEFAULT_LABELS, ...(data?.labels ?? {}) },
       nav: { hidden: data?.nav?.hidden ?? [], order: data?.nav?.order ?? [] },
       cards,
       columns,
+      tables,
       theme: {
         variant: data?.theme?.variant ?? DEFAULT_THEME.variant,
         cardStyle: data?.theme?.cardStyle ?? DEFAULT_THEME.cardStyle,
@@ -168,6 +184,15 @@ export function useCardGroup(page: string): ResolvedCardGroup {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useColumnGroup(page: string): ResolvedColumnGroup {
   return useUiConfigContext().columns[page] ?? { hidden: [], order: [], advanced: [] };
+}
+
+/**
+ * The table config (default sort) for a list page (e.g. `"tag_reads"`). Returns
+ * `{ defaultSort: null }` when the page has no configured default.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useTableConfig(page: string): ResolvedTableConfig {
+  return useUiConfigContext().tables[page] ?? { defaultSort: null };
 }
 
 /** Persona theme variant + card style. */

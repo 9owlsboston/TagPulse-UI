@@ -7,6 +7,7 @@ import {
   useNavConfig,
   useCardGroup,
   useColumnGroup,
+  useTableConfig,
   useThemeConfig,
 } from '@/lib/uiConfig';
 
@@ -75,6 +76,7 @@ function LeafProbe() {
   const nav = useNavConfig();
   const cards = useCardGroup('dashboard');
   const columns = useColumnGroup('tag_reads');
+  const tables = useTableConfig('tag_reads');
   const theme = useThemeConfig();
   return (
     <>
@@ -84,6 +86,9 @@ function LeafProbe() {
       <span data-testid="cards-order">{cards.order.join(',')}</span>
       <span data-testid="columns-hidden">{columns.hidden.join(',')}</span>
       <span data-testid="columns-advanced">{columns.advanced.join(',')}</span>
+      <span data-testid="tables-sort">
+        {tables.defaultSort ? `${tables.defaultSort.key}:${tables.defaultSort.dir}` : 'none'}
+      </span>
       <span data-testid="theme-variant">{theme.variant}</span>
       <span data-testid="theme-card-style">{theme.cardStyle}</span>
     </>
@@ -96,6 +101,7 @@ describe('nav / cards / columns / theme leaf consumption', () => {
       nav: { hidden: ['sec-inventory'], order: ['/', '/alerts'] },
       cards: { dashboard: { hidden: ['low-stock'], order: ['devices'] } },
       columns: { tag_reads: { hidden: ['device_id'], advanced: ['tid', 'user_memory_hex'] } },
+      tables: { tag_reads: { defaultSort: { key: 'timestamp', dir: 'desc' } } },
       theme: { variant: 'operator', cardStyle: 'sparkline' },
     };
     mockUseUiConfig.mockReturnValue({ data });
@@ -110,6 +116,7 @@ describe('nav / cards / columns / theme leaf consumption', () => {
     expect(screen.getByTestId('cards-order')).toHaveTextContent('devices');
     expect(screen.getByTestId('columns-hidden')).toHaveTextContent('device_id');
     expect(screen.getByTestId('columns-advanced')).toHaveTextContent('tid,user_memory_hex');
+    expect(screen.getByTestId('tables-sort')).toHaveTextContent('timestamp:desc');
     expect(screen.getByTestId('theme-variant')).toHaveTextContent('operator');
     expect(screen.getByTestId('theme-card-style')).toHaveTextContent('sparkline');
   });
@@ -125,6 +132,7 @@ describe('nav / cards / columns / theme leaf consumption', () => {
     expect(screen.getByTestId('cards-order')).toHaveTextContent('');
     expect(screen.getByTestId('columns-hidden')).toHaveTextContent('');
     expect(screen.getByTestId('columns-advanced')).toHaveTextContent('');
+    expect(screen.getByTestId('tables-sort')).toHaveTextContent('none');
     expect(screen.getByTestId('theme-variant')).toHaveTextContent('default');
     expect(screen.getByTestId('theme-card-style')).toHaveTextContent('default');
   });

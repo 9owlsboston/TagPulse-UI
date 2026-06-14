@@ -14,8 +14,8 @@ import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
-import { useColumnGroup } from '@/lib/uiConfig';
-import { applyColumnConfig, hasAdvancedColumns } from '@/lib/columnConfig';
+import { useColumnGroup, useTableConfig } from '@/lib/uiConfig';
+import { applyColumnConfig, applyDefaultSort, hasAdvancedColumns } from '@/lib/columnConfig';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -64,6 +64,7 @@ export function TagReads() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const columnConfig = useColumnGroup(TAG_READS_PAGE);
+  const tableConfig = useTableConfig(TAG_READS_PAGE);
 
   const { data: devices } = useDevices();
   const { data: rawData, isLoading } = useTagReads(
@@ -206,14 +207,18 @@ export function TagReads() {
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:
   // hide plumbing (TID / User Memory) behind the Advanced toggle by default,
   // plus any tenant-configured hidden/order/advanced. With no config and the
-  // toggle off, only the default-advanced columns are dropped.
+  // toggle off, only the default-advanced columns are dropped. A configured
+  // `tables.tag_reads.defaultSort` then overrides the column's own default sort.
   const visibleColumns = useMemo(
     () =>
-      applyColumnConfig(columns, columnConfig, {
-        defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
-        showAdvanced,
-      }),
-    [columns, columnConfig, showAdvanced],
+      applyDefaultSort(
+        applyColumnConfig(columns, columnConfig, {
+          defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
+          showAdvanced,
+        }),
+        tableConfig.defaultSort,
+      ),
+    [columns, columnConfig, showAdvanced, tableConfig.defaultSort],
   );
 
   const advancedColumnsAvailable = useMemo(
