@@ -113,6 +113,31 @@ export function useStockLevels(params?: { product_id?: string; zone_id?: string 
   });
 }
 
+// §59.8 Units table — individual stock-item units for a product (or lot/zone).
+export function useStockItems(
+  params?: {
+    product_id?: string;
+    lot_id?: string;
+    zone_id?: string;
+    state?: string;
+    limit?: number;
+  },
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: ['inventory', 'stock-items', params],
+    queryFn: () =>
+      InventoryService.listStockItemsStockItemsGet(
+        params?.product_id ?? undefined,
+        params?.lot_id ?? undefined,
+        params?.zone_id ?? undefined,
+        params?.state ?? undefined,
+        params?.limit ?? 200,
+      ),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 export function useStockMovements(params?: {
   product_id?: string;
   stock_item_id?: string;
