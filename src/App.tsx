@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AntApp from 'antd/es/app';
 import Spin from 'antd/es/spin';
 import { AuthProvider } from '@/lib/auth';
+import { UiConfigProvider } from '@/lib/uiConfig';
 import { TenantGuard } from '@/components/TenantGuard';
 import { Layout } from '@/components/Layout';
 import { ApiHealthGate } from '@/components/ApiHealthGate';
@@ -89,9 +90,11 @@ export function App() {
           <AntApp>
             <ApiHealthGate>
               <AuthProvider>
-                <BrowserRouter>
-                  <AppRoutes />
-                </BrowserRouter>
+                <UiConfigProvider>
+                  <BrowserRouter>
+                    <AppRoutes />
+                  </BrowserRouter>
+                </UiConfigProvider>
               </AuthProvider>
             </ApiHealthGate>
           </AntApp>

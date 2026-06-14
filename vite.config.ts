@@ -179,6 +179,7 @@ export default defineConfig({
       '/tag-data-mappings': 'http://localhost:8000',
       '/telemetry-models': 'http://localhost:8000',
       '/telemetry': 'http://localhost:8000',
+      '/ui-config': 'http://localhost:8000',
       '/dashboard': 'http://localhost:8000',
       '/metrics': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
