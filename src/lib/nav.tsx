@@ -185,3 +185,64 @@ export function matchesPath(key: string, pathname: string): boolean {
   if (pathname === key) return true;
   return pathname.startsWith(key + '/');
 }
+
+// ─── Sprint 60 (ADR-032 §4 `nav`) — config-driven visibility + ordering ─────
+
+/** The resolved `nav` leaf: keys to hide and an explicit ordering. */
+export interface NavConfigApplied {
+  hidden: string[];
+  order: string[];
+}
+
+/**
+ * Stable reorder of `{ key }` items by an explicit `order` list. Keys present
+ * in `order` sort to the front in that order; keys absent from it keep their
+ * original relative position behind the ordered ones. An empty `order` is a
+ * no-op (today's order preserved).
+ */
+function orderByKeys<T extends { key: string }>(items: T[], order: string[]): T[] {
+  if (order.length === 0) return items;
+  const idx = new Map(order.map((k, i) => [k, i] as const));
+  return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => {
+      const ai = idx.get(a.item.key) ?? Number.MAX_SAFE_INTEGER;
+      const bi = idx.get(b.item.key) ?? Number.MAX_SAFE_INTEGER;
+      return ai !== bi ? ai - bi : a.i - b.i;
+    })
+    .map((x) => x.item);
+}
+
+/**
+ * Apply the resolved `nav` leaf (ADR-032 §4) to the already role/mode-filtered
+ * nav. **Config can only further restrict or reorder, never reveal** — it runs
+ * *after* the role/mode authorization filter, so a `hidden` entry hides a
+ * section, a top item, or an item within a section, and an emptied section
+ * drops out entirely. `order` is matched against the same flat key space, so a
+ * tenant can reorder sections, top items, and items-within-a-section from one
+ * list. Both inputs default to empty (today's nav unchanged).
+ */
+export function applyNavConfig(
+  top: NavItem[],
+  sections: NavSection[],
+  cfg: NavConfigApplied,
+): { top: NavItem[]; sections: NavSection[] } {
+  const hidden = new Set(cfg.hidden);
+  const filteredTop = orderByKeys(
+    top.filter((item) => !hidden.has(item.key)),
+    cfg.order,
+  );
+  const filteredSections = orderByKeys(
+    sections
+      .map((sec) => ({
+        ...sec,
+        items: orderByKeys(
+          sec.items.filter((item) => !hidden.has(item.key)),
+          cfg.order,
+        ),
+      }))
+      .filter((sec) => !hidden.has(sec.key) && sec.items.length > 0),
+    cfg.order,
+  );
+  return { top: filteredTop, sections: filteredSections };
+}

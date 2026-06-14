@@ -23,6 +23,7 @@ import {
 import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
 import { useDashboardSparklines } from '@/hooks/useDashboardSparklines';
+import { useCardGroup } from '@/lib/uiConfig';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import type { DashboardSummary } from '@/types';
 
@@ -139,11 +140,28 @@ function loadIds(key: string): string[] {
   }
 }
 
+/** True when the user has an explicit, device-local layout choice stored. */
+function hasStored(key: string): boolean {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
 function saveIds(key: string, value: string[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
     /* localStorage may be disabled / full — ignore, personalisation is best-effort */
+  }
+}
+
+function removeIds(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* best-effort */
   }
 }
 
@@ -154,17 +172,27 @@ export function Dashboard() {
   // KPI numbers (graceful degradation per backend contract).
   const { data: sparklines } = useDashboardSparklines();
   const { brandColor } = useThemeMode();
+  // Sprint 60 (ADR-032 §4 `cards`) — the tenant/role/user-server card config is
+  // the *default* layer; the existing device-local localStorage personalisation
+  // overrides it when the operator has made an explicit choice on this device.
+  // "Reset layout" clears the local choice and reverts to the configured default.
+  const cardConfig = useCardGroup('dashboard');
   const [orderState, setOrderState] = useState<string[]>(() => loadIds(ORDER_KEY));
   const [hiddenState, setHiddenState] = useState<string[]>(() => loadIds(HIDDEN_KEY));
+  const [orderPresent, setOrderPresent] = useState<boolean>(() => hasStored(ORDER_KEY));
+  const [hiddenPresent, setHiddenPresent] = useState<boolean>(() => hasStored(HIDDEN_KEY));
   const [customizing, setCustomizing] = useState(false);
 
-  // Merge saved order with canonical TILES so newly-shipped tiles auto-append
-  // for users who already saved a layout.
+  const effectiveOrder = orderPresent ? orderState : cardConfig.order;
+  const effectiveHidden = hiddenPresent ? hiddenState : cardConfig.hidden;
+
+  // Merge effective order with canonical TILES so newly-shipped tiles auto-append
+  // for users who already saved a layout (or whose tenant config omits one).
   const orderedTiles = useMemo<TileDef[]>(() => {
     const byId = new Map(TILES.map((t) => [t.id, t]));
     const seen = new Set<string>();
     const result: TileDef[] = [];
-    for (const id of orderState) {
+    for (const id of effectiveOrder) {
       const tile = byId.get(id);
       if (tile && !seen.has(id)) {
         result.push(tile);
@@ -175,9 +203,9 @@ export function Dashboard() {
       if (!seen.has(tile.id)) result.push(tile);
     }
     return result;
-  }, [orderState]);
+  }, [effectiveOrder]);
 
-  const hidden = useMemo(() => new Set(hiddenState), [hiddenState]);
+  const hidden = useMemo(() => new Set(effectiveHidden), [effectiveHidden]);
   const visibleTiles = customizing
     ? orderedTiles
     : orderedTiles.filter((t) => !hidden.has(t.id));
@@ -194,20 +222,27 @@ export function Dashboard() {
     next[idx] = b;
     next[swap] = a;
     setOrderState(next);
+    setOrderPresent(true);
     saveIds(ORDER_KEY, next);
   };
 
   const toggleHidden = (id: string): void => {
-    const next = hidden.has(id) ? hiddenState.filter((x) => x !== id) : [...hiddenState, id];
+    const next = hidden.has(id)
+      ? [...effectiveHidden].filter((x) => x !== id)
+      : [...effectiveHidden, id];
     setHiddenState(next);
+    setHiddenPresent(true);
     saveIds(HIDDEN_KEY, next);
   };
 
   const resetLayout = (): void => {
+    // Revert to the configured (tenant/role) default, not "show everything".
     setOrderState([]);
     setHiddenState([]);
-    saveIds(ORDER_KEY, []);
-    saveIds(HIDDEN_KEY, []);
+    setOrderPresent(false);
+    setHiddenPresent(false);
+    removeIds(ORDER_KEY);
+    removeIds(HIDDEN_KEY);
   };
 
   return (

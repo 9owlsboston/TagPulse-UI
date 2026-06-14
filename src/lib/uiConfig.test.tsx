@@ -1,7 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { UiConfig } from '@/api/generated/models/UiConfig';
-import { UiConfigProvider, useLabel } from '@/lib/uiConfig';
+import {
+  UiConfigProvider,
+  useLabel,
+  useNavConfig,
+  useCardGroup,
+  useColumnGroup,
+  useThemeConfig,
+} from '@/lib/uiConfig';
 
 // Drive the provider off a mocked query so we don't stand up a backend.
 const mockUseUiConfig = vi.fn();
@@ -61,5 +68,76 @@ describe('useLabel', () => {
       </UiConfigProvider>,
     );
     expect(screen.getByTestId('device-plural')).toHaveTextContent('Devices');
+  });
+});
+
+function LeafProbe() {
+  const nav = useNavConfig();
+  const cards = useCardGroup('dashboard');
+  const columns = useColumnGroup('tag_reads');
+  const theme = useThemeConfig();
+  return (
+    <>
+      <span data-testid="nav-hidden">{nav.hidden.join(',')}</span>
+      <span data-testid="nav-order">{nav.order.join(',')}</span>
+      <span data-testid="cards-hidden">{cards.hidden.join(',')}</span>
+      <span data-testid="cards-order">{cards.order.join(',')}</span>
+      <span data-testid="columns-hidden">{columns.hidden.join(',')}</span>
+      <span data-testid="columns-advanced">{columns.advanced.join(',')}</span>
+      <span data-testid="theme-variant">{theme.variant}</span>
+      <span data-testid="theme-card-style">{theme.cardStyle}</span>
+    </>
+  );
+}
+
+describe('nav / cards / columns / theme leaf consumption', () => {
+  it('exposes the resolved nav, cards, columns and theme leaves', () => {
+    const data: UiConfig = {
+      nav: { hidden: ['sec-inventory'], order: ['/', '/alerts'] },
+      cards: { dashboard: { hidden: ['low-stock'], order: ['devices'] } },
+      columns: { tag_reads: { hidden: ['device_id'], advanced: ['tid', 'user_memory_hex'] } },
+      theme: { variant: 'operator', cardStyle: 'sparkline' },
+    };
+    mockUseUiConfig.mockReturnValue({ data });
+    render(
+      <UiConfigProvider>
+        <LeafProbe />
+      </UiConfigProvider>,
+    );
+    expect(screen.getByTestId('nav-hidden')).toHaveTextContent('sec-inventory');
+    expect(screen.getByTestId('nav-order')).toHaveTextContent('/,/alerts');
+    expect(screen.getByTestId('cards-hidden')).toHaveTextContent('low-stock');
+    expect(screen.getByTestId('cards-order')).toHaveTextContent('devices');
+    expect(screen.getByTestId('columns-hidden')).toHaveTextContent('device_id');
+    expect(screen.getByTestId('columns-advanced')).toHaveTextContent('tid,user_memory_hex');
+    expect(screen.getByTestId('theme-variant')).toHaveTextContent('operator');
+    expect(screen.getByTestId('theme-card-style')).toHaveTextContent('sparkline');
+  });
+
+  it('returns normalised empty defaults when leaves are absent', () => {
+    mockUseUiConfig.mockReturnValue({ data: { labels: { device: 'Reader' } } });
+    render(
+      <UiConfigProvider>
+        <LeafProbe />
+      </UiConfigProvider>,
+    );
+    expect(screen.getByTestId('nav-hidden')).toHaveTextContent('');
+    expect(screen.getByTestId('cards-order')).toHaveTextContent('');
+    expect(screen.getByTestId('columns-hidden')).toHaveTextContent('');
+    expect(screen.getByTestId('columns-advanced')).toHaveTextContent('');
+    expect(screen.getByTestId('theme-variant')).toHaveTextContent('default');
+    expect(screen.getByTestId('theme-card-style')).toHaveTextContent('default');
+  });
+
+  it('reflects the resolved theme leaf onto <html> data attributes', () => {
+    const data: UiConfig = { theme: { variant: 'power', cardStyle: 'sparkline' } };
+    mockUseUiConfig.mockReturnValue({ data });
+    render(
+      <UiConfigProvider>
+        <LeafProbe />
+      </UiConfigProvider>,
+    );
+    expect(document.documentElement.getAttribute('data-ui-variant')).toBe('power');
+    expect(document.documentElement.getAttribute('data-card-style')).toBe('sparkline');
   });
 });

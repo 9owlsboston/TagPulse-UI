@@ -14,6 +14,8 @@ import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
+import { useColumnGroup } from '@/lib/uiConfig';
+import { applyColumnConfig, hasAdvancedColumns } from '@/lib/columnConfig';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -40,6 +42,14 @@ const SIGNAL_SERIES: TpSeries[] = [{ key: 'signal', label: 'Signal' }];
 const VIRTUAL_ROW_THRESHOLD = 500;
 const VIRTUAL_SCROLL_HEIGHT = 480;
 
+// Sprint 60 (ADR-032 §6.3) — the plumbing identity columns hidden behind the
+// "Advanced columns" toggle by default. `tid` (factory tag serial) and
+// `user_memory_hex` (raw user-memory bank) are meaningless to a non-technical
+// operator; the config `columns.tag_reads.advanced` may extend this set, and
+// `columns.tag_reads.hidden` / `.order` further tailor the table per tenant.
+const TAG_READS_PAGE = 'tag_reads';
+const DEFAULT_ADVANCED_COLUMNS = ['tid', 'user_memory_hex'];
+
 export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
@@ -51,6 +61,9 @@ export function TagReads() {
   const [hasLocation, setHasLocation] = useState(false);
   const [epcScheme, setEpcScheme] = useState<string | undefined>();
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const columnConfig = useColumnGroup(TAG_READS_PAGE);
 
   const { data: devices } = useDevices();
   const { data: rawData, isLoading } = useTagReads(
@@ -128,17 +141,35 @@ export function TagReads() {
 
   const columns = useMemo<ColumnsType<TagReadResponse>>(
     () => [
-      { title: 'Tag ID', dataIndex: 'tag_id' },
-      { title: 'EPC', dataIndex: 'epc', render: (v: string | null | undefined) => v ?? '—' },
+      { title: 'Tag ID', key: 'tag_id', dataIndex: 'tag_id' },
+      {
+        title: 'EPC',
+        key: 'epc',
+        dataIndex: 'epc',
+        render: (v: string | null | undefined) => v ?? '—',
+      },
       {
         title: 'Scheme',
+        key: 'epc_scheme',
         dataIndex: 'epc_scheme',
         render: (v: string | null | undefined) => v ?? '—',
       },
-      { title: 'TID', dataIndex: 'tid', render: (v: string | null | undefined) => v ?? '—' },
-      { title: 'Device', dataIndex: 'device_id' },
+      {
+        title: 'TID',
+        key: 'tid',
+        dataIndex: 'tid',
+        render: (v: string | null | undefined) => v ?? '—',
+      },
+      {
+        title: 'User Memory',
+        key: 'user_memory_hex',
+        dataIndex: 'user_memory_hex',
+        render: (v: string | null | undefined) => v ?? '—',
+      },
+      { title: 'Device', key: 'device_id', dataIndex: 'device_id' },
       {
         title: 'Timestamp',
+        key: 'timestamp',
         dataIndex: 'timestamp',
         sorter: (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
         render: (v: string, row: TagReadResponse) => {
@@ -150,19 +181,44 @@ export function TagReads() {
           );
         },
       },
-      { title: 'Signal', dataIndex: 'signal_strength', render: (v: number | null) => v ?? '—' },
+      {
+        title: 'Signal',
+        key: 'signal_strength',
+        dataIndex: 'signal_strength',
+        render: (v: number | null) => v ?? '—',
+      },
       {
         title: 'Latitude',
+        key: 'latitude',
         dataIndex: 'latitude',
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
       },
       {
         title: 'Longitude',
+        key: 'longitude',
         dataIndex: 'longitude',
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
       },
     ],
     [flashing],
+  );
+
+  // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:
+  // hide plumbing (TID / User Memory) behind the Advanced toggle by default,
+  // plus any tenant-configured hidden/order/advanced. With no config and the
+  // toggle off, only the default-advanced columns are dropped.
+  const visibleColumns = useMemo(
+    () =>
+      applyColumnConfig(columns, columnConfig, {
+        defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
+        showAdvanced,
+      }),
+    [columns, columnConfig, showAdvanced],
+  );
+
+  const advancedColumnsAvailable = useMemo(
+    () => hasAdvancedColumns(columns, columnConfig, DEFAULT_ADVANCED_COLUMNS),
+    [columns, columnConfig],
   );
 
   const deviceOptions = useMemo(
@@ -198,6 +254,7 @@ export function TagReads() {
       { header: 'epc', accessor: (r) => r.epc },
       { header: 'epc_scheme', accessor: (r) => r.epc_scheme },
       { header: 'tid', accessor: (r) => r.tid },
+      { header: 'user_memory_hex', accessor: (r) => r.user_memory_hex },
       { header: 'device_id', accessor: (r) => r.device_id },
       { header: 'timestamp', accessor: (r) => r.timestamp },
       { header: 'signal_strength', accessor: (r) => r.signal_strength },
@@ -288,6 +345,15 @@ export function TagReads() {
               Export rows CSV
             </Button>
           )}
+          {viewMode === 'table' && advancedColumnsAvailable && (
+            <Checkbox
+              checked={showAdvanced}
+              onChange={(e) => setShowAdvanced(e.target.checked)}
+              data-testid="tag-reads-advanced-columns-toggle"
+            >
+              Advanced columns
+            </Checkbox>
+          )}
         </Space>
         <Segmented
           options={[
@@ -302,7 +368,7 @@ export function TagReads() {
         isVirtual ? (
           <Table
             rowKey="id"
-            columns={columns}
+            columns={visibleColumns}
             dataSource={data}
             loading={isLoading}
             rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
@@ -314,7 +380,7 @@ export function TagReads() {
         ) : (
           <Table
             rowKey="id"
-            columns={columns}
+            columns={visibleColumns}
             dataSource={data}
             loading={isLoading}
             rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}

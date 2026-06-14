@@ -128,4 +128,32 @@ describe('TagReads', () => {
     // Table-mode CSV button must not be present in chart view.
     expect(screen.queryByTestId('tag-reads-export-rows-csv')).not.toBeInTheDocument();
   });
+
+  // Sprint 60 (ADR-032 §6.3) — TID + User Memory are advanced (default-OFF).
+  it('hides the TID and User Memory columns by default', () => {
+    render(<TagReads />, { wrapper });
+    expect(screen.queryByText('TID')).not.toBeInTheDocument();
+    expect(screen.queryByText('User Memory')).not.toBeInTheDocument();
+    // Non-plumbing columns stay visible.
+    expect(screen.getByText('EPC')).toBeInTheDocument();
+  });
+
+  it('offers an Advanced columns toggle that reveals the plumbing columns', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+    render(<TagReads />, { wrapper });
+    const toggle = screen.getByTestId('tag-reads-advanced-columns-toggle');
+    expect(toggle).toBeInTheDocument();
+    await user.click(toggle);
+    expect(screen.getByText('TID')).toBeInTheDocument();
+    expect(screen.getByText('User Memory')).toBeInTheDocument();
+  });
+
+  it('hides the Advanced columns toggle in chart view', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+    render(<TagReads />, { wrapper });
+    await user.click(screen.getByText('Chart'));
+    expect(
+      screen.queryByTestId('tag-reads-advanced-columns-toggle'),
+    ).not.toBeInTheDocument();
+  });
 });

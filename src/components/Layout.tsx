@@ -5,7 +5,7 @@ import Alert from 'antd/es/alert';
 import type { MenuProps } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { useUiConfigContext } from '@/lib/uiConfig';
+import { useUiConfigContext, useNavConfig } from '@/lib/uiConfig';
 import { pluralizeLabel } from '@/lib/uiLabels';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useVersionInfo, useHealthStatus } from '@/components/ApiHealthGate';
@@ -17,6 +17,7 @@ import Typography from 'antd/es/typography';
 import {
   NAV_SECTIONS,
   NAV_TOP,
+  applyNavConfig,
   matchesPath,
   sectionForPath,
   type NavItem,
@@ -92,6 +93,7 @@ export function Layout() {
   const { user, role, tenantId } = useAuth();
   const { data: tenantConfig } = useTenantConfig();
   const { labels } = useUiConfigContext();
+  const navConfig = useNavConfig();
   const versionInfo = useVersionInfo();
   const { degraded, degradedReason, degradedDetail } = useHealthStatus();
   const { mode } = useThemeMode();
@@ -102,11 +104,19 @@ export function Layout() {
 
   const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
-  const topItems = filterNav(NAV_TOP, role, enabledModes);
-  const sections = NAV_SECTIONS.map((sec) => ({
+  // Role/mode authorization filter first (what the viewer is *allowed* to see),
+  // then the Sprint 60 `nav` leaf (ADR-032 §4) further hides/reorders as
+  // presentation — config can only restrict, never reveal.
+  const roleFilteredTop = filterNav(NAV_TOP, role, enabledModes);
+  const roleFilteredSections = NAV_SECTIONS.map((sec) => ({
     ...sec,
     items: filterNav(sec.items, role, enabledModes),
   })).filter((sec) => sec.items.length > 0);
+  const { top: topItems, sections } = applyNavConfig(
+    roleFilteredTop,
+    roleFilteredSections,
+    navConfig,
+  );
 
   // Sprint 41 Phase F6 — collapsed-sidebar state, persisted per
   // (tenant, user). We re-hydrate whenever the storage key changes
