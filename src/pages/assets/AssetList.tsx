@@ -15,11 +15,14 @@ import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { ListPageShell } from '@/components/ListPageShell';
 import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';
 import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
+import { useColumnGroup, useTableConfig } from '@/lib/uiConfig';
+import { applyColumnConfig, applyDefaultSort, hasAdvancedColumns } from '@/lib/columnConfig';
 import { CategorySelect } from '@/components/CategorySelect';
 import {
   PendingLabelPicker,
@@ -35,6 +38,15 @@ import type { AssetCurrentLocation } from '@/api/generated/models/AssetCurrentLo
 import { AssetCreate } from '@/api/generated/models/AssetCreate';
 
 const { RangePicker } = DatePicker;
+
+// Sprint 60 (ADR-032 §6.3) — config-driven column presets. The registration
+// date is genuinely low-value for daily floor ops, so it is default-OFF behind
+// the "Advanced columns" toggle; `external_ref` stays visible (it's a business
+// cross-reference to the operator's WMS, not plumbing). A tenant's
+// `columns.assets.{hidden,order,advanced}` / `tables.assets.defaultSort`
+// further tailor the table — any column can be hidden/reordered/advanced.
+const ASSETS_PAGE = 'assets';
+const DEFAULT_ADVANCED_COLUMNS = ['created_at'];
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -126,6 +138,26 @@ export function AssetList() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm<AssetCreate>();
+
+  // Sprint 60 (ADR-032 §6.3) — config-driven column presets + advanced toggle.
+  const columnConfig = useColumnGroup(ASSETS_PAGE);
+  const tableConfig = useTableConfig(ASSETS_PAGE);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  // Lightweight key list for the toggle-availability check (the full column
+  // defs are applied inline below; this mirrors their addressable keys).
+  const baseColumnKeys = useMemo(
+    () => [
+      { key: 'name' },
+      { key: 'category' },
+      { key: 'external_ref' },
+      { key: 'status' },
+      { key: 'location' },
+      { key: 'last_seen' },
+      { key: 'created_at' },
+      ...(showTemperature ? [{ key: 'temperature' }] : []),
+    ],
+    [showTemperature],
+  );
 
   // Sprint 54.4 — re-apply URL-param status when the dashboard navigates
   // between tiles without a full reload.
@@ -327,6 +359,15 @@ export function AssetList() {
       >
         Never seen
       </Checkbox>
+      {hasAdvancedColumns(baseColumnKeys, columnConfig, DEFAULT_ADVANCED_COLUMNS) && (
+        <Checkbox
+          checked={showAdvanced}
+          onChange={(e) => setShowAdvanced(e.target.checked)}
+          data-testid="asset-list-advanced-columns-toggle"
+        >
+          Advanced columns
+        </Checkbox>
+      )}
     </Space>
   );
 
@@ -427,8 +468,10 @@ export function AssetList() {
                 />
               ),
           }}
-          columns={[
-            { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+          columns={applyDefaultSort(
+            applyColumnConfig(
+              [
+                { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
             // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
             // the Category column below is the sole classifier surface.
             // Sprint 37 row 3.3a — Category column. Renders the category
@@ -461,6 +504,7 @@ export function AssetList() {
             },
             {
               title: 'External Ref',
+              key: 'external_ref',
               dataIndex: 'external_ref',
               render: (v: string | null) => v ?? '—',
             },
@@ -520,6 +564,7 @@ export function AssetList() {
             },
             {
               title: 'Registered',
+              key: 'created_at',
               dataIndex: 'created_at',
               render: (v: string) => (
                 <Tooltip title={new Date(v).toLocaleString()}>{formatRelative(v)}</Tooltip>
@@ -546,7 +591,12 @@ export function AssetList() {
                   },
                 ]
               : []),
-          ]}
+              ],
+              columnConfig,
+              { defaultAdvanced: DEFAULT_ADVANCED_COLUMNS, showAdvanced },
+            ),
+            tableConfig.defaultSort,
+          )}
         />
       </ListPageShell>
 

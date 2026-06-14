@@ -242,6 +242,17 @@ describe('Assets pages — smoke', () => {
     expect(badge).toHaveTextContent('1');
   });
 
+  it('AssetList hides the Registered column by default and reveals it via the Advanced toggle', () => {
+    render(wrap(<AssetList />));
+    // 'Registered' is default-advanced (ADR-032 §6.3) — hidden until toggled.
+    expect(screen.queryByText('Registered')).not.toBeInTheDocument();
+    const toggle = screen.getByTestId('asset-list-advanced-columns-toggle');
+    fireEvent.click(toggle);
+    expect(screen.getByText('Registered')).toBeInTheDocument();
+    // Business columns stay visible regardless of the toggle.
+    expect(screen.getByText('WMS-007')).toBeInTheDocument();
+  });
+
   it('SitesZones renders site, zone and reader chip', () => {
     render(wrap(<SitesZones />));
     expect(screen.getByText('Locations')).toBeInTheDocument();
