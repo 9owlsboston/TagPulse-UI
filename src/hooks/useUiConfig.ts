@@ -12,7 +12,7 @@
  * renders today's UI. Long `staleTime` because presentation config changes
  * rarely; `retry: false` so a missing endpoint doesn't thrash.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { UiConfigService } from '@/api/generated/services/UiConfigService';
 import type { UiConfig } from '@/api/generated/models/UiConfig';
 
@@ -24,5 +24,23 @@ export function useUiConfig() {
     queryFn: () => UiConfigService.getUiConfigUiConfigGet(),
     staleTime: 5 * 60_000,
     retry: false,
+  });
+}
+
+/**
+ * Persist the calling user's own presentation overrides (ADR-032 §7 step 2,
+ * `PUT /ui-config/me`). The body is a **sparse** subset of the config document;
+ * an empty body `{}` clears the user override ("Reset to team default"). On
+ * success the resolved config query is invalidated so every consumer
+ * (`useLabel` / `useNavConfig` / `useCardGroup` / `useColumnGroup` / …) picks
+ * up the freshly-resolved document.
+ */
+export function useUpdateMyUiConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (override: UiConfig) => UiConfigService.putUiConfigMeUiConfigMePut(override),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: UI_CONFIG_KEY });
+    },
   });
 }

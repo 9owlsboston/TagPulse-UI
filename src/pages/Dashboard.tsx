@@ -129,6 +129,16 @@ const TILES: TileDef[] = [
   },
 ];
 
+/**
+ * Lightweight `{ id, title }` catalog of the dashboard cards, derived from
+ * `TILES` so it can never drift. Consumed by the Preferences page to let a user
+ * choose which cards to hide via `cards.dashboard` (`PUT /ui-config/me`).
+ */
+export const DASHBOARD_CARDS: { id: string; title: string }[] = TILES.map((t) => ({
+  id: t.id,
+  title: t.title,
+}));
+
 function loadIds(key: string): string[] {
   try {
     const raw = localStorage.getItem(key);

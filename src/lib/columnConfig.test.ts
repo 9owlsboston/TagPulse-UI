@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyColumnConfig,
+  applyDefaultSort,
   hasAdvancedColumns,
   columnKey,
   type KeyedColumn,
@@ -92,5 +93,42 @@ describe('hasAdvancedColumns', () => {
 
   it('counts config.advanced as well as the page default', () => {
     expect(hasAdvancedColumns(cols(), { ...EMPTY, advanced: ['epc'] })).toBe(true);
+  });
+});
+
+describe('applyDefaultSort', () => {
+  type SortCol = KeyedColumn & { defaultSortOrder?: 'ascend' | 'descend'; sorter?: boolean };
+  const sortCols = (): SortCol[] => [
+    { key: 'tag_id', dataIndex: 'tag_id' },
+    { key: 'timestamp', dataIndex: 'timestamp', sorter: true },
+    { key: 'signal', dataIndex: 'signal', sorter: true, defaultSortOrder: 'ascend' },
+  ];
+
+  it('is a no-op for a null sort', () => {
+    const out = applyDefaultSort(sortCols(), null);
+    expect(out.find((c) => c.key === 'signal')?.defaultSortOrder).toBe('ascend');
+  });
+
+  it('sets defaultSortOrder on the matching column (desc → descend)', () => {
+    const out = applyDefaultSort(sortCols(), { key: 'timestamp', dir: 'desc' });
+    expect(out.find((c) => c.key === 'timestamp')?.defaultSortOrder).toBe('descend');
+  });
+
+  it('maps asc → ascend', () => {
+    const out = applyDefaultSort(sortCols(), { key: 'timestamp', dir: 'asc' });
+    expect(out.find((c) => c.key === 'timestamp')?.defaultSortOrder).toBe('ascend');
+  });
+
+  it('clears any pre-existing defaultSortOrder from other columns', () => {
+    const out = applyDefaultSort(sortCols(), { key: 'timestamp', dir: 'desc' });
+    // The hardcoded ascend on `signal` is stripped so only one default wins.
+    expect(out.find((c) => c.key === 'signal')?.defaultSortOrder).toBeUndefined();
+  });
+
+  it('is a no-op when the key matches no column', () => {
+    const out = applyDefaultSort(sortCols(), { key: 'nope', dir: 'desc' });
+    expect(out.find((c) => c.key === 'timestamp')?.defaultSortOrder).toBeUndefined();
+    // pre-existing one is still cleared (single-default invariant)
+    expect(out.find((c) => c.key === 'signal')?.defaultSortOrder).toBeUndefined();
   });
 });

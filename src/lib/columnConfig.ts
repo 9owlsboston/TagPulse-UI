@@ -104,3 +104,39 @@ export function hasAdvancedColumns<T>(
     return key !== undefined && advanced.has(key) && !hidden.has(key);
   });
 }
+
+/** A resolved default sort (`null` = no configured default). */
+export interface DefaultSort {
+  key: string;
+  dir: 'asc' | 'desc';
+}
+
+/**
+ * Apply a config-driven default sort (ADR-032 §4 `tables.<page>.defaultSort`)
+ * to an AntD column list: set `defaultSortOrder` on the column whose key
+ * matches `sort.key` (`asc`→`ascend`, `desc`→`descend`), clearing it from every
+ * other column so only one default sort wins. A `null` sort returns the columns
+ * unchanged. Matching column keeps every other prop (its `sorter`, render, …).
+ *
+ * No-op for a key that matches no column. Columns are shallow-cloned only where
+ * the sort order changes, so referential identity is preserved elsewhere.
+ */
+export function applyDefaultSort<T>(
+  columns: readonly T[],
+  sort: DefaultSort | null,
+): T[] {
+  if (sort === null) return [...columns];
+  const order = sort.dir === 'desc' ? 'descend' : 'ascend';
+  return columns.map((col) => {
+    const key = columnKey(col as KeyedColumn);
+    if (key === sort.key) return { ...col, defaultSortOrder: order };
+    // Strip any hardcoded defaultSortOrder so the config's choice is the only
+    // default — AntD honours the last column carrying one otherwise.
+    if ('defaultSortOrder' in (col as object)) {
+      const next = { ...col } as Record<string, unknown>;
+      delete next.defaultSortOrder;
+      return next as T;
+    }
+    return col;
+  });
+}

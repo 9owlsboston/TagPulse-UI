@@ -5,10 +5,12 @@ import Card from 'antd/es/card';
 import Col from 'antd/es/col';
 import DatePicker from 'antd/es/date-picker';
 import Descriptions from 'antd/es/descriptions';
+import Drawer from 'antd/es/drawer';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
 import Modal from 'antd/es/modal';
 import Row from 'antd/es/row';
+import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
@@ -17,11 +19,22 @@ import message from 'antd/es/message';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useCreateLot, useLots, useProduct, useStockLevels, useUpdateProduct } from '@/hooks/useInventory';
+import {
+  useCreateLot,
+  useLots,
+  useProduct,
+  useStockItems,
+  useStockLevels,
+  useStockMovements,
+  useUpdateProduct,
+} from '@/hooks/useInventory';
+import { useZones } from '@/hooks/useAssets';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
 import type { LotResponse } from '@/api/generated/models/LotResponse';
+import type { StockItemResponse } from '@/api/generated/models/StockItemResponse';
+import type { StockMovementResponse } from '@/api/generated/models/StockMovementResponse';
 
 const { Title } = Typography;
 
@@ -57,6 +70,40 @@ export function ProductDetail() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [form] = Form.useForm<LotFormValues>();
   const [editForm] = Form.useForm<ProductEditFormValues>();
+
+  // §59.8 Units table state: zone + state facet filters and the per-unit
+  // movement-history drawer.
+  const [unitState, setUnitState] = useState<string | undefined>();
+  const [unitZoneId, setUnitZoneId] = useState<string | undefined>();
+  const [historyUnit, setHistoryUnit] = useState<StockItemResponse | null>(null);
+
+  const { data: units, isLoading: unitsLoading } = useStockItems({
+    product_id: id,
+    state: unitState,
+    zone_id: unitZoneId,
+  });
+  const { data: zones } = useZones();
+  const { data: unitMovements, isLoading: movementsLoading } = useStockMovements(
+    { stock_item_id: historyUnit?.id },
+  );
+
+  const zoneName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const z of zones ?? []) map.set(z.id, z.name);
+    return (zoneId: string | null | undefined) =>
+      zoneId ? (map.get(zoneId) ?? zoneId.slice(0, 8)) : 'unassigned';
+  }, [zones]);
+
+  // Facet options derived from the data actually present, so the filters never
+  // offer an empty slice.
+  const unitStateOptions = useMemo(() => {
+    const states = new Set((units ?? []).map((u) => u.state));
+    return [...states].sort().map((s) => ({ label: s, value: s }));
+  }, [units]);
+  const unitZoneOptions = useMemo(() => {
+    const ids = new Set((units ?? []).map((u) => u.current_zone_id).filter(Boolean) as string[]);
+    return [...ids].map((zid) => ({ label: zoneName(zid), value: zid }));
+  }, [units, zoneName]);
 
   const chartData = useMemo(
     () =>
@@ -212,6 +259,104 @@ export function ProductDetail() {
           ]}
         />
       </Card>
+
+      {/* §59.8 Units table — individual stock-item units, name-resolved zone,
+          zone + state facet filters, and a per-unit movement-history drawer. */}
+      <Card
+        title="Units"
+        style={{ marginTop: 16 }}
+        extra={
+          <Space wrap>
+            <Select
+              allowClear
+              placeholder="State"
+              style={{ width: 150 }}
+              value={unitState}
+              onChange={(v) => setUnitState(v)}
+              options={unitStateOptions}
+              data-testid="units-state-filter"
+            />
+            <Select
+              allowClear
+              placeholder="Zone"
+              style={{ width: 180 }}
+              value={unitZoneId}
+              onChange={(v) => setUnitZoneId(v)}
+              options={unitZoneOptions}
+              data-testid="units-zone-filter"
+            />
+          </Space>
+        }
+      >
+        <Table<StockItemResponse>
+          rowKey="id"
+          loading={unitsLoading}
+          dataSource={units ?? []}
+          pagination={{ pageSize: 10 }}
+          locale={{ emptyText: 'No units recorded for this product yet.' }}
+          onRow={(row) => ({
+            onClick: () => setHistoryUnit(row),
+            style: { cursor: 'pointer' },
+          })}
+          columns={[
+            {
+              title: 'EPC / binding',
+              dataIndex: 'binding_value',
+              render: (v: string, row) => (
+                <Space size={4}>
+                  <Tag>{row.binding_kind}</Tag>
+                  <span style={{ fontFamily: 'monospace' }}>{v}</span>
+                </Space>
+              ),
+            },
+            {
+              title: 'State',
+              dataIndex: 'state',
+              render: (v: string) => (
+                <Tag color={v === 'in_stock' ? 'green' : v === 'consumed' ? 'default' : 'blue'}>{v}</Tag>
+              ),
+            },
+            {
+              title: 'Zone',
+              dataIndex: 'current_zone_id',
+              render: (v: string | null) => zoneName(v),
+            },
+            {
+              title: 'Last seen',
+              dataIndex: 'last_seen_at',
+              sorter: (a, b) => new Date(a.last_seen_at).getTime() - new Date(b.last_seen_at).getTime(),
+              defaultSortOrder: 'descend',
+              render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+            },
+          ]}
+        />
+      </Card>
+
+      <Drawer
+        title={historyUnit ? `Unit history — ${historyUnit.binding_value}` : 'Unit history'}
+        open={historyUnit !== null}
+        onClose={() => setHistoryUnit(null)}
+        width={520}
+        data-testid="unit-history-drawer"
+      >
+        <Table<StockMovementResponse>
+          rowKey="id"
+          loading={movementsLoading}
+          dataSource={unitMovements ?? []}
+          pagination={{ pageSize: 20 }}
+          locale={{ emptyText: 'No movements recorded for this unit.' }}
+          columns={[
+            {
+              title: 'When',
+              dataIndex: 'occurred_at',
+              render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+            },
+            { title: 'Type', dataIndex: 'movement_type', render: (v: string) => <Tag>{v}</Tag> },
+            { title: 'From', dataIndex: 'from_zone_id', render: (v: string | null) => zoneName(v) },
+            { title: 'To', dataIndex: 'to_zone_id', render: (v: string | null) => zoneName(v) },
+          ]}
+        />
+      </Drawer>
 
       <Modal
         title="Create Lot"

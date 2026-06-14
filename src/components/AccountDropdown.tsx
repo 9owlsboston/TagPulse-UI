@@ -22,6 +22,7 @@ import {
   AuditOutlined,
   BarChartOutlined,
   BulbOutlined,
+  ControlOutlined,
   FormatPainterOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -91,6 +92,7 @@ export function AccountDropdown() {
         </span>
       ),
     },
+    { key: '/preferences', icon: <ControlOutlined />, label: 'Preferences' },
     ...(isAdmin
       ? ([
           { type: 'divider' as const },

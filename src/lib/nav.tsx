@@ -153,6 +153,8 @@ export const NAV_UNROUTED_ALLOWLIST: readonly string[] = [
   '/admin/dead-letters',
   '/admin/pending-bulk-operations',
   '/admin/tag-data-mappings',
+  // User preferences — surfaced via AccountDropdown (all roles)
+  '/preferences',
   // Dev-only
   '/dev/tokens',
   '/dev/charts',
