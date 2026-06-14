@@ -47,6 +47,7 @@ import {
   ThunderboltOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
+import type { LabelKey } from '@/lib/uiLabels';
 
 export type MinRole = 'viewer' | 'editor' | 'admin';
 export type RequiredMode = 'asset' | 'inventory';
@@ -57,6 +58,13 @@ export interface NavItem {
   label: string;
   minRole: MinRole;
   requires?: RequiredMode | RequiredMode[];
+  /**
+   * Configurable-UI label-skin key (Sprint 60, ADR-032 §4). When set, the
+   * rendered menu label is the resolved (skinnable, pluralized) display term
+   * for this entity (e.g. `device` → "Readers") instead of the static `label`.
+   * Unset items render `label` verbatim (nav groupings, non-entity pages).
+   */
+  labelKey?: LabelKey;
 }
 
 export interface NavSection {
@@ -69,8 +77,8 @@ export interface NavSection {
 // ─── Ungrouped top items (≤3) ──────────────────────────────────────────────
 export const NAV_TOP: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', minRole: 'viewer' },
-  { key: '/tag-reads', icon: <ReadOutlined />, label: 'Tag Reads', minRole: 'viewer' },
-  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer' },
+  { key: '/tag-reads', icon: <ReadOutlined />, label: 'Tag Reads', minRole: 'viewer', labelKey: 'tagRead' },
+  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer', labelKey: 'alert' },
 ];
 
 // ─── Sections (≤4) ────────────────────────────────────────────────────────
@@ -80,8 +88,8 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Asset Tracking',
     icon: <AimOutlined />,
     items: [
-      { key: '/assets', icon: <GoldOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset' },
-      { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer' },
+      { key: '/assets', icon: <GoldOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset', labelKey: 'asset' },
+      { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer', labelKey: 'tag' },
       // Sites/Zones are shared with inventory stock-levels — cross-mode.
       { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: ['asset', 'inventory'] },
       { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },
@@ -116,9 +124,9 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Devices & Telemetry',
     icon: <DeploymentUnitOutlined />,
     items: [
-      { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer' },
+      { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer', labelKey: 'device' },
       { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
-      { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer' },
+      { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer', labelKey: 'telemetry' },
       { key: '/telemetry-models', icon: <PartitionOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
       { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' },
     ],

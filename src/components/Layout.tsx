@@ -5,6 +5,8 @@ import Alert from 'antd/es/alert';
 import type { MenuProps } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
+import { useUiConfigContext } from '@/lib/uiConfig';
+import { pluralizeLabel } from '@/lib/uiLabels';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useVersionInfo, useHealthStatus } from '@/components/ApiHealthGate';
 import { useTenantBranding } from '@/hooks/useTenantBranding';
@@ -89,6 +91,7 @@ export function Layout() {
   const location = useLocation();
   const { user, role, tenantId } = useAuth();
   const { data: tenantConfig } = useTenantConfig();
+  const { labels } = useUiConfigContext();
   const versionInfo = useVersionInfo();
   const { degraded, degradedReason, degradedDetail } = useHealthStatus();
   const { mode } = useThemeMode();
@@ -146,7 +149,15 @@ export function Layout() {
   // Sprint 54 Phase B (54.2) — collapsible SubMenu sections.
   // Items with `children:` render as SubMenu in AntD Menu. Collapsed
   // (icon-only) sider mode falls back to popover-on-hover automatically.
-  const navItemToMenuItem = ({ key, icon, label }: NavItem) => ({ key, icon, label });
+  //
+  // Sprint 60 (ADR-032 §4) — an item carrying a `labelKey` renders the
+  // resolved label skin (pluralized for the nav), so `Device` → `Reader`
+  // is configuration, not a code edit; untagged items keep their static label.
+  const navItemToMenuItem = ({ key, icon, label, labelKey }: NavItem) => ({
+    key,
+    icon,
+    label: labelKey ? pluralizeLabel(labels[labelKey] ?? label) : label,
+  });
 
   const menuItems: MenuProps['items'] = [
     ...topItems.map(navItemToMenuItem),
