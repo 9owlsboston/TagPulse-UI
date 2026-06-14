@@ -34,6 +34,7 @@ const AlertHistory = lazy(() => import('@/pages/rules/AlertHistory').then((m) =>
 const IntegrationList = lazy(() => import('@/pages/integrations/IntegrationList').then((m) => ({ default: m.IntegrationList })));
 const DeliveryLog = lazy(() => import('@/pages/integrations/DeliveryLog').then((m) => ({ default: m.DeliveryLog })));
 const UsageDashboard = lazy(() => import('@/pages/admin/UsageDashboard').then((m) => ({ default: m.UsageDashboard })));
+const Preferences = lazy(() => import('@/pages/Preferences').then((m) => ({ default: m.Preferences })));
 const UserList = lazy(() => import('@/pages/admin/UserList').then((m) => ({ default: m.UserList })));
 const UserCreatePage = lazy(() => import('@/pages/admin/UserCreatePage').then((m) => ({ default: m.UserCreatePage })));
 const UserDetail = lazy(() => import('@/pages/admin/UserDetail').then((m) => ({ default: m.UserDetail })));
@@ -168,6 +169,7 @@ export function AppRoutes() {
               <Route path="/admin/labels" element={<LabelManagement />} />
               <Route path="/admin/tag-data-mappings" element={<TagDataMappings />} />
               <Route path="/admin/usage" element={<UsageDashboard />} />
+              <Route path="/preferences" element={<Preferences />} />
               <Route path="/admin/users" element={<UserList />} />
               <Route path="/admin/users/new" element={<UserCreatePage />} />
               <Route path="/admin/users/:id" element={<UserDetail />} />
