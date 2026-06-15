@@ -70,6 +70,23 @@ vi.mock('@/components/AccountDropdown', () => ({
   AccountDropdown: () => <div data-testid="account-dropdown" />,
 }));
 
+// Controllable resolved nav config (Sprint 61) — lets a test inject a
+// `placement` override and assert the relocation renders. Labels resolve to the
+// canonical defaults (so `tagRead` → "Tag Read" pluralizes to "Tag Reads", not
+// double-pluralized) and section headers render today's terms.
+let navConfigMock: { hidden: string[]; order: string[]; placement: Record<string, string> } = {
+  hidden: [],
+  order: [],
+  placement: {},
+};
+vi.mock('@/lib/uiConfig', async () => {
+  const { DEFAULT_LABELS } = await import('@/lib/uiLabels');
+  return {
+    useNavConfig: () => navConfigMock,
+    useUiConfigContext: () => ({ labels: DEFAULT_LABELS }),
+  };
+});
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function renderLayout() {
@@ -88,6 +105,7 @@ beforeEach(() => {
   // Each test starts with a clean localStorage so prior persistence
   // doesn't bleed in — F6 reads the collapsed flag on mount.
   window.localStorage.clear();
+  navConfigMock = { hidden: [], order: [], placement: {} };
 });
 
 afterEach(() => {
@@ -190,3 +208,40 @@ describe('Layout — Sprint 41 collapsible sidebar (F6)', () => {
     expect(window.localStorage.getItem(expectedKey)).toBe('1');
   });
 });
+
+describe('Layout — nav.placement into an empty target section (Sprint 61 fix)', () => {
+  it('does not render the empty Locations section by default', () => {
+    renderLayout();
+    const sider = screen.getByTestId('sider');
+    // `sec-locations` is empty by default (placement target) — Layout must not
+    // render an empty section header.
+    expect(within(sider).queryByText('Locations')).not.toBeInTheDocument();
+  });
+
+  it('renders the Locations section once an item is placed into it', () => {
+    // Regression: Layout previously dropped empty sections *before*
+    // applyNavConfig, deleting the relocation target so Locations/Map could
+    // never move into `sec-locations`. With the fix, the empty target survives
+    // to applyNavConfig, gets populated by placement, and renders.
+    navConfigMock = { hidden: [], order: [], placement: { '/map': 'sec-locations' } };
+    renderLayout();
+    const sider = screen.getByTestId('sider');
+
+    // The Locations section header now appears (it has the relocated Map item).
+    const locations = within(sider).getByText('Locations');
+    expect(locations).toBeInTheDocument();
+
+    // Opening it reveals Map; Map is no longer under the Assets section.
+    fireEvent.click(locations);
+    expect(within(sider).getByText('Map')).toBeInTheDocument();
+  });
+
+  it('pins Tag Reads to the top band when placement says `top`', () => {
+    navConfigMock = { hidden: [], order: [], placement: { '/tag-reads': 'top' } };
+    renderLayout();
+    const sider = screen.getByTestId('sider');
+    // Tag Reads is now an ungrouped top item (no need to open the Tags section).
+    expect(within(sider).getByText('Tag Reads')).toBeInTheDocument();
+  });
+});
+
