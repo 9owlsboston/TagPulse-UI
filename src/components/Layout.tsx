@@ -105,13 +105,19 @@ export function Layout() {
   const enabledModes = new Set(tenantConfig?.tracking_modes ?? ['asset', 'inventory']);
 
   // Role/mode authorization filter first (what the viewer is *allowed* to see),
-  // then the Sprint 60 `nav` leaf (ADR-032 §4) further hides/reorders as
-  // presentation — config can only restrict, never reveal.
+  // then the Sprint 60/61 `nav` leaf (ADR-032 §4) hides / reorders / **relocates**
+  // as presentation — config can only restrict, never reveal.
+  //
+  // We deliberately do NOT drop empty sections here: a section may be an empty
+  // **placement target** (e.g. `sec-locations`), and `nav.placement` (Sprint 61)
+  // can move an item into it. Dropping it before `applyNavConfig` would delete
+  // the relocation target and silently fall the item back to its home section.
+  // `applyNavConfig` drops any still-empty section at the *end*, after placement.
   const roleFilteredTop = filterNav(NAV_TOP, role, enabledModes);
   const roleFilteredSections = NAV_SECTIONS.map((sec) => ({
     ...sec,
     items: filterNav(sec.items, role, enabledModes),
-  })).filter((sec) => sec.items.length > 0);
+  }));
   const { top: topItems, sections } = applyNavConfig(
     roleFilteredTop,
     roleFilteredSections,
