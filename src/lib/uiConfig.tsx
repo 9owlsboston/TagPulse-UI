@@ -36,6 +36,13 @@ import { DEFAULT_LABELS, pluralizeLabel, type LabelKey, type LabelMap } from '@/
 export interface ResolvedNavConfig {
   hidden: string[];
   order: string[];
+  /**
+   * Sprint 61 (ADR-032 §4 `nav`) — relocate a *movable* item to one of its
+   * candidate parents (`{ item-key: parent }`). `parent` may be a section key
+   * or the reserved `'top'` token. Empty = every movable item at its default
+   * parent.
+   */
+  placement: Record<string, string>;
 }
 
 /** Normalised per-page card-group shape (lists always present). */
@@ -77,7 +84,7 @@ interface UiConfigContextValue {
   theme: ResolvedThemeConfig;
 }
 
-const EMPTY_NAV: ResolvedNavConfig = { hidden: [], order: [] };
+const EMPTY_NAV: ResolvedNavConfig = { hidden: [], order: [], placement: {} };
 const DEFAULT_THEME: ResolvedThemeConfig = { variant: 'default', cardStyle: 'default' };
 
 const DEFAULT_CONTEXT: UiConfigContextValue = {
@@ -116,7 +123,11 @@ export function UiConfigProvider({ children }: { children: ReactNode }) {
     }
     return {
       labels: { ...DEFAULT_LABELS, ...(data?.labels ?? {}) },
-      nav: { hidden: data?.nav?.hidden ?? [], order: data?.nav?.order ?? [] },
+      nav: {
+        hidden: data?.nav?.hidden ?? [],
+        order: data?.nav?.order ?? [],
+        placement: data?.nav?.placement ?? {},
+      },
       cards,
       columns,
       tables,

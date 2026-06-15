@@ -97,22 +97,26 @@ afterEach(() => {
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
-describe('Layout — Sprint 54.2 sectioned sider', () => {
-  it('renders the two ungrouped top items plus the four section headers', () => {
+describe('Layout — entity-first sectioned sider (Sprint 61)', () => {
+  it('renders the Dashboard top item plus the entity section headers', () => {
     renderLayout();
 
     const sider = screen.getByTestId('sider');
     expect(sider).toHaveAttribute('data-collapsed', 'false');
 
-    // Ungrouped top items (no SubMenu header above them).
+    // Dashboard is the only ungrouped top item by default.
     expect(within(sider).getByText('Dashboard')).toBeInTheDocument();
-    expect(within(sider).getByText('Alerts')).toBeInTheDocument();
 
-    // Four collapsible section headers (54.2 mandates these labels).
-    expect(within(sider).getByText('Asset Tracking')).toBeInTheDocument();
+    // Entity-first section headers (Sprint 61 IA). Under the default label map
+    // the device section renders "Devices"; `sec-locations` is empty so it is
+    // dropped by Layout and does not render a header.
+    expect(within(sider).getByText('Assets')).toBeInTheDocument();
+    expect(within(sider).getByText('Tags')).toBeInTheDocument();
+    expect(within(sider).getByText('Devices')).toBeInTheDocument();
     expect(within(sider).getByText('Inventory')).toBeInTheDocument();
+    expect(within(sider).getByText('Alerts')).toBeInTheDocument();
     expect(within(sider).getByText('Data Management')).toBeInTheDocument();
-    expect(within(sider).getByText('Devices & Telemetry')).toBeInTheDocument();
+    expect(within(sider).queryByText('Locations')).not.toBeInTheDocument();
 
     // Sections start collapsed (initial route `/` is ungrouped). Per-item
     // surface coverage is provided by the route-reachability smoke test
@@ -124,11 +128,11 @@ describe('Layout — Sprint 54.2 sectioned sider', () => {
     renderLayout();
     const sider = screen.getByTestId('sider');
 
-    fireEvent.click(within(sider).getByText('Asset Tracking'));
-    expect(within(sider).getByText('Assets')).toBeInTheDocument();
-    expect(within(sider).getByText('Tags')).toBeInTheDocument();
-    expect(within(sider).getByText('Locations')).toBeInTheDocument();
-    expect(within(sider).getByText('Map')).toBeInTheDocument();
+    fireEvent.click(within(sider).getByText('Tags'));
+    expect(within(sider).getByText('Tag Reads')).toBeInTheDocument();
+    expect(within(sider).getByText('Tag Transfers')).toBeInTheDocument();
+    expect(within(sider).getByText('Tag Reconciliation')).toBeInTheDocument();
+    expect(within(sider).getByText('Tag Import')).toBeInTheDocument();
   });
 });
 
