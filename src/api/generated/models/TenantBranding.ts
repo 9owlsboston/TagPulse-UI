@@ -16,7 +16,11 @@ export type TenantBranding = {
      */
     display_name?: (string | null);
     /**
-     * HTTPS URL to the logo image hosted by the operator.
+     * Collapsed-sidebar logo (square icon/mark): an https:// URL or an uploaded base64 data:image/... URL. Falls back to logo_url, then the monogram, when unset.
+     */
+    logo_collapsed_url?: (string | null);
+    /**
+     * Full/expanded logo: an https:// URL or an uploaded base64 data:image/... URL. Shown in the expanded sidebar header.
      */
     logo_url?: (string | null);
 };

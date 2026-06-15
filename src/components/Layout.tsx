@@ -228,7 +228,12 @@ export function Layout() {
     (tenantConfig?.name ?? null) ||
     tenantId ||
     'TagPulse';
-  const logoUrl = branding?.logo_url?.trim();
+  // Two logos (branding-logo-upload chore): a full/expanded wordmark for the
+  // 240px header and a square mark for the 64px collapsed rail. Collapsed falls
+  // back to the full logo, then a letter monogram.
+  const fullLogo = branding?.logo_url?.trim();
+  const collapsedLogo = branding?.logo_collapsed_url?.trim() || fullLogo;
+  const monogram = tenantDisplayName.charAt(0).toUpperCase();
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
@@ -260,20 +265,41 @@ export function Layout() {
           }}
           data-testid="sider-brand-header"
         >
-          {logoUrl && (
-            <img
-              src={logoUrl}
-              alt=""
-              style={{ height: 28, maxWidth: 28, objectFit: 'contain' }}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          )}
-          {!collapsed && (
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {tenantDisplayName}
-            </span>
+          {collapsed ? (
+            // Collapsed rail: square mark, or a monogram fallback.
+            collapsedLogo ? (
+              <img
+                src={collapsedLogo}
+                alt=""
+                style={{ width: 32, height: 32, objectFit: 'contain' }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+                data-testid="sider-brand-logo-collapsed"
+              />
+            ) : (
+              <span aria-hidden data-testid="sider-brand-monogram">
+                {monogram}
+              </span>
+            )
+          ) : (
+            // Expanded header: full wordmark logo (replaces the text), else
+            // the display name.
+            fullLogo ? (
+              <img
+                src={fullLogo}
+                alt={tenantDisplayName}
+                style={{ height: 32, maxWidth: 200, objectFit: 'contain' }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+                data-testid="sider-brand-logo-full"
+              />
+            ) : (
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {tenantDisplayName}
+              </span>
+            )
           )}
         </div>
         <Menu
