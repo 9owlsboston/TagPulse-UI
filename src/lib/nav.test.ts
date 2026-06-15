@@ -82,31 +82,42 @@ describe('route-reachability smoke (Sprint 54.2)', () => {
     expect(unreachable, `unreachable routes — add to NAV_* or NAV_UNROUTED_ALLOWLIST:\n  ${unreachable.join('\n  ')}`).toEqual([]);
   });
 
-  it('nav constraint: ≤4 sections + ≤3 ungrouped top items', () => {
-    expect(NAV_SECTIONS.length).toBeLessThanOrEqual(4);
-    expect(NAV_TOP.length).toBeLessThanOrEqual(3);
+  it('entity-first IA: domain-noun sections + Dashboard-only top (Sprint 61)', () => {
+    // The top band is just Dashboard by default; movable items (Tag Reads,
+    // Alerts) live in their owning entity sections.
+    expect(NAV_TOP.map((i) => i.key)).toEqual(['/']);
+    // The entity sections, in order. `sec-locations` is a placement target,
+    // empty by default (Layout drops it until populated).
+    expect(NAV_SECTIONS.map((s) => s.key)).toEqual([
+      'sec-assets',
+      'sec-tags',
+      'sec-readers',
+      'sec-inventory',
+      'sec-alerts',
+      'sec-locations',
+      'sec-data-management',
+    ]);
   });
 });
 
-describe('label-skin section header (Sprint 60, ADR-032 §4)', () => {
-  const devicesSection = NAV_SECTIONS.find((s) => s.key === 'sec-devices-connections');
+describe('label-skin section header (Sprint 60/61, ADR-032 §4)', () => {
+  const readersSection = NAV_SECTIONS.find((s) => s.key === 'sec-readers');
 
-  it('the Devices & Telemetry section carries a skinLabel', () => {
-    expect(devicesSection).toBeDefined();
-    expect(devicesSection!.skinLabel).toBeInstanceOf(Function);
+  it('the Readers (device) section carries a skinLabel', () => {
+    expect(readersSection).toBeDefined();
+    expect(readersSection!.skinLabel).toBeInstanceOf(Function);
   });
 
-  it('reproduces the static label byte-for-byte under the default label map', () => {
-    // An empty override map resolves to DEFAULT_LABELS, so configuring nothing
-    // must render exactly the static header — no UI change for unskinned tenants.
-    expect(devicesSection!.skinLabel!({})).toBe(devicesSection!.label);
-    expect(devicesSection!.skinLabel!({})).toBe('Devices & Telemetry');
+  it('reproduces the default entity label under the default label map', () => {
+    // An empty override map resolves to DEFAULT_LABELS — the entity-first
+    // section header is the pluralized default entity term ("Devices"), so a
+    // non-WM tenant sees today's vocabulary.
+    expect(readersSection!.skinLabel!({})).toBe('Devices');
   });
 
-  it('skins only the device entity, keeping "Telemetry" singular', () => {
-    // The WM skin (device → Reader) must yield "Readers & Telemetry", NOT a
-    // naive pluralization of the whole label (which would mangle "Telemetry").
-    expect(devicesSection!.skinLabel!({ device: 'Reader' })).toBe('Readers & Telemetry');
+  it('applies the WM device→Reader skin to the section header', () => {
+    expect(readersSection!.skinLabel!({ device: 'Reader' })).toBe('Readers');
   });
 });
+
 

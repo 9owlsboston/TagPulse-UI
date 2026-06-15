@@ -9,7 +9,12 @@
  *     allow-listed below as "reachable elsewhere" (account dropdown,
  *     deep-link from a list page, dev-only URL).
  *
- * Constraint per roadmap: **≤4 sections + ≤3 ungrouped top items**.
+ * Sprint 61 — **entity-first IA**: the top-level menu is the domain nouns
+ * (Assets · Tags · Readers · Inventory · Alerts) plus one cross-cutting
+ * catch-all (Data Management). Each entity section owns its primary views;
+ * `Data Management` holds only reference data + bulk I/O. This supersedes the
+ * earlier Sprint 54 "≤4 sections + ≤3 top items" constraint — the entity model
+ * is the organizing principle now.
  *
  * Cross-mode gating uses `requires`. With a single mode string the
  * item is only shown when that mode is enabled in
@@ -84,25 +89,61 @@ export interface NavSection {
   items: NavItem[];
 }
 
-// ─── Ungrouped top items (≤3) ──────────────────────────────────────────────
+// ─── Ungrouped top items ───────────────────────────────────────────────────
+// Sprint 61 (entity-first IA): the menu is the domain nouns. Only Dashboard is
+// an ungrouped top-level page by default; Tag Reads and Alerts moved into their
+// owning entity sections (Tags / Alerts). Tag Reads is a *movable* item whose
+// default parent is the Tags section but can be pinned back to top-level via
+// the `nav.placement` leaf (Sprint 61 PR-B/C).
 export const NAV_TOP: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard', minRole: 'viewer' },
-  { key: '/tag-reads', icon: <ReadOutlined />, label: 'Tag Reads', minRole: 'viewer', labelKey: 'tagRead' },
-  { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer', labelKey: 'alert' },
 ];
 
-// ─── Sections (≤4) ────────────────────────────────────────────────────────
+// ─── Sections (entity-first) ───────────────────────────────────────────────
+// Each section is a domain entity that owns its primary views; `Data
+// Management` is the cross-cutting reference-data + bulk-I/O catch-all. Section
+// headers skin off the label registry so a tenant's entity rename (e.g.
+// device→Reader) flows to the header. `sec-locations` is defined but empty by
+// default — it is a *placement target* (Sprint 61): Locations/Map default into
+// the Assets section and a tenant may relocate them here. Empty sections are
+// dropped by Layout, so it never renders until populated by placement.
 export const NAV_SECTIONS: NavSection[] = [
   {
-    key: 'sec-asset-tracking',
-    label: 'Asset Tracking',
+    key: 'sec-assets',
+    label: 'Assets',
     icon: <AimOutlined />,
+    skinLabel: (labels) => pluralizeLabel(resolveLabel(labels, 'asset')),
     items: [
       { key: '/assets', icon: <GoldOutlined />, label: 'Assets', minRole: 'viewer', requires: 'asset', labelKey: 'asset' },
-      { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer', labelKey: 'tag' },
       // Sites/Zones are shared with inventory stock-levels — cross-mode.
       { key: '/sites', icon: <EnvironmentOutlined />, label: 'Locations', minRole: 'viewer', requires: ['asset', 'inventory'] },
       { key: '/map', icon: <GlobalOutlined />, label: 'Map', minRole: 'viewer', requires: 'asset' },
+    ],
+  },
+  {
+    key: 'sec-tags',
+    label: 'Tags',
+    icon: <TagOutlined />,
+    skinLabel: (labels) => pluralizeLabel(resolveLabel(labels, 'tag')),
+    items: [
+      { key: '/tags', icon: <TagOutlined />, label: 'Tags', minRole: 'viewer', labelKey: 'tag' },
+      // Tag Reads is movable — default parent is Tags (can be pinned top-level).
+      { key: '/tag-reads', icon: <ReadOutlined />, label: 'Tag Reads', minRole: 'viewer', labelKey: 'tagRead' },
+      { key: '/tag-transfers', icon: <SwapOutlined />, label: 'Tag Transfers', minRole: 'viewer' },
+      { key: '/tags/reconciliation', icon: <DiffOutlined />, label: 'Tag Reconciliation', minRole: 'viewer' },
+      { key: '/tags/import', icon: <UploadOutlined />, label: 'Tag Import', minRole: 'editor' },
+    ],
+  },
+  {
+    key: 'sec-readers',
+    label: 'Readers',
+    icon: <DeploymentUnitOutlined />,
+    skinLabel: (labels) => pluralizeLabel(resolveLabel(labels, 'device')),
+    items: [
+      { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer', labelKey: 'device' },
+      { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer', labelKey: 'telemetry' },
+      { key: '/telemetry-models', icon: <PartitionOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
+      { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
     ],
   },
   {
@@ -117,29 +158,32 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: 'sec-alerts',
+    label: 'Alerts',
+    icon: <AlertOutlined />,
+    skinLabel: (labels) => pluralizeLabel(resolveLabel(labels, 'alert')),
+    items: [
+      { key: '/alerts', icon: <AlertOutlined />, label: 'Alerts', minRole: 'viewer', labelKey: 'alert' },
+      { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' },
+    ],
+  },
+  {
+    key: 'sec-locations',
+    label: 'Locations',
+    icon: <EnvironmentOutlined />,
+    // Empty by default — a placement target for Locations/Map (Sprint 61).
+    // Layout drops empty sections, so this only renders once a tenant relocates
+    // an item here via `nav.placement`.
+    items: [],
+  },
+  {
     key: 'sec-data-management',
     label: 'Data Management',
     icon: <DatabaseOutlined />,
     items: [
       { key: '/categories', icon: <FolderOutlined />, label: 'Categories', minRole: 'viewer' },
       { key: '/admin/labels', icon: <TagsOutlined />, label: 'Labels', minRole: 'admin' },
-      { key: '/tags/import', icon: <UploadOutlined />, label: 'Tag Import', minRole: 'editor' },
-      { key: '/tag-transfers', icon: <SwapOutlined />, label: 'Tag Transfers', minRole: 'viewer' },
-      { key: '/tags/reconciliation', icon: <DiffOutlined />, label: 'Tag Reconciliation', minRole: 'viewer' },
       { key: '/inventory/csv-import', icon: <FileExcelOutlined />, label: 'Inventory CSV Import', minRole: 'admin', requires: 'inventory' },
-    ],
-  },
-  {
-    key: 'sec-devices-connections',
-    label: 'Devices & Telemetry',
-    icon: <DeploymentUnitOutlined />,
-    skinLabel: (labels) => `${pluralizeLabel(resolveLabel(labels, 'device'))} & Telemetry`,
-    items: [
-      { key: '/devices', icon: <HddOutlined />, label: 'Devices', minRole: 'viewer', labelKey: 'device' },
-      { key: '/integrations', icon: <ApiOutlined />, label: 'Integrations', minRole: 'viewer' },
-      { key: '/telemetry', icon: <LineChartOutlined />, label: 'Telemetry', minRole: 'viewer', labelKey: 'telemetry' },
-      { key: '/telemetry-models', icon: <PartitionOutlined />, label: 'Telemetry Models', minRole: 'viewer' },
-      { key: '/rules', icon: <ThunderboltOutlined />, label: 'Rules', minRole: 'viewer' },
     ],
   },
 ];

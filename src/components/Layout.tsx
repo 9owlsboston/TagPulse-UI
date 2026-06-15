@@ -33,9 +33,9 @@ const { Text } = Typography;
 // a top-level item, or explicitly allow-listed as reachable elsewhere
 // (account dropdown, deep-link from list page, dev-only URL).
 //
-// Layout shape: ≤2 ungrouped top items (Dashboard, Alerts) above
-// ≤4 collapsible SubMenu sections (Asset Tracking, Inventory,
-// Data Management, Devices & Telemetry). The SubMenu containing
+// Layout shape (Sprint 61 entity-first IA): Dashboard as the ungrouped top
+// item above the entity SubMenu sections (Assets, Tags, Readers, Inventory,
+// Alerts, Data Management). The SubMenu containing
 // the current route is opened by default; users can open / close
 // any section freely and switching routes auto-opens the matching
 // section without collapsing the others they've toggled open.
