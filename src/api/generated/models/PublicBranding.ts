@@ -9,6 +9,7 @@
 export type PublicBranding = {
     brand_color?: (string | null);
     display_name?: (string | null);
+    logo_collapsed_url?: (string | null);
     logo_url?: (string | null);
     name: string;
     slug: string;
