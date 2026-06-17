@@ -21,9 +21,11 @@ vi.mock('@/lib/uiConfig', () => ({
 }));
 
 const putMock = vi.fn().mockResolvedValue({});
+const patchMock = vi.fn().mockResolvedValue({});
 vi.mock('@/api/generated/services/UiConfigService', () => ({
   UiConfigService: {
     putUiConfigMeUiConfigMePut: (body: unknown) => putMock(body),
+    patchUiConfigMeUiConfigMePatch: (body: unknown) => patchMock(body),
   },
 }));
 
@@ -32,9 +34,10 @@ function wrap(node: React.ReactNode) {
   return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
 }
 
-describe('Preferences — PUT /ui-config/me', () => {
+describe('Preferences — PATCH save / PUT reset', () => {
   beforeEach(() => {
     putMock.mockClear();
+    patchMock.mockClear();
     resolvedHidden = [];
     resolvedNavHidden = [];
     resolvedPlacement = {};
@@ -49,19 +52,21 @@ describe('Preferences — PUT /ui-config/me', () => {
     expect(screen.getByTestId('prefs-visible-count')).toHaveTextContent('1 of 2 shown');
   });
 
-  it('persists cards + nav via PUT /ui-config/me on Save', async () => {
+  it('persists cards + nav via merge-style PATCH /ui-config/me on Save', async () => {
     render(wrap(<Preferences />));
     // Hide "devices".
     fireEvent.click(screen.getByTestId('prefs-card-devices'));
     fireEvent.click(screen.getByTestId('prefs-save'));
-    await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
-    expect(putMock).toHaveBeenCalledWith({
+    await waitFor(() => expect(patchMock).toHaveBeenCalledTimes(1));
+    expect(patchMock).toHaveBeenCalledWith({
       cards: { dashboard: { hidden: ['devices'] } },
       nav: { hidden: [], placement: {} },
     });
+    // Save composes via PATCH — it must not touch the wholesale PUT path.
+    expect(putMock).not.toHaveBeenCalled();
   });
 
-  it('clears the override with an empty body on Reset to team default', async () => {
+  it('clears the override with an empty body via PUT on Reset to team default', async () => {
     resolvedHidden = ['devices'];
     render(wrap(<Preferences />));
     fireEvent.click(screen.getByTestId('prefs-reset'));
@@ -78,8 +83,8 @@ describe('Preferences — PUT /ui-config/me', () => {
     expect(inv).toBeChecked();
     fireEvent.click(inv);
     fireEvent.click(screen.getByTestId('prefs-save'));
-    await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
-    const body = putMock.mock.calls[0]![0] as { nav: { hidden: string[] } };
+    await waitFor(() => expect(patchMock).toHaveBeenCalledTimes(1));
+    const body = patchMock.mock.calls[0]![0] as { nav: { hidden: string[] } };
     expect(body.nav.hidden).toContain('sec-inventory');
   });
 
@@ -90,8 +95,8 @@ describe('Preferences — PUT /ui-config/me', () => {
     const seg = screen.getByTestId('prefs-placement-/tag-reads');
     fireEvent.click(within(seg).getByText('Top level'));
     fireEvent.click(screen.getByTestId('prefs-save'));
-    await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1));
-    const body = putMock.mock.calls[0]![0] as { nav: { placement: Record<string, string> } };
+    await waitFor(() => expect(patchMock).toHaveBeenCalledTimes(1));
+    const body = patchMock.mock.calls[0]![0] as { nav: { placement: Record<string, string> } };
     expect(body.nav.placement['/tag-reads']).toBe('top');
   });
 });
