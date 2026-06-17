@@ -82,6 +82,7 @@ const columns = (
 
 export function TelemetryModels() {
   const { modal, message } = App.useApp();
+  const telemetryLabel = useLabel('telemetry');
   const { data, isLoading } = useTelemetryModels();
   const createModel = useCreateTelemetryModel();
   const deleteModel = useDeleteTelemetryModel();
@@ -102,7 +103,7 @@ export function TelemetryModels() {
 
   const handleDelete = (id: string) => {
     modal.confirm({
-      title: 'Delete Telemetry Model',
+      title: `Delete ${telemetryLabel} Model`,
       content: 'Are you sure?',
       okType: 'danger',
       onOk: () => deleteModel.mutateAsync(id),

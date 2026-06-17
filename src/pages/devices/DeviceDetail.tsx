@@ -29,6 +29,7 @@ const { Title, Text } = Typography;
 
 export function DeviceDetail() {
   const telemetryLabel = useLabel('telemetry');
+  const deviceLabel = useLabel('device');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { modal, message } = App.useApp();
@@ -50,7 +51,7 @@ export function DeviceDetail() {
 
   const handleDecommission = () => {
     modal.confirm({
-      title: 'Decommission Device',
+      title: `Decommission ${deviceLabel}`,
       content: `Are you sure you want to decommission "${device.name}"?`,
       okType: 'danger',
       onOk: async () => {
@@ -62,7 +63,7 @@ export function DeviceDetail() {
 
   const handleRotateToken = () => {
     modal.confirm({
-      title: 'Rotate Device Token',
+      title: `Rotate ${deviceLabel} Token`,
       content: (
         <>
           <p>
