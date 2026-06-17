@@ -105,6 +105,14 @@ describe('TagReads', () => {
     expect(screen.getByText('EPC Scheme')).toBeInTheDocument();
   });
 
+  it('offers an EPC (hex) column (config-driven visibility)', () => {
+    // The raw-hex EPC column is addressable so tenants/users that prefer the
+    // hex over the decoded URI can reveal it (and hide the URI) via config or
+    // the column chooser. With no config in the test, it renders.
+    render(<TagReads />, { wrapper });
+    expect(screen.getByText('EPC (hex)')).toBeInTheDocument();
+  });
+
   it('uses paginated table when rows ≤ 500', () => {
     render(<TagReads />, { wrapper });
     expect(screen.getByTestId('tag-reads-table-paginated')).toBeInTheDocument();
