@@ -17,6 +17,7 @@ import Alert from 'antd/es/alert';
 import { InboxOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { RoleGuard } from '@/components/RoleGuard';
+import { useLabel } from '@/lib/uiConfig';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
@@ -155,6 +156,8 @@ function ImportTab({ entity, endpoint }: TabContentProps) {
 }
 
 export function CsvImport() {
+  const lotsLabel = useLabel('lot', { plural: true });
+  const stockItemsLabel = useLabel('stockItem', { plural: true });
   return (
     <RoleGuard roles={['admin']}>
       <div>
@@ -169,12 +172,12 @@ export function CsvImport() {
               },
               {
                 key: 'lots',
-                label: 'Lots',
+                label: lotsLabel,
                 children: <ImportTab entity="lots" endpoint="/lots/import" />,
               },
               {
                 key: 'stock-items',
-                label: 'Stock Items',
+                label: stockItemsLabel,
                 children: <ImportTab entity="stock-items" endpoint="/stock-items/import" />,
               },
             ]}

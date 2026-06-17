@@ -8,6 +8,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useRules, useUpdateRule, useDeleteRule } from '@/hooks/useRules';
+import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
@@ -16,6 +17,7 @@ import { SignalingRuleModal } from '@/pages/rules/SignalingRuleModal';
 import type { RuleResponse } from '@/types';
 
 export function RuleList() {
+  const rulesLabel = useLabel('rule', { plural: true });
   const navigate = useNavigate();
   const { data, isLoading } = useRules();
   const updateRule = useUpdateRule();
@@ -77,7 +79,7 @@ export function RuleList() {
   return (
     <ListPageShell
       testId="rule-list-page"
-      title="Rules"
+      title={rulesLabel}
       count={rows.length}
       countTestId="rule-list-count"
       primaryAction={

@@ -60,6 +60,7 @@ const { Title, Text } = Typography;
 
 export function SitesZones() {
   const { mode } = useThemeMode();
+  const devicesLabel = useLabel('device', { plural: true });
   const t = tokens[mode];
   const { modal, message } = App.useApp();
   // Sprint 37 row 3.9b — site + zone label filters; Sprint 43 — moved
@@ -370,7 +371,7 @@ export function SitesZones() {
                     render: (v: string) => <Tag>{v}</Tag>,
                   },
                   {
-                    title: 'Readers',
+                    title: devicesLabel,
                     dataIndex: 'fixed_reader_ids',
                     render: (ids: string[] | null) =>
                       ids && ids.length > 0 ? (

@@ -109,6 +109,7 @@ export function AlertHistory() {
   };
 
   const deviceLabel = useLabel('device');
+  const alertsLabel = useLabel('alert', { plural: true });
 
   const columns: ColumnsType<AlertResponse> = [
     {
@@ -202,7 +203,7 @@ export function AlertHistory() {
 
   return (
     <ListPageShell
-      title="Alerts"
+      title={alertsLabel}
       count={filtered.length}
       countTestId="alert-history-title-count"
       primaryAction={

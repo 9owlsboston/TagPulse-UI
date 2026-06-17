@@ -10,6 +10,7 @@ import Typography from 'antd/es/typography';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TagTransferResponse } from '@/api/generated/models/TagTransferResponse';
 import { useTransfers, type TransferListParams } from '@/hooks/useTransfers';
+import { useLabel } from '@/lib/uiConfig';
 import { useCanPerform } from '@/components/useCanPerform';
 import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
 import { ListPageShell } from '@/components/ListPageShell';
@@ -54,6 +55,7 @@ function formatTimestamp(iso: string | null): string {
  * ack/reject path lives in Sprint 51b backend gap #3).
  */
 export function TransferList() {
+  const tagLabel = useLabel('tag');
   const navigate = useNavigate();
   const canCreate = useCanPerform('editor');
   const [searchParams] = useSearchParams();
@@ -144,7 +146,7 @@ export function TransferList() {
     <>
       <ListPageShell
         testId="transfer-list-page"
-        title="Tag transfers"
+        title={`${tagLabel} transfers`}
         count={rows.length}
         countTestId="transfer-list-count"
         description="Cross-tenant transfers of EPCs (ADR 028 §Transfers). Outbound rows show transfers this tenant initiated; inbound rows show transfers other tenants have requested to this tenant. Receiving-tenant acknowledgement lands in a later sprint."

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useReadsPerHour } from '@/hooks/useTagReads';
+import { useLabel } from '@/lib/uiConfig';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
 
@@ -16,6 +17,7 @@ const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
 export function TelemetryDashboard() {
+  const telemetryLabel = useLabel('telemetry');
   const navigate = useNavigate();
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
@@ -66,7 +68,7 @@ export function TelemetryDashboard() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>Telemetry</Title>
+        <Title level={2} style={{ margin: 0 }}>{telemetryLabel}</Title>
         <Button icon={<SearchOutlined />} onClick={() => navigate('/tag-reads')}>
           Tag Reads
         </Button>
