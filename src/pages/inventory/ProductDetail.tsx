@@ -29,6 +29,7 @@ import {
   useUpdateProduct,
 } from '@/hooks/useInventory';
 import { useZones } from '@/hooks/useAssets';
+import { useLabel } from '@/lib/uiConfig';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
@@ -86,6 +87,8 @@ export function ProductDetail() {
   const { data: unitMovements, isLoading: movementsLoading } = useStockMovements(
     { stock_item_id: historyUnit?.id },
   );
+
+  const zoneLabel = useLabel('zone');
 
   const zoneName = useMemo(() => {
     const map = new Map<string, string>();
@@ -317,7 +320,7 @@ export function ProductDetail() {
               ),
             },
             {
-              title: 'Zone',
+              title: zoneLabel,
               dataIndex: 'current_zone_id',
               render: (v: string | null) => zoneName(v),
             },

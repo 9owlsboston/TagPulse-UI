@@ -14,7 +14,7 @@ import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
-import { useColumnGroup, useTableConfig } from '@/lib/uiConfig';
+import { useColumnGroup, useLabel, useTableConfig } from '@/lib/uiConfig';
 import { applyColumnConfig, applyDefaultSort, hasAdvancedColumns } from '@/lib/columnConfig';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
@@ -65,6 +65,8 @@ export function TagReads() {
 
   const columnConfig = useColumnGroup(TAG_READS_PAGE);
   const tableConfig = useTableConfig(TAG_READS_PAGE);
+  const deviceLabel = useLabel('device');
+  const devicesLabel = useLabel('device', { plural: true });
 
   const { data: devices } = useDevices();
   const { data: rawData, isLoading } = useTagReads(
@@ -167,7 +169,7 @@ export function TagReads() {
         dataIndex: 'user_memory_hex',
         render: (v: string | null | undefined) => v ?? '—',
       },
-      { title: 'Device', key: 'device_id', dataIndex: 'device_id' },
+      { title: deviceLabel, key: 'device_id', dataIndex: 'device_id' },
       {
         title: 'Timestamp',
         key: 'timestamp',
@@ -201,7 +203,7 @@ export function TagReads() {
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
       },
     ],
-    [flashing],
+    [flashing, deviceLabel],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:
@@ -228,10 +230,10 @@ export function TagReads() {
 
   const deviceOptions = useMemo(
     () => [
-      { label: 'All Devices', value: '' },
+      { label: `All ${devicesLabel}`, value: '' },
       ...(devices ?? []).map((d) => ({ label: d.name, value: d.id })),
     ],
-    [devices],
+    [devices, devicesLabel],
   );
 
   const epcSchemeOptions = useMemo(
@@ -299,7 +301,7 @@ export function TagReads() {
       `}</style>
       <Title level={2}>Tag Reads</Title>
       <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <Form.Item label="Device">
+        <Form.Item label={deviceLabel}>
           <Select
             options={deviceOptions}
             value={deviceId ?? ''}

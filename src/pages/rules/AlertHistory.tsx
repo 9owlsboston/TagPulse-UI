@@ -11,6 +11,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { Link, useSearchParams } from 'react-router-dom';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
+import { useLabel } from '@/lib/uiConfig';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
@@ -107,6 +108,8 @@ export function AlertHistory() {
     window.location.reload();
   };
 
+  const deviceLabel = useLabel('device');
+
   const columns: ColumnsType<AlertResponse> = [
     {
       title: 'Time',
@@ -167,7 +170,7 @@ export function AlertHistory() {
       },
     },
     {
-      title: 'Device',
+      title: deviceLabel,
       dataIndex: 'device_id',
       width: 220,
       filters: deviceFilters.length > 0 ? deviceFilters : undefined,

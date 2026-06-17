@@ -7,6 +7,7 @@ import Tag from 'antd/es/tag';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { useProducts, useStockMovements } from '@/hooks/useInventory';
+import { useLabel } from '@/lib/uiConfig';
 import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery } from '@tanstack/react-query';
 import { ListPageShell } from '@/components/ListPageShell';
@@ -40,6 +41,8 @@ export function StockMovements() {
     until: range?.[1]?.toISOString(),
     limit: 500,
   });
+
+  const deviceLabel = useLabel('device');
 
   const zoneLabel = useMemo(() => {
     const m = new Map<string, string>();
@@ -140,7 +143,7 @@ export function StockMovements() {
             },
             { title: 'Qty', dataIndex: 'quantity', width: 80, align: 'right' },
             {
-              title: 'Device',
+              title: deviceLabel,
               dataIndex: 'device_id',
               render: (v: string | null) => (v ? <code>{v.slice(0, 8)}</code> : '—'),
             },
