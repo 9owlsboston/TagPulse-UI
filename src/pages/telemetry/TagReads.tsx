@@ -169,6 +169,16 @@ export function TagReads() {
         render: (v: string | null | undefined) => v ?? '—',
       },
       {
+        // The raw wire-format EPC hex. Default-hidden via the system `columns`
+        // config (ADR-032) so the readable decoded `EPC` URI is the default;
+        // tenants that prefer the hex (e.g. RFID-only fleets) reveal it and
+        // hide the URI via their `columns.tag_reads` preset or the chooser.
+        title: 'EPC (hex)',
+        key: 'epc_hex',
+        dataIndex: 'epc_hex',
+        render: (v: string | null | undefined) => v ?? '—',
+      },
+      {
         title: 'TID',
         key: 'tid',
         dataIndex: 'tid',
