@@ -6,7 +6,7 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ### Fixed
 
-- **Tag Reads page-size changer was stuck at 20 (bug).** Selecting **50** or **100 / page** on the Tag Reads table did nothing — it snapped straight back to 20. Root cause: the paginated table passed `pagination={{ pageSize: 20 }}`, and a literal `pageSize` is a **controlled** prop, so AntD reverted every size-changer selection on the next render. Switched to the uncontrolled `defaultPageSize: 20` (plus explicit `showSizeChanger: true` and `pageSizeOptions: [20, 50, 100]`) in [src/pages/telemetry/TagReads.tsx](src/pages/telemetry/TagReads.tsx), so the table owns its page size and the changer takes effect. Regression test in [TagReads.test.tsx](src/pages/telemetry/TagReads.test.tsx) drives the changer (20 → 100) and asserts the extra rows render. `npm run check` clean (480 tests).
+- **Table page-size changer was stuck at 20 on Tag Reads + Alerts (bug).** Selecting **50** or **100 / page** did nothing — it snapped straight back to 20. Root cause: the tables passed `pagination={{ pageSize: 20 }}`, and a literal `pageSize` is a **controlled** prop, so AntD reverted every size-changer selection on the next render. Switched both [Tag Reads](src/pages/telemetry/TagReads.tsx) and [Alert History](src/pages/rules/AlertHistory.tsx) to the uncontrolled `defaultPageSize: 20` (plus explicit `showSizeChanger: true` and `pageSizeOptions: [20, 50, 100]`), so each table owns its page size and the changer takes effect. Regression tests in [TagReads.test.tsx](src/pages/telemetry/TagReads.test.tsx) + [AlertHistory.test.tsx](src/pages/rules/AlertHistory.test.tsx) drive the changer (20 → 100) and assert the extra rows render. `npm run check` clean.
 
 ### Added
 
