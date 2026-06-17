@@ -23,6 +23,36 @@ export class UiConfigService {
         });
     }
     /**
+     * Patch Ui Config Me
+     * Deep-merge a sparse override into the caller's stored prefs (Sprint 63).
+     *
+     * Unlike ``PUT /me`` (which replaces the whole user layer), ``PATCH`` folds
+     * the body into the existing prefs per leaf (ADR-032 §2 deep-merge: nested
+     * dicts recurse, a list *is* a leaf and replaces wholesale). This lets
+     * independent write surfaces compose without clobbering one another — e.g.
+     * the column chooser writing ``columns.<page>.hidden`` no longer wipes the
+     * Preferences page's ``cards`` / ``nav`` choices. The body is the usual
+     * **sparse** ADR-032 §4 subset; unknown/ill-typed keys are rejected (422).
+     * An empty body is a no-op (use ``PUT /me`` with ``{}`` or
+     * ``DELETE /me/columns/{page}`` to reset). Requires a real user identity.
+     * @param requestBody
+     * @returns UiConfig Successful Response
+     * @throws ApiError
+     */
+    public static patchUiConfigMeUiConfigMePatch(
+        requestBody: Record<string, any>,
+    ): CancelablePromise<UiConfig> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/ui-config/me',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Put Ui Config Me
      * Upsert the caller's UI override and return the freshly resolved config.
      *
@@ -42,6 +72,34 @@ export class UiConfigService {
             url: '/ui-config/me',
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Delete Ui Config Me Columns
+     * Reset one list page's column override to the team default (Sprint 63).
+     *
+     * Removes ``columns.<page>`` from the caller's stored prefs so that page's
+     * columns re-inherit the tenant/role/system layers (the per-table "reset to
+     * team default" — distinct from the *show everything* a user gets by setting
+     * ``columns.<page>.hidden = []`` via ``PATCH``). Idempotent: resetting a page
+     * with no stored override is a no-op (200). Other leaves — and other pages'
+     * column overrides — are untouched. Requires a real user identity.
+     * @param page
+     * @returns UiConfig Successful Response
+     * @throws ApiError
+     */
+    public static deleteUiConfigMeColumnsUiConfigMeColumnsPageDelete(
+        page: string,
+    ): CancelablePromise<UiConfig> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/ui-config/me/columns/{page}',
+            path: {
+                'page': page,
+            },
             errors: {
                 422: `Validation Error`,
             },

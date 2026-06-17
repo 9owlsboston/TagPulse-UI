@@ -88,10 +88,27 @@ export function applyColumnConfig<T>(
 }
 
 /**
- * True if the page has at least one *toggleable* advanced column — i.e. an
- * advanced column that isn't also `hidden`. Drives whether the "Advanced
- * columns" toggle is worth rendering at all (no toggle when nothing hides).
+ * The user-toggleable column candidates for a `ColumnChooser` (Sprint 63,
+ * Tier 2). Returns every **addressable** column (one with a resolvable key)
+ * except the **advanced** ones — those keep their own "Advanced columns"
+ * toggle. Crucially this is computed from the *full* column list and ignores
+ * `cfg.hidden`, so a currently-hidden column still appears in the chooser
+ * (unchecked) and can be re-shown — unlike {@link applyColumnConfig}, which
+ * removes hidden columns from what the table renders. `order` is applied so the
+ * chooser lists columns in the same order the table shows them.
  */
+export function chooserCandidates<T>(
+  columns: readonly T[],
+  cfg: ColumnConfigApplied,
+  opts: { defaultAdvanced?: string[] } = {},
+): T[] {
+  const advanced = effectiveAdvanced(cfg, opts.defaultAdvanced ?? []);
+  const candidates = columns.filter((col) => {
+    const key = columnKey(col as KeyedColumn);
+    return key !== undefined && !advanced.has(key);
+  });
+  return orderByKeys(candidates, cfg.order);
+}
 export function hasAdvancedColumns<T>(
   columns: readonly T[],
   cfg: ColumnConfigApplied,

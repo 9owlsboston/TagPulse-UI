@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   applyColumnConfig,
   applyDefaultSort,
+  chooserCandidates,
   hasAdvancedColumns,
   columnKey,
   type KeyedColumn,
@@ -93,6 +94,33 @@ describe('hasAdvancedColumns', () => {
 
   it('counts config.advanced as well as the page default', () => {
     expect(hasAdvancedColumns(cols(), { ...EMPTY, advanced: ['epc'] })).toBe(true);
+  });
+});
+
+describe('chooserCandidates', () => {
+  it('lists every addressable column, including currently-hidden ones', () => {
+    // Unlike applyColumnConfig, hidden columns stay in the chooser so they can
+    // be re-shown (Tier 2 — the resolved hidden set drives the checkbox state).
+    const out = chooserCandidates(cols(), { ...EMPTY, hidden: ['epc'] });
+    expect(out.map(columnKey)).toEqual(['tag_id', 'epc', 'tid', 'user_memory_hex', 'timestamp']);
+  });
+
+  it('excludes advanced columns (they have their own toggle)', () => {
+    const out = chooserCandidates(cols(), { ...EMPTY, advanced: ['epc'] }, {
+      defaultAdvanced: ['tid', 'user_memory_hex'],
+    });
+    expect(out.map(columnKey)).toEqual(['tag_id', 'timestamp']);
+  });
+
+  it('omits unaddressable (keyless) columns', () => {
+    const withKeyless: KeyedColumn[] = [...cols(), { dataIndex: ['nested', 'x'] }];
+    const out = chooserCandidates(withKeyless, EMPTY);
+    expect(out.every((c) => columnKey(c) !== undefined)).toBe(true);
+  });
+
+  it('applies config order so the chooser matches the table order', () => {
+    const out = chooserCandidates(cols(), { ...EMPTY, order: ['timestamp', 'tag_id'] });
+    expect(out.map(columnKey)).toEqual(['timestamp', 'tag_id', 'epc', 'tid', 'user_memory_hex']);
   });
 });
 

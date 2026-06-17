@@ -23,8 +23,15 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useColumnGroup, useTableConfig } from '@/lib/uiConfig';
-import { applyColumnConfig, applyDefaultSort, columnKey, hasAdvancedColumns, type KeyedColumn } from '@/lib/columnConfig';
-import { useLocalColumnVisibility } from '@/lib/useLocalColumnVisibility';
+import {
+  applyColumnConfig,
+  applyDefaultSort,
+  chooserCandidates,
+  columnKey,
+  hasAdvancedColumns,
+  type KeyedColumn,
+} from '@/lib/columnConfig';
+import { useColumnVisibility } from '@/lib/useColumnVisibility';
 import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
 import { CategorySelect } from '@/components/CategorySelect';
 import {
@@ -147,7 +154,7 @@ export function AssetList() {
   // Sprint 60 (ADR-032 §6.3) — config-driven column presets + advanced toggle.
   const columnConfig = useColumnGroup(ASSETS_PAGE);
   const tableConfig = useTableConfig(ASSETS_PAGE);
-  const colVis = useLocalColumnVisibility(ASSETS_PAGE);
+  const colVis = useColumnVisibility(ASSETS_PAGE);
   const [showAdvanced, setShowAdvanced] = useState(false);
   // Lightweight key list for the toggle-availability check (the full column
   // defs are applied inline below; this mirrors their addressable keys).
@@ -454,28 +461,25 @@ export function AssetList() {
     [assetColumns, columnConfig, showAdvanced],
   );
 
-  // Sprint 62 — the addressable columns the device-local "Columns" chooser can
-  // toggle (the server-visible candidates; unaddressable columns are omitted).
+  // Sprint 62 — the addressable columns the "Columns" chooser can toggle. Built
+  // from the *full* column set (minus advanced) so a currently-hidden column
+  // still appears (unchecked) and can be re-shown; the resolved `hidden` set
+  // (Sprint 63: the cross-device user override) drives each checkbox.
   const chooserColumns = useMemo<ColumnChooserItem[]>(
     () =>
-      serverVisibleColumns
+      chooserCandidates<AssetColumn>(assetColumns, columnConfig, {
+        defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
+      })
         .map((c) => ({ key: columnKey(c as KeyedColumn), label: (c as { title?: ReactNode }).title }))
         .filter((c): c is ColumnChooserItem => c.key !== undefined),
-    [serverVisibleColumns],
+    [assetColumns, columnConfig],
   );
 
-  // Apply the device-local hides on top of the server floor, then the
-  // config-driven default sort.
+  // The rendered table = server-resolved visible columns (which now include the
+  // user's cross-device hides) with the config-driven default sort applied.
   const visibleColumns = useMemo(
-    () =>
-      applyDefaultSort(
-        serverVisibleColumns.filter((c) => {
-          const k = columnKey(c as KeyedColumn);
-          return k === undefined || !colVis.hidden.has(k);
-        }),
-        tableConfig.defaultSort,
-      ),
-    [serverVisibleColumns, colVis.hidden, tableConfig.defaultSort],
+    () => applyDefaultSort(serverVisibleColumns, tableConfig.defaultSort),
+    [serverVisibleColumns, tableConfig.defaultSort],
   );
 
   const toolbar = (
@@ -541,6 +545,8 @@ export function AssetList() {
         hidden={colVis.hidden}
         onToggle={colVis.setColumnVisible}
         onShowAll={colVis.showAll}
+        onResetToTeamDefault={colVis.resetToTeamDefault}
+        busy={colVis.isSaving}
       />
     </Space>
   );

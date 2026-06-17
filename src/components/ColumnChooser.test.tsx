@@ -76,4 +76,45 @@ describe('ColumnChooser', () => {
     fireEvent.click(screen.getByTestId('column-chooser-show-all'));
     expect(onShowAll).toHaveBeenCalledTimes(1);
   });
+
+  it('omits "Reset to team default" when no reset handler is supplied (Tier 1)', () => {
+    render(<ColumnChooser columns={cols} hidden={new Set()} onToggle={() => {}} onShowAll={() => {}} />);
+    fireEvent.click(screen.getByTestId('column-chooser-trigger'));
+    expect(screen.queryByTestId('column-chooser-reset-default')).not.toBeInTheDocument();
+  });
+
+  it('"Reset to team default" fires onResetToTeamDefault (Tier 2)', () => {
+    const onReset = vi.fn();
+    render(
+      <ColumnChooser
+        columns={cols}
+        hidden={new Set()}
+        onToggle={() => {}}
+        onShowAll={() => {}}
+        onResetToTeamDefault={onReset}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('column-chooser-trigger'));
+    // Enabled even with nothing hidden — the reset is an idempotent server op.
+    expect(screen.getByTestId('column-chooser-reset-default')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('column-chooser-reset-default'));
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables every control while busy', () => {
+    render(
+      <ColumnChooser
+        columns={cols}
+        hidden={new Set(['b'])}
+        onToggle={() => {}}
+        onShowAll={() => {}}
+        onResetToTeamDefault={() => {}}
+        busy
+      />,
+    );
+    fireEvent.click(screen.getByTestId('column-chooser-trigger'));
+    expect(screen.getByTestId('column-toggle-a')).toBeDisabled();
+    expect(screen.getByTestId('column-chooser-show-all')).toBeDisabled();
+    expect(screen.getByTestId('column-chooser-reset-default')).toBeDisabled();
+  });
 });

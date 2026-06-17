@@ -21,7 +21,7 @@ import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { useCardGroup, useNavConfig } from '@/lib/uiConfig';
-import { useUpdateMyUiConfig } from '@/hooks/useUiConfig';
+import { usePatchMyUiConfig, useUpdateMyUiConfig } from '@/hooks/useUiConfig';
 import { NAV_MENU_SECTIONS, NAV_MOVABLE_ENTRIES, movableDefaultParent } from '@/lib/nav';
 import { DASHBOARD_CARDS } from '@/pages/Dashboard';
 
@@ -30,7 +30,12 @@ const { Title, Paragraph } = Typography;
 export function Preferences() {
   const resolvedCards = useCardGroup('dashboard');
   const resolvedNav = useNavConfig();
-  const updateMine = useUpdateMyUiConfig();
+  // Save composes via the merge-style PATCH (ADR-032 v1.3) so persisting the
+  // cards/nav panels no longer clobbers the user's per-table `columns` override
+  // (and vice-versa). Reset still uses the wholesale PUT `{}` — the explicit
+  // "clear my whole layer" verb.
+  const patchMine = usePatchMyUiConfig();
+  const resetMine = useUpdateMyUiConfig();
 
   // Seed local edit state from the resolved doc so the controls reflect the
   // user's current effective view.
@@ -84,7 +89,7 @@ export function Preferences() {
 
   const onSave = async () => {
     try {
-      await updateMine.mutateAsync({
+      await patchMine.mutateAsync({
         cards: { dashboard: { hidden: [...hiddenCards] } },
         nav: { hidden: [...hiddenSections], placement },
       });
@@ -96,7 +101,7 @@ export function Preferences() {
 
   const onReset = async () => {
     try {
-      await updateMine.mutateAsync({});
+      await resetMine.mutateAsync({});
       setHiddenCards(new Set());
       setHiddenSections(new Set());
       setPlacement({});
@@ -189,13 +194,13 @@ export function Preferences() {
       <Space style={{ marginTop: 16 }}>
         <Button
           type="primary"
-          loading={updateMine.isPending}
+          loading={patchMine.isPending}
           onClick={onSave}
           data-testid="prefs-save"
         >
           Save preferences
         </Button>
-        <Button loading={updateMine.isPending} onClick={onReset} data-testid="prefs-reset">
+        <Button loading={resetMine.isPending} onClick={onReset} data-testid="prefs-reset">
           Reset to team default
         </Button>
       </Space>
