@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Table from 'antd/es/table';
 import Select from 'antd/es/select';
 import Form from 'antd/es/form';
@@ -15,7 +15,9 @@ import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useColumnGroup, useLabel, useTableConfig } from '@/lib/uiConfig';
-import { applyColumnConfig, applyDefaultSort, hasAdvancedColumns } from '@/lib/columnConfig';
+import { applyColumnConfig, applyDefaultSort, columnKey, hasAdvancedColumns, type KeyedColumn } from '@/lib/columnConfig';
+import { useLocalColumnVisibility } from '@/lib/useLocalColumnVisibility';
+import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -65,6 +67,7 @@ export function TagReads() {
 
   const columnConfig = useColumnGroup(TAG_READS_PAGE);
   const tableConfig = useTableConfig(TAG_READS_PAGE);
+  const colVis = useLocalColumnVisibility(TAG_READS_PAGE);
   const deviceLabel = useLabel('device');
   const devicesLabel = useLabel('device', { plural: true });
   const tagReadsLabel = useLabel('tagRead', { plural: true });
@@ -212,16 +215,37 @@ export function TagReads() {
   // plus any tenant-configured hidden/order/advanced. With no config and the
   // toggle off, only the default-advanced columns are dropped. A configured
   // `tables.tag_reads.defaultSort` then overrides the column's own default sort.
+  const serverVisibleColumns = useMemo(
+    () =>
+      applyColumnConfig(columns, columnConfig, {
+        defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
+        showAdvanced,
+      }),
+    [columns, columnConfig, showAdvanced],
+  );
+
+  // Sprint 62 — the addressable columns the device-local "Columns" chooser can
+  // toggle (the server-visible candidates; unaddressable columns are omitted).
+  const chooserColumns = useMemo<ColumnChooserItem[]>(
+    () =>
+      serverVisibleColumns
+        .map((c) => ({ key: columnKey(c as KeyedColumn), label: (c as { title?: ReactNode }).title }))
+        .filter((c): c is ColumnChooserItem => c.key !== undefined),
+    [serverVisibleColumns],
+  );
+
+  // Apply the device-local hides on top of the server floor, then the
+  // config-driven default sort.
   const visibleColumns = useMemo(
     () =>
       applyDefaultSort(
-        applyColumnConfig(columns, columnConfig, {
-          defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
-          showAdvanced,
+        serverVisibleColumns.filter((c) => {
+          const k = columnKey(c as KeyedColumn);
+          return k === undefined || !colVis.hidden.has(k);
         }),
         tableConfig.defaultSort,
       ),
-    [columns, columnConfig, showAdvanced, tableConfig.defaultSort],
+    [serverVisibleColumns, colVis.hidden, tableConfig.defaultSort],
   );
 
   const advancedColumnsAvailable = useMemo(
@@ -361,6 +385,14 @@ export function TagReads() {
             >
               Advanced columns
             </Checkbox>
+          )}
+          {viewMode === 'table' && (
+            <ColumnChooser
+              columns={chooserColumns}
+              hidden={colVis.hidden}
+              onToggle={colVis.setColumnVisible}
+              onShowAll={colVis.showAll}
+            />
           )}
         </Space>
         <Segmented

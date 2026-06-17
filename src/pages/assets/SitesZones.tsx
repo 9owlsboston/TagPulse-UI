@@ -61,6 +61,7 @@ const { Title, Text } = Typography;
 export function SitesZones() {
   const { mode } = useThemeMode();
   const devicesLabel = useLabel('device', { plural: true });
+  const zoneLabel = useLabel('zone');
   const t = tokens[mode];
   const { modal, message } = App.useApp();
   // Sprint 37 row 3.9b — site + zone label filters; Sprint 43 — moved
@@ -241,7 +242,7 @@ export function SitesZones() {
 
   const handleDeleteZone = (zone: ZoneResponse) => {
     modal.confirm({
-      title: 'Delete Zone',
+      title: `Delete ${zoneLabel}`,
       content: `Delete zone "${zone.name}"?`,
       okType: 'danger',
       onOk: () => deleteZone.mutateAsync(zone.id),

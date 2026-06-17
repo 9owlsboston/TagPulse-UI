@@ -52,6 +52,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function AssetDetail() {
   const telemetryLabel = useLabel('telemetry');
+  const assetLabel = useLabel('asset');
+  const tagLabel = useLabel('tag');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { modal, message } = App.useApp();
@@ -103,7 +105,7 @@ export function AssetDetail() {
 
   const handleRetire = () => {
     modal.confirm({
-      title: 'Retire Asset',
+      title: `Retire ${assetLabel}`,
       content: `Mark "${asset.name}" as retired? Its bindings remain in history.`,
       okType: 'danger',
       onOk: async () => {
@@ -171,7 +173,7 @@ export function AssetDetail() {
 
   const handleUnbind = (binding: AssetTagBindingResponse) => {
     modal.confirm({
-      title: 'Unbind Tag',
+      title: `Unbind ${tagLabel}`,
       content: `Unbind ${binding.binding_kind} value "${binding.binding_value}"?`,
       onOk: async () => {
         await unbind.mutateAsync(binding.binding_value);
