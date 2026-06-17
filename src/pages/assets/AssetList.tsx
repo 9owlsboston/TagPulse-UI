@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from 'antd/es/button';
 import Checkbox from 'antd/es/checkbox';
@@ -23,7 +23,9 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useColumnGroup, useTableConfig } from '@/lib/uiConfig';
-import { applyColumnConfig, applyDefaultSort, hasAdvancedColumns } from '@/lib/columnConfig';
+import { applyColumnConfig, applyDefaultSort, columnKey, hasAdvancedColumns, type KeyedColumn } from '@/lib/columnConfig';
+import { useLocalColumnVisibility } from '@/lib/useLocalColumnVisibility';
+import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
 import { CategorySelect } from '@/components/CategorySelect';
 import {
   PendingLabelPicker,
@@ -145,6 +147,7 @@ export function AssetList() {
   // Sprint 60 (ADR-032 §6.3) — config-driven column presets + advanced toggle.
   const columnConfig = useColumnGroup(ASSETS_PAGE);
   const tableConfig = useTableConfig(ASSETS_PAGE);
+  const colVis = useLocalColumnVisibility(ASSETS_PAGE);
   const [showAdvanced, setShowAdvanced] = useState(false);
   // Lightweight key list for the toggle-availability check (the full column
   // defs are applied inline below; this mirrors their addressable keys).
@@ -313,6 +316,168 @@ export function AssetList() {
   // status, filter-drawer toggle, last-seen range, never-seen) goes in
   // the shell's `toolbar` slot; the Register Asset button goes in
   // `primaryAction`; the side FilterPanel goes in `aside`.
+  // Sprint 62 — column visibility. Extract the column defs into a memo so the
+  // device-local "Columns" chooser and the table share one server-visible set.
+  const assetColumns = useMemo<AssetColumn[]>(
+    () => [
+      { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+      // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
+      // the Category column below is the sole classifier surface.
+      // Sprint 37 row 3.3a — Category column. Renders the category
+      // name (resolved from the categories cache to avoid N+1) with
+      // a Tag coloured by category_type. Sortable by name.
+      {
+        title: 'Category',
+        key: 'category',
+        sorter: (a, b) => {
+          const an = a.category_id ? categoryById.get(a.category_id)?.name ?? '' : '';
+          const bn = b.category_id ? categoryById.get(b.category_id)?.name ?? '' : '';
+          return an.localeCompare(bn);
+        },
+        render: (_: unknown, row: AssetResponse) => {
+          if (!row.category_id) return <Typography.Text type="secondary">—</Typography.Text>;
+          const c = categoryById.get(row.category_id);
+          if (!c) return <Typography.Text type="secondary">{row.category_id.slice(0, 8)}…</Typography.Text>;
+          const typeColor: Record<string, string> = {
+            liquid_container: 'blue',
+            reference_tag: 'purple',
+            rti_container: 'cyan',
+            object: 'gold',
+          };
+          return (
+            <Tooltip title={`Type: ${c.category_type}`}>
+              <Tag color={typeColor[c.category_type] ?? 'default'}>{c.name}</Tag>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        title: 'External Ref',
+        key: 'external_ref',
+        dataIndex: 'external_ref',
+        render: (v: string | null) => v ?? '—',
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        filters: STATUS_FILTERS,
+        onFilter: (value, record) => record.status === value,
+        render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag>,
+      },
+      {
+        title: 'Location',
+        key: 'location',
+        filters: SOURCE_FILTERS,
+        onFilter: (value, record) => {
+          const loc = locationByAssetId.get(record.id);
+          if (value === '__none__') return !loc;
+          return loc?.latest_position_source === value;
+        },
+        render: (_: unknown, row: AssetResponse) => {
+          const loc = locationByAssetId.get(row.id);
+          if (!loc) return <Typography.Text type="secondary">—</Typography.Text>;
+          const coords = `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
+          return (
+            <Tooltip title={`${coords} · source: ${loc.latest_position_source}`}>
+              <Space size={4}>
+                <span style={{ fontFamily: 'monospace' }}>{coords}</span>
+                <Tag>{loc.latest_position_source}</Tag>
+              </Space>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        title: 'Last seen',
+        key: 'last_seen',
+        sorter: (a, b) => {
+          const la = locationByAssetId.get(a.id)?.recorded_at;
+          const lb = locationByAssetId.get(b.id)?.recorded_at;
+          return (la ? Date.parse(la) : 0) - (lb ? Date.parse(lb) : 0);
+        },
+        render: (_: unknown, row: AssetResponse) => {
+          const loc = locationByAssetId.get(row.id);
+          if (!loc) return <Typography.Text type="secondary">never</Typography.Text>;
+          const isFlashing = flashing.has(row.id);
+          return (
+            <Tooltip title={new Date(loc.recorded_at).toLocaleString()}>
+              <span
+                key={loc.recorded_at}
+                className={isFlashing ? 'tagpulse-cell-pop' : undefined}
+              >
+                {formatRelative(loc.recorded_at)}
+              </span>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        title: 'Registered',
+        key: 'created_at',
+        dataIndex: 'created_at',
+        render: (v: string) => (
+          <Tooltip title={new Date(v).toLocaleString()}>{formatRelative(v)}</Tooltip>
+        ),
+      },
+      ...(showTemperature
+        ? [
+            {
+              title: 'Temperature',
+              key: 'temperature',
+              render: (_: unknown, row: AssetResponse) => {
+                const t = (row.latest_telemetry ?? []).find(
+                  (m) => m.metric_name === 'temperature_c',
+                );
+                if (!t) return <Typography.Text type="secondary">—</Typography.Text>;
+                return (
+                  <Tooltip title={`as of ${new Date(t.timestamp).toLocaleString()}`}>
+                    <span style={{ fontFamily: 'monospace' }}>
+                      {t.metric_value.toFixed(1)} {t.unit ?? '°C'}
+                    </span>
+                  </Tooltip>
+                );
+              },
+            },
+          ]
+        : []),
+    ],
+    [categoryById, locationByAssetId, flashing, showTemperature],
+  );
+
+  // Server-resolved visible columns (tenant/role config + Advanced toggle).
+  const serverVisibleColumns = useMemo(
+    () =>
+      applyColumnConfig<AssetColumn>(assetColumns, columnConfig, {
+        defaultAdvanced: DEFAULT_ADVANCED_COLUMNS,
+        showAdvanced,
+      }),
+    [assetColumns, columnConfig, showAdvanced],
+  );
+
+  // Sprint 62 — the addressable columns the device-local "Columns" chooser can
+  // toggle (the server-visible candidates; unaddressable columns are omitted).
+  const chooserColumns = useMemo<ColumnChooserItem[]>(
+    () =>
+      serverVisibleColumns
+        .map((c) => ({ key: columnKey(c as KeyedColumn), label: (c as { title?: ReactNode }).title }))
+        .filter((c): c is ColumnChooserItem => c.key !== undefined),
+    [serverVisibleColumns],
+  );
+
+  // Apply the device-local hides on top of the server floor, then the
+  // config-driven default sort.
+  const visibleColumns = useMemo(
+    () =>
+      applyDefaultSort(
+        serverVisibleColumns.filter((c) => {
+          const k = columnKey(c as KeyedColumn);
+          return k === undefined || !colVis.hidden.has(k);
+        }),
+        tableConfig.defaultSort,
+      ),
+    [serverVisibleColumns, colVis.hidden, tableConfig.defaultSort],
+  );
+
   const toolbar = (
     <Space wrap>
       <Input.Search
@@ -371,6 +536,12 @@ export function AssetList() {
           Advanced columns
         </Checkbox>
       )}
+      <ColumnChooser
+        columns={chooserColumns}
+        hidden={colVis.hidden}
+        onToggle={colVis.setColumnVisible}
+        onShowAll={colVis.showAll}
+      />
     </Space>
   );
 
@@ -471,135 +642,7 @@ export function AssetList() {
                 />
               ),
           }}
-          columns={applyDefaultSort(
-            applyColumnConfig<AssetColumn>(
-              [
-                { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-            // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
-            // the Category column below is the sole classifier surface.
-            // Sprint 37 row 3.3a — Category column. Renders the category
-            // name (resolved from the categories cache to avoid N+1) with
-            // a Tag coloured by category_type. Sortable by name.
-            {
-              title: 'Category',
-              key: 'category',
-              sorter: (a, b) => {
-                const an = a.category_id ? categoryById.get(a.category_id)?.name ?? '' : '';
-                const bn = b.category_id ? categoryById.get(b.category_id)?.name ?? '' : '';
-                return an.localeCompare(bn);
-              },
-              render: (_: unknown, row: AssetResponse) => {
-                if (!row.category_id) return <Typography.Text type="secondary">—</Typography.Text>;
-                const c = categoryById.get(row.category_id);
-                if (!c) return <Typography.Text type="secondary">{row.category_id.slice(0, 8)}…</Typography.Text>;
-                const typeColor: Record<string, string> = {
-                  liquid_container: 'blue',
-                  reference_tag: 'purple',
-                  rti_container: 'cyan',
-                  object: 'gold',
-                };
-                return (
-                  <Tooltip title={`Type: ${c.category_type}`}>
-                    <Tag color={typeColor[c.category_type] ?? 'default'}>{c.name}</Tag>
-                  </Tooltip>
-                );
-              },
-            },
-            {
-              title: 'External Ref',
-              key: 'external_ref',
-              dataIndex: 'external_ref',
-              render: (v: string | null) => v ?? '—',
-            },
-            {
-              title: 'Status',
-              dataIndex: 'status',
-              filters: STATUS_FILTERS,
-              onFilter: (value, record) => record.status === value,
-              render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag>,
-            },
-            {
-              title: 'Location',
-              key: 'location',
-              filters: SOURCE_FILTERS,
-              onFilter: (value, record) => {
-                const loc = locationByAssetId.get(record.id);
-                if (value === '__none__') return !loc;
-                return loc?.latest_position_source === value;
-              },
-              render: (_: unknown, row: AssetResponse) => {
-                const loc = locationByAssetId.get(row.id);
-                if (!loc) return <Typography.Text type="secondary">—</Typography.Text>;
-                const coords = `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
-                return (
-                  <Tooltip title={`${coords} · source: ${loc.latest_position_source}`}>
-                    <Space size={4}>
-                      <span style={{ fontFamily: 'monospace' }}>{coords}</span>
-                      <Tag>{loc.latest_position_source}</Tag>
-                    </Space>
-                  </Tooltip>
-                );
-              },
-            },
-            {
-              title: 'Last seen',
-              key: 'last_seen',
-              sorter: (a, b) => {
-                const la = locationByAssetId.get(a.id)?.recorded_at;
-                const lb = locationByAssetId.get(b.id)?.recorded_at;
-                return (la ? Date.parse(la) : 0) - (lb ? Date.parse(lb) : 0);
-              },
-              render: (_: unknown, row: AssetResponse) => {
-                const loc = locationByAssetId.get(row.id);
-                if (!loc) return <Typography.Text type="secondary">never</Typography.Text>;
-                const isFlashing = flashing.has(row.id);
-                return (
-                  <Tooltip title={new Date(loc.recorded_at).toLocaleString()}>
-                    <span
-                      key={loc.recorded_at}
-                      className={isFlashing ? 'tagpulse-cell-pop' : undefined}
-                    >
-                      {formatRelative(loc.recorded_at)}
-                    </span>
-                  </Tooltip>
-                );
-              },
-            },
-            {
-              title: 'Registered',
-              key: 'created_at',
-              dataIndex: 'created_at',
-              render: (v: string) => (
-                <Tooltip title={new Date(v).toLocaleString()}>{formatRelative(v)}</Tooltip>
-              ),
-            },
-            ...(showTemperature
-              ? [
-                  {
-                    title: 'Temperature',
-                    key: 'temperature',
-                    render: (_: unknown, row: AssetResponse) => {
-                      const t = (row.latest_telemetry ?? []).find(
-                        (m) => m.metric_name === 'temperature_c',
-                      );
-                      if (!t) return <Typography.Text type="secondary">—</Typography.Text>;
-                      return (
-                        <Tooltip title={`as of ${new Date(t.timestamp).toLocaleString()}`}>
-                          <span style={{ fontFamily: 'monospace' }}>
-                            {t.metric_value.toFixed(1)} {t.unit ?? '°C'}
-                          </span>
-                        </Tooltip>
-                      );
-                    },
-                  },
-                ]
-              : []),
-              ],
-              columnConfig,
-              { defaultAdvanced: DEFAULT_ADVANCED_COLUMNS, showAdvanced },
-            ),
-            tableConfig.defaultSort,
-          )}
+          columns={visibleColumns}
         />
       </ListPageShell>
 
