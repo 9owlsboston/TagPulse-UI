@@ -440,7 +440,14 @@ export function TagReads() {
             dataSource={data}
             loading={isLoading}
             rowClassName={(row) => (flashing.has(row.id) ? 'tagpulse-row-flash' : '')}
-            pagination={{ pageSize: 20 }}
+            pagination={{
+              // `defaultPageSize` (uncontrolled) lets AntD own the page size so
+              // the size changer actually takes effect — a literal `pageSize`
+              // is *controlled* and reverts every selection back on re-render.
+              defaultPageSize: 20,
+              showSizeChanger: true,
+              pageSizeOptions: [20, 50, 100],
+            }}
             data-testid="tag-reads-table-paginated"
           />
         )

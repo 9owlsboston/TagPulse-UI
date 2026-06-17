@@ -238,7 +238,13 @@ export function AlertHistory() {
         columns={columns}
         dataSource={filtered}
         loading={isLoading}
-        pagination={{ pageSize: 20, showSizeChanger: true }}
+        pagination={{
+          // Uncontrolled `defaultPageSize` so the size changer takes effect — a
+          // literal `pageSize` is controlled and reverts every selection.
+          defaultPageSize: 20,
+          showSizeChanger: true,
+          pageSizeOptions: [20, 50, 100],
+        }}
         locale={{
           emptyText:
             search || range || statusFilter ? (

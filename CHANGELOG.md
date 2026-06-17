@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- **Table page-size changer was stuck at 20 on Tag Reads + Alerts (bug).** Selecting **50** or **100 / page** did nothing — it snapped straight back to 20. Root cause: the tables passed `pagination={{ pageSize: 20 }}`, and a literal `pageSize` is a **controlled** prop, so AntD reverted every size-changer selection on the next render. Switched both [Tag Reads](src/pages/telemetry/TagReads.tsx) and [Alert History](src/pages/rules/AlertHistory.tsx) to the uncontrolled `defaultPageSize: 20` (plus explicit `showSizeChanger: true` and `pageSizeOptions: [20, 50, 100]`), so each table owns its page size and the changer takes effect. Regression tests in [TagReads.test.tsx](src/pages/telemetry/TagReads.test.tsx) + [AlertHistory.test.tsx](src/pages/rules/AlertHistory.test.tsx) drive the changer (20 → 100) and assert the extra rows render. `npm run check` clean.
+
 ### Added
 
 - **Tag Reads — `EPC (hex)` column for hex-preferring tenants (chore).** The Tag Reads page rendered only the decoded **EPC URI** (`urn:epc:id:sgtin:…`) and `Tag ID`; the raw wire-format **`epc_hex`** (already in the `TagReadResponse` payload) had no column. RFID-only fleets (e.g. WM) that think in raw hex had to read the URI or rely on `Tag ID` coincidentally carrying the hex. Added an **`EPC (hex)`** column ([src/pages/telemetry/TagReads.tsx](src/pages/telemetry/TagReads.tsx)) keyed `epc_hex`, grouped next to `EPC`/`Scheme`. It's a normal addressable column (not `advanced`), so its visibility is **config-driven** via the ADR-032 `columns.tag_reads` leaf and the Sprint 63 column chooser: the backend system default hides it (so the readable URI stays the default — no clutter), and a tenant/user that prefers hex reveals it (and hides the URI) via their `columns.tag_reads` preset or the "Columns" chooser. Test in [TagReads.test.tsx](src/pages/telemetry/TagReads.test.tsx) asserts the column renders. Pairs with the backend chore (system-default hide + WM tenant preset). `npm run check` clean.

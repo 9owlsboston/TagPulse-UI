@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -20,6 +20,18 @@ const SINGLE_ROW: TagReadResponse[] = [
 // 600 synthetic rows — triggers VIRTUAL_ROW_THRESHOLD (500) in the page.
 const LARGE_ROWS: TagReadResponse[] = Array.from({ length: 600 }, (_, i) => ({
   id: `r${i}`,
+  device_id: '1',
+  tag_id: `TAG-${String(i).padStart(4, '0')}`,
+  timestamp: '2026-04-25T10:00:00Z',
+  signal_strength: -50,
+  sensor_data: null,
+  created_at: '2026-04-25T10:00:00Z',
+}) as unknown as TagReadResponse);
+
+// 30 rows — paginated (≤ 500) but more than the default page size of 20, so
+// the page-size changer is exercised.
+const MID_ROWS: TagReadResponse[] = Array.from({ length: 30 }, (_, i) => ({
+  id: `m${i}`,
   device_id: '1',
   tag_id: `TAG-${String(i).padStart(4, '0')}`,
   timestamp: '2026-04-25T10:00:00Z',
@@ -117,6 +129,20 @@ describe('TagReads', () => {
     render(<TagReads />, { wrapper });
     expect(screen.getByTestId('tag-reads-table-paginated')).toBeInTheDocument();
     expect(screen.queryByTestId('tag-reads-table-virtual')).not.toBeInTheDocument();
+  });
+
+  it('lets the page-size changer take effect (not controlled-locked at 20)', async () => {
+    currentRows = MID_ROWS; // 30 rows → page 1 of 20 by default
+    render(<TagReads />, { wrapper });
+    // Default page size 20 → the 26th row (TAG-0025) is on page 2, not shown.
+    expect(screen.getByText('TAG-0000')).toBeInTheDocument();
+    expect(screen.queryByText('TAG-0025')).not.toBeInTheDocument();
+    // Open the size changer and pick "100 / page".
+    fireEvent.mouseDown(screen.getByText('20 / page'));
+    fireEvent.click(await screen.findByText('100 / page'));
+    // With 100/page all 30 rows render → TAG-0025 is now visible. A controlled
+    // `pageSize` prop would have reverted the selection back to 20 (the bug).
+    expect(await screen.findByText('TAG-0025')).toBeInTheDocument();
   });
 
   it('switches to virtual table when rows > 500', () => {
