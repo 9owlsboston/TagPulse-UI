@@ -47,6 +47,7 @@ import { FilterPanel } from '@/components/FilterPanel';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { tokens } from '@/theme/tokens';
 import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
+import { useLabel } from '@/lib/uiConfig';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
@@ -852,6 +853,7 @@ function ZoneOccupantsModal({
   onClose: () => void;
 }) {
   const { data, isLoading } = useAssetsInZone(zone?.id);
+  const tagLabel = useLabel('tag');
   return (
     <Modal
       title={zone ? `Assets in "${zone.name}"` : 'Assets in zone'}
@@ -870,7 +872,7 @@ function ZoneOccupantsModal({
         columns={[
           { title: 'Name', dataIndex: 'name' },
           {
-            title: 'Tag',
+            title: tagLabel,
             dataIndex: 'binding_value',
             ellipsis: true,
           },

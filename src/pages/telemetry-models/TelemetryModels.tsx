@@ -20,6 +20,7 @@ import {
   useUpdateTelemetryModel,
 } from '@/hooks/useTelemetryModels';
 import { useTelemetryQuarantine } from '@/hooks/useTelemetry';
+import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import type {
@@ -277,6 +278,8 @@ function QuarantinePanel() {
     return byReason;
   }, [data]);
 
+  const deviceLabel = useLabel('device');
+
   const columns: ColumnsType<TelemetryQuarantineResponse> = [
     {
       title: 'Received',
@@ -285,7 +288,7 @@ function QuarantinePanel() {
       sorter: (a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime(),
       defaultSortOrder: 'descend',
     },
-    { title: 'Device', dataIndex: 'device_id', ellipsis: true },
+    { title: deviceLabel, dataIndex: 'device_id', ellipsis: true },
     { title: 'Metric', dataIndex: 'metric_name' },
     {
       title: 'Value',
