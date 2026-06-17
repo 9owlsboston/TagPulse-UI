@@ -29,6 +29,7 @@ import {
   useZones,
 } from '@/hooks/useAssets';
 import { useDevices } from '@/hooks/useDevices';
+import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
@@ -50,6 +51,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function AssetDetail() {
+  const telemetryLabel = useLabel('telemetry');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { modal, message } = App.useApp();
@@ -455,7 +457,7 @@ export function AssetDetail() {
     },
     {
       key: 'telemetry',
-      label: 'Telemetry',
+      label: telemetryLabel,
       children: id ? (
         <SubjectTelemetryTab
           subjectKind="asset"

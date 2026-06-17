@@ -7,6 +7,7 @@ import Card from 'antd/es/card';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { useCreateDevice } from '@/hooks/useDevices';
+import { useLabel } from '@/lib/uiConfig';
 import {
   PendingLabelPicker,
   attachPendingLabels,
@@ -18,6 +19,7 @@ const { Title } = Typography;
 const { TextArea } = Input;
 
 export function DeviceRegister() {
+  const deviceLabel = useLabel('device');
   const navigate = useNavigate();
   const createDevice = useCreateDevice();
   const [form] = Form.useForm<DeviceCreate & { metadataJson?: string }>();
@@ -62,7 +64,7 @@ export function DeviceRegister() {
 
   return (
     <div>
-      <Title level={2}>Register Device</Title>
+      <Title level={2}>{`Register ${deviceLabel}`}</Title>
       <Card style={{ maxWidth: 600 }}>
         <Form form={form} layout="vertical" onFinish={handleFinish}>
           <Form.Item name="name" label="Name" rules={[{ required: true, max: 255 }]}>

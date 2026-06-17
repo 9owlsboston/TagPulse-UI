@@ -12,6 +12,7 @@ import { FilterOutlined, PlusOutlined, SwapOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDevices } from '@/hooks/useDevices';
+import { useLabel } from '@/lib/uiConfig';
 import { useAuth } from '@/lib/auth';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
@@ -74,6 +75,7 @@ const adminTokenColumn: ColumnsType<DeviceResponse>[number] = {
 };
 
 export function DeviceList() {
+  const devicesLabel = useLabel('device', { plural: true });
   const navigate = useNavigate();
   const { role } = useAuth();
   const { message } = App.useApp();
@@ -196,7 +198,7 @@ export function DeviceList() {
   return (
     <>
       <ListPageShell
-        title="Devices"
+        title={devicesLabel}
         primaryAction={
           <RoleGuard roles={['admin', 'editor']}>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/devices/register')}>

@@ -8,6 +8,7 @@ import Table from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Typography from 'antd/es/typography';
 import { useTags, type TagListParams } from '@/hooks/useTags';
+import { useLabel } from '@/lib/uiConfig';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
 import { TagResponse } from '@/api/generated/models/TagResponse';
@@ -74,6 +75,7 @@ function formatRelative(iso: string | null): string {
  * reconciliation views (Phase E).
  */
 export function TagList() {
+  const tagsLabel = useLabel('tag', { plural: true });
   const navigate = useNavigate();
   const [status, setStatus] = useState('');
   const [epcPrefix, setEpcPrefix] = useState('');
@@ -137,7 +139,7 @@ export function TagList() {
   return (
     <ListPageShell
       testId="tag-list-page"
-      title="Tags"
+      title={tagsLabel}
       titleLevel={3}
       description={
         <Text type="secondary">

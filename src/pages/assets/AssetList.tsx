@@ -18,6 +18,7 @@ import { FilterOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAssets, useAssetsCurrentLocations, useCreateAsset } from '@/hooks/useAssets';
+import { useLabel } from '@/lib/uiConfig';
 import { useCategories } from '@/hooks/useCategories';
 import { useCanPerform } from '@/components/useCanPerform';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
@@ -88,6 +89,7 @@ const MAX_FLASHES_PER_REFRESH = 12;
 const FLASH_DURATION_MS = 900;
 
 export function AssetList() {
+  const assetsLabel = useLabel('asset', { plural: true });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
@@ -399,7 +401,7 @@ export function AssetList() {
         }
       `}</style>
       <ListPageShell
-        title="Assets"
+        title={assetsLabel}
         count={filteredRows.length}
         countTestId="asset-list-title-count"
         primaryAction={

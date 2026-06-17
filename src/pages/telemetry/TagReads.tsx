@@ -67,6 +67,7 @@ export function TagReads() {
   const tableConfig = useTableConfig(TAG_READS_PAGE);
   const deviceLabel = useLabel('device');
   const devicesLabel = useLabel('device', { plural: true });
+  const tagReadsLabel = useLabel('tagRead', { plural: true });
 
   const { data: devices } = useDevices();
   const { data: rawData, isLoading } = useTagReads(
@@ -299,7 +300,7 @@ export function TagReads() {
           .tagpulse-cell-pop { animation: none; }
         }
       `}</style>
-      <Title level={2}>Tag Reads</Title>
+      <Title level={2}>{tagReadsLabel}</Title>
       <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <Form.Item label={deviceLabel}>
           <Select

@@ -28,6 +28,7 @@ import App from 'antd/es/app';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useLot, useProduct } from '@/hooks/useInventory';
+import { useLabel } from '@/lib/uiConfig';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { useCanPerform } from '@/components/useCanPerform';
@@ -94,6 +95,7 @@ function ColdChainCard({ latest }: { latest: NonNullable<ReturnType<typeof useLo
 }
 
 export function LotDetail() {
+  const telemetryLabel = useLabel('telemetry');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { modal, message } = App.useApp();
@@ -208,7 +210,7 @@ export function LotDetail() {
     },
     {
       key: 'telemetry',
-      label: 'Telemetry',
+      label: telemetryLabel,
       children: (
         <SubjectTelemetryTab
           subjectKind="lot"

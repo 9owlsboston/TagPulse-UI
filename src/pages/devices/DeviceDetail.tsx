@@ -15,6 +15,7 @@ import Select from 'antd/es/select';
 import App from 'antd/es/app';
 import { CopyOutlined, EditOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert, useUpdateDevice } from '@/hooks/useDevices';
+import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
@@ -27,6 +28,7 @@ import type { DeviceUpdate } from '@/types';
 const { Title, Text } = Typography;
 
 export function DeviceDetail() {
+  const telemetryLabel = useLabel('telemetry');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { modal, message } = App.useApp();
@@ -221,7 +223,7 @@ export function DeviceDetail() {
     },
     {
       key: 'telemetry',
-      label: 'Telemetry',
+      label: telemetryLabel,
       children: <DeviceTelemetryTab deviceId={device.id} deviceType={device.device_type} />,
     },
     {
