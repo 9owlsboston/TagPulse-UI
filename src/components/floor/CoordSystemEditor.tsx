@@ -15,11 +15,16 @@ import InputNumber from 'antd/es/input-number';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
+import Upload from 'antd/es/upload';
+import { UploadOutlined } from '@ant-design/icons';
 import { useUpdateSite } from '@/hooks/useAssets';
 import { CoordSystem } from '@/api/generated/models/CoordSystem';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
 
 const { Text } = Typography;
+
+// ~1.5 MB image ≈ 2 MB base64 (the backend cap). Reject earlier, client-side.
+const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
 
 interface FormValues {
   units: CoordSystem.units;
@@ -43,6 +48,21 @@ export function CoordSystemEditor({ site }: { site: SiteResponse }) {
   const [form] = Form.useForm<FormValues>();
   const existing = site.coord_system ?? null;
   const [hasFrame, setHasFrame] = useState<boolean>(existing != null);
+  const [floorplanImage, setFloorplanImage] = useState<string | null>(
+    existing?.floorplan_image ?? null,
+  );
+
+  const beforeUpload = (file: File): boolean => {
+    if (file.size > MAX_IMAGE_BYTES) {
+      message.error('Floorplan image too large (max ~1.5 MB)');
+      return false;
+    }
+    const reader = new FileReader();
+    reader.onload = () =>
+      setFloorplanImage(typeof reader.result === 'string' ? reader.result : null);
+    reader.readAsDataURL(file);
+    return false; // never auto-upload — we store inline on save
+  };
 
   const initialValues: FormValues = existing
     ? {
@@ -61,6 +81,7 @@ export function CoordSystemEditor({ site }: { site: SiteResponse }) {
       extent_y: values.extent_y,
       origin_anchor: values.origin_anchor,
       rotation_deg: values.rotation_deg,
+      floorplan_image: floorplanImage,
     };
     try {
       await updateSite.mutateAsync({ id: site.id, data: { coord_system } });
@@ -131,6 +152,23 @@ export function CoordSystemEditor({ site }: { site: SiteResponse }) {
         </Form.Item>
         <Form.Item label="Rotation°" name="rotation_deg" style={{ marginBottom: 12 }}>
           <InputNumber min={-360} max={360} style={{ width: 100 }} />
+        </Form.Item>
+        <Form.Item label="Floorplan image" style={{ marginBottom: 12 }}>
+          <Space>
+            <Upload accept="image/*" showUploadList={false} beforeUpload={beforeUpload}>
+              <Button icon={<UploadOutlined />} data-testid="coord-system-upload">
+                {floorplanImage ? 'Replace' : 'Upload'}
+              </Button>
+            </Upload>
+            {floorplanImage && (
+              <Button
+                onClick={() => setFloorplanImage(null)}
+                data-testid="coord-system-remove-image"
+              >
+                Remove
+              </Button>
+            )}
+          </Space>
         </Form.Item>
       </Space>
       <Space>
