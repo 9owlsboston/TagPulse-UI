@@ -59,6 +59,18 @@ const VIRTUAL_SCROLL_HEIGHT = 480;
 const TAG_READS_PAGE = 'tag_reads';
 const DEFAULT_ADVANCED_COLUMNS = ['tid', 'user_memory_hex'];
 
+// Sprint 64 — Antenna / Temperature / Humidity. Temp & humidity live in the
+// free-form `sensor_data` dict under *two* key conventions: real edge devices
+// (wire-format v2) write `temperature_c` / `humidity_pct`; simulators & demo
+// seeds write `temperature` / `humidity`. Resolve a fallback chain so both
+// render, and reuse the same resolver for the render, sorter, and CSV export.
+const asFiniteNumber = (v: unknown): number | undefined =>
+  typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+const readTemperature = (r: TagReadResponse): number | undefined =>
+  asFiniteNumber(r.sensor_data?.temperature) ?? asFiniteNumber(r.sensor_data?.temperature_c);
+const readHumidity = (r: TagReadResponse): number | undefined =>
+  asFiniteNumber(r.sensor_data?.humidity) ?? asFiniteNumber(r.sensor_data?.humidity_pct);
+
 export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
@@ -212,6 +224,34 @@ export function TagReads() {
         render: (v: number | null) => v ?? '—',
       },
       {
+        title: 'Antenna',
+        key: 'reader_antenna',
+        dataIndex: 'reader_antenna',
+        render: (v: number | null | undefined) => v ?? '—',
+        sorter: (a, b) => (a.reader_antenna ?? -Infinity) - (b.reader_antenna ?? -Infinity),
+      },
+      {
+        // Free-form `sensor_data` — resolved via the temperature fallback chain
+        // (real-device `temperature_c` vs simulator `temperature`), so no
+        // `dataIndex`; sort uses the same resolver.
+        title: 'Temp (°C)',
+        key: 'sensor_temperature',
+        render: (_v: unknown, row: TagReadResponse) => {
+          const t = readTemperature(row);
+          return t === undefined ? '—' : t.toFixed(1);
+        },
+        sorter: (a, b) => (readTemperature(a) ?? -Infinity) - (readTemperature(b) ?? -Infinity),
+      },
+      {
+        title: 'Humidity (%)',
+        key: 'sensor_humidity',
+        render: (_v: unknown, row: TagReadResponse) => {
+          const h = readHumidity(row);
+          return h === undefined ? '—' : h.toFixed(1);
+        },
+        sorter: (a, b) => (readHumidity(a) ?? -Infinity) - (readHumidity(b) ?? -Infinity),
+      },
+      {
         title: 'Latitude',
         key: 'latitude',
         dataIndex: 'latitude',
@@ -304,6 +344,9 @@ export function TagReads() {
       { header: 'device_id', accessor: (r) => r.device_id },
       { header: 'timestamp', accessor: (r) => r.timestamp },
       { header: 'signal_strength', accessor: (r) => r.signal_strength },
+      { header: 'reader_antenna', accessor: (r) => r.reader_antenna },
+      { header: 'temperature_c', accessor: (r) => readTemperature(r) },
+      { header: 'humidity_pct', accessor: (r) => readHumidity(r) },
       { header: 'latitude', accessor: (r) => r.latitude },
       { header: 'longitude', accessor: (r) => r.longitude },
       { header: 'location_accuracy_m', accessor: (r) => r.location_accuracy_m },
