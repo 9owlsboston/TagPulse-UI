@@ -12,6 +12,7 @@ import Card from 'antd/es/card';
 import Checkbox from 'antd/es/checkbox';
 import Empty from 'antd/es/empty';
 import Modal from 'antd/es/modal';
+import Select from 'antd/es/select';
 import Slider from 'antd/es/slider';
 import Space from 'antd/es/space';
 import Spin from 'antd/es/spin';
@@ -23,10 +24,12 @@ import { MapContainer, TileLayer, Marker, Polygon, Popup, CircleMarker, Tooltip,
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-import { useAssets, useAssetCurrentLocation, useAssetManifest, useAssetPath, useZones } from '@/hooks/useAssets';
+import { useAssets, useAssetCurrentLocation, useAssetManifest, useAssetPath, useSites, useZones } from '@/hooks/useAssets';
+import { useDevices } from '@/hooks/useDevices';
 import { useStockLevels } from '@/hooks/useInventory';
 import { useMapConfig, OSM_FALLBACK } from '@/hooks/useMapConfig';
 import { useAuth } from '@/lib/auth';
+import { FloorMap } from '@/components/floor/FloorMap';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { ManifestEntry } from '@/api/generated/models/ManifestEntry';
 import { useThemeMode } from '@/theme/ThemeProvider';
@@ -196,6 +199,8 @@ export function MapPage() {
 
   const { data: assets, isLoading: assetsLoading } = useAssets({ status: 'active', limit: 500 });
   const { data: zones, isLoading: zonesLoading } = useZones();
+  const { data: sites } = useSites();
+  const { data: devices } = useDevices();
   const { data: stockLevels } = useStockLevels();
   const { data: mapConfigData } = useMapConfig();
   const mapConfig = mapConfigData ?? OSM_FALLBACK;
@@ -207,6 +212,15 @@ export function MapPage() {
   );
   const [replayMinutesAgo, setReplayMinutesAgo] = useState(0); // 0 = live, max 1440 (24h)
   const [manifestAsset, setManifestAsset] = useState<AssetResponse | null>(null);
+  // Sprint 64 Phase 2 — floor view. Sites with a `coord_system` render as a
+  // floor plan (CRS.Simple-style SVG); the default (undefined) is the
+  // geographic Leaflet map.
+  const [floorSiteId, setFloorSiteId] = useState<string | undefined>();
+  const floorSites = useMemo(() => (sites ?? []).filter((s) => s.coord_system != null), [sites]);
+  const floorSite = useMemo(
+    () => floorSites.find((s) => s.id === floorSiteId) ?? null,
+    [floorSites, floorSiteId],
+  );
 
   const polygonZones = useMemo(
     () =>
@@ -249,6 +263,20 @@ export function MapPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={2} style={{ margin: 0 }}>Map</Title>
         <Space>
+          {floorSites.length > 0 && (
+            <Select
+              allowClear
+              placeholder="Geographic"
+              style={{ width: 200 }}
+              value={floorSiteId}
+              onChange={(v) => setFloorSiteId(v)}
+              data-testid="map-view-select"
+              options={[
+                { label: 'Geographic', value: '' },
+                ...floorSites.map((s) => ({ label: `Floor: ${s.name}`, value: s.id })),
+              ]}
+            />
+          )}
           <Checkbox checked={showAssets} onChange={(e) => setShowAssets(e.target.checked)}>Assets</Checkbox>
           <Checkbox checked={showZones} onChange={(e) => setShowZones(e.target.checked)}>Zones</Checkbox>
           <Checkbox checked={showStockDensity} onChange={(e) => setShowStockDensity(e.target.checked)}>Stock density</Checkbox>
@@ -258,6 +286,13 @@ export function MapPage() {
       <Card>
         {(assetsLoading || zonesLoading) ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
+        ) : floorSite ? (
+          <FloorMap
+            site={floorSite}
+            devices={devices ?? []}
+            assets={assets ?? []}
+            showAssets={showAssets}
+          />
         ) : (
           <>
             <div style={{ height: 560, width: '100%' }}>

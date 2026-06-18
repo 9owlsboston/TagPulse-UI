@@ -7,9 +7,14 @@ import { MapPage } from '@/pages/map/MapPage';
 vi.mock('@/hooks/useAssets', () => ({
   useAssets: () => ({ data: [], isLoading: false }),
   useZones: () => ({ data: [], isLoading: false }),
+  useSites: () => ({ data: [], isLoading: false }),
   useAssetCurrentLocation: () => ({ data: null }),
   useAssetPath: () => ({ data: [] }),
   useAssetManifest: () => ({ data: null, isLoading: false, error: null }),
+}));
+
+vi.mock('@/hooks/useDevices', () => ({
+  useDevices: () => ({ data: [], isLoading: false }),
 }));
 
 vi.mock('@/hooks/useInventory', () => ({
