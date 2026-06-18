@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AntApp from 'antd/es/app';
 import { CoordSystem } from '@/api/generated/models/CoordSystem';
 import { FloorPlacement } from '@/components/floor/FloorPlacement';
 import { pixelToFloor, floorToSvg } from '@/components/floor/floorMath';
@@ -48,11 +49,16 @@ describe('floorToSvg', () => {
 });
 
 const upsertMutate = vi.fn();
+const updateDeviceMutate = vi.fn();
 let mockAntennas: Array<{ port: number; x: number | null; y: number | null }> = [];
 
 vi.mock('@/hooks/useAntennas', () => ({
   useAntennas: () => ({ data: mockAntennas, isLoading: false }),
   useUpsertAntenna: () => ({ mutateAsync: upsertMutate, isPending: false }),
+}));
+
+vi.mock('@/hooks/useDevices', () => ({
+  useUpdateDevice: () => ({ mutateAsync: updateDeviceMutate, isPending: false }),
 }));
 
 vi.mock('@/theme/ThemeProvider', () => ({
@@ -61,7 +67,11 @@ vi.mock('@/theme/ThemeProvider', () => ({
 
 function wrap(node: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={qc}>
+      <AntApp>{node}</AntApp>
+    </QueryClientProvider>
+  );
 }
 
 const SITE = {
@@ -105,5 +115,34 @@ describe('FloorPlacement', () => {
     render(wrap(<FloorPlacement site={SITE} devices={[FIXED_READER, MOBILE_READER]} />));
     // The mobile reader must not be selectable (rendered as an option label).
     expect(screen.queryByText('Truck-1')).not.toBeInTheDocument();
+  });
+
+  it('assigns the reader to the site on placement when unassigned', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+    mockAntennas = [];
+    upsertMutate.mockReset().mockResolvedValue({});
+    updateDeviceMutate.mockReset().mockResolvedValue({});
+    const unassigned = { id: 'd1', name: 'Dock-1', mobility: 'fixed', site_id: null } as unknown as DeviceResponse;
+    render(wrap(<FloorPlacement site={SITE} devices={[unassigned]} />));
+    // Select the reader via the antd Select.
+    await user.click(screen.getByTestId('floor-reader-select').querySelector('.ant-select-selector')!);
+    await user.click(await screen.findByText('Dock-1'));
+    // Mock layout (jsdom has none) so the click maps to floor coords.
+    const canvas = screen.getByTestId('floor-canvas');
+    canvas.getBoundingClientRect = (() => ({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 100,
+      right: 100,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })) as unknown as typeof canvas.getBoundingClientRect;
+    fireEvent.click(canvas, { clientX: 50, clientY: 50 });
+    await screen.findByTestId('floor-canvas');
+    await vi.waitFor(() => expect(upsertMutate).toHaveBeenCalled());
+    expect(updateDeviceMutate).toHaveBeenCalledWith({ id: 'd1', data: { site_id: 's1' } });
   });
 });

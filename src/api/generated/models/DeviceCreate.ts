@@ -11,5 +11,6 @@ export type DeviceCreate = {
     firmware_version?: (string | null);
     metadata?: (Record<string, any> | null);
     name: string;
+    site_id?: (string | null);
 };
 

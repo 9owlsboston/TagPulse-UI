@@ -13,6 +13,7 @@ import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import { useAntennas, useUpsertAntenna } from '@/hooks/useAntennas';
+import { useUpdateDevice } from '@/hooks/useDevices';
 import { CoordSystem } from '@/api/generated/models/CoordSystem';
 import type { DeviceResponse } from '@/api/generated/models/DeviceResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
@@ -62,6 +63,7 @@ export function FloorPlacement({
   const { mode } = useThemeMode();
   const t = tokens[mode];
   const upsert = useUpsertAntenna();
+  const updateDevice = useUpdateDevice();
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>();
 
@@ -90,6 +92,12 @@ export function FloorPlacement({
         port: 0,
         data: { x: p.x, y: p.y },
       });
+      // Implicit assignment: placing a reader on this site's floor assigns it to
+      // the site if it isn't already (enables floor-zone resolution).
+      const placed = fixedReaders.find((d) => d.id === selectedDeviceId);
+      if (placed && placed.site_id !== site.id) {
+        await updateDevice.mutateAsync({ id: selectedDeviceId, data: { site_id: site.id } });
+      }
       message.success(`Placed at (${p.x}, ${p.y})`);
     } catch {
       message.error('Failed to place reader');

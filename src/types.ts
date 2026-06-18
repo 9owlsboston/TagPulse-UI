@@ -6,6 +6,7 @@ export interface DeviceCreate {
   metadata?: Record<string, unknown>;
   configuration?: Record<string, unknown>;
   firmware_version?: string;
+  site_id?: string | null;
 }
 
 export interface DeviceUpdate {
@@ -15,6 +16,7 @@ export interface DeviceUpdate {
   metadata?: Record<string, unknown>;
   configuration?: Record<string, unknown>;
   firmware_version?: string;
+  site_id?: string | null;
 }
 
 export interface DeviceResponse {
@@ -28,6 +30,7 @@ export interface DeviceResponse {
   connection_state: string;
   last_seen: string | null;
   mobility?: string;
+  site_id?: string | null;
   token_prefix: string | null;
   token_rotated_at: string | null;
   cert_thumbprint?: string | null;

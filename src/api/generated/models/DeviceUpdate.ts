@@ -11,6 +11,7 @@ export type DeviceUpdate = {
     firmware_version?: (string | null);
     metadata?: (Record<string, any> | null);
     name?: (string | null);
+    site_id?: (string | null);
     status?: (string | null);
 };
 
