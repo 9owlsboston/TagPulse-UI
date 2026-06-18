@@ -2,12 +2,14 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CoordSystem } from './CoordSystem';
 /**
  * Create a site.
  */
 export type SiteCreate = {
     address?: (string | null);
     city?: (string | null);
+    coord_system?: (CoordSystem | null);
     country?: (string | null);
     default_timezone?: string;
     kind?: SiteCreate.kind;

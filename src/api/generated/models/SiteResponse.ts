@@ -2,12 +2,14 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CoordSystem } from './CoordSystem';
 /**
  * Persisted site row.
  */
 export type SiteResponse = {
     address: (string | null);
     city: (string | null);
+    coord_system?: (CoordSystem | null);
     country: (string | null);
     created_at: string;
     default_timezone: string;

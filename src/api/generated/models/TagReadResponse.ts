@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { LocationDescriptor } from './LocationDescriptor';
 /**
  * Tag read event returned from the API.
  */
@@ -14,6 +15,7 @@ export type TagReadResponse = {
     epc_scheme?: (string | null);
     id: string;
     latitude?: (number | null);
+    location?: (LocationDescriptor | null);
     location_accuracy_m?: (number | null);
     location_source?: (string | null);
     longitude?: (number | null);
