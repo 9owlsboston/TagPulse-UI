@@ -22,6 +22,7 @@ import {
   EnvironmentOutlined,
   FilterOutlined,
   PlusOutlined,
+  BorderOuterOutlined,
 } from '@ant-design/icons';
 import {
   useAssetsInZone,
@@ -55,6 +56,7 @@ import { SiteCreate } from '@/api/generated/models/SiteCreate';
 import type { SiteUpdate } from '@/api/generated/models/SiteUpdate';
 import type { ZoneUpdate } from '@/api/generated/models/ZoneUpdate';
 import { PolygonDraw } from '@/components/PolygonDraw';
+import { FloorPlanModal } from '@/components/floor/FloorPlanModal';
 
 const { Title, Text } = Typography;
 
@@ -87,6 +89,7 @@ export function SitesZones() {
   const [creatingKind, setCreatingKind] = useState<'site' | 'transporter' | null>(null);
   const [zoneModalSiteId, setZoneModalSiteId] = useState<string | null>(null);
   const [editingSite, setEditingSite] = useState<SiteResponse | null>(null);
+  const [floorPlanSiteId, setFloorPlanSiteId] = useState<string | null>(null);
   const [editingZone, setEditingZone] = useState<ZoneResponse | null>(null);
   const [occupantsZone, setOccupantsZone] = useState<ZoneResponse | null>(null);
   // Sprint 37 row 3.9d — client-side label queues for the Site and Zone
@@ -341,6 +344,16 @@ export function SitesZones() {
                 >
                   Add Zone
                 </Button>
+                {!isTransporter && (
+                  <Button
+                    size="small"
+                    icon={<BorderOuterOutlined />}
+                    onClick={() => setFloorPlanSiteId(site.id)}
+                    aria-label={`Floor plan for site ${site.name}`}
+                  >
+                    Floor plan
+                  </Button>
+                )}
                 <Button
                   size="small"
                   icon={<EditOutlined />}
@@ -648,6 +661,13 @@ export function SitesZones() {
       <ZoneOccupantsModal
         zone={occupantsZone}
         onClose={() => setOccupantsZone(null)}
+      />
+
+      <FloorPlanModal
+        site={(sites ?? []).find((s) => s.id === floorPlanSiteId) ?? null}
+        devices={devices ?? []}
+        open={floorPlanSiteId !== null}
+        onClose={() => setFloorPlanSiteId(null)}
       />
 
       {/* Sprint 28 G3 — edit modal. Sprint 34 gap 3.2 — extended with kind,
