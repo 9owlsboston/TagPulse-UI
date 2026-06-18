@@ -18,6 +18,7 @@ export type DeviceResponse = {
     metadata: (Record<string, any> | null);
     mobility?: string;
     name: string;
+    site_id?: (string | null);
     status: string;
     token_prefix?: (string | null);
     token_rotated_at?: (string | null);

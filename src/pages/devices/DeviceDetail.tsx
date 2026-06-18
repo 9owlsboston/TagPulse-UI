@@ -15,6 +15,7 @@ import Select from 'antd/es/select';
 import App from 'antd/es/app';
 import { CopyOutlined, EditOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert, useUpdateDevice } from '@/hooks/useDevices';
+import { useSites } from '@/hooks/useAssets';
 import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useRecentReads } from '@/hooks/useTagReads';
@@ -41,6 +42,7 @@ export function DeviceDetail() {
   const rotateToken = useRotateDeviceToken();
   const attachCert = useAttachDeviceCert();
   const updateDevice = useUpdateDevice();
+  const { data: sites } = useSites();
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [certModalOpen, setCertModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -104,6 +106,7 @@ export function DeviceDetail() {
       device_type: device.device_type,
       firmware_version: device.firmware_version ?? undefined,
       status: device.status,
+      site_id: device.site_id ?? undefined,
       metadata_text: JSON.stringify(device.metadata ?? {}, null, 2),
     });
     setEditOpen(true);
@@ -129,6 +132,7 @@ export function DeviceDetail() {
       device_type: values.device_type,
       firmware_version: values.firmware_version,
       status: values.status,
+      site_id: values.site_id ?? null,
       metadata: metadata as DeviceUpdate['metadata'],
     };
     try {
@@ -464,6 +468,21 @@ export function DeviceDetail() {
                 { value: 'maintenance', label: 'maintenance' },
                 { value: 'decommissioned', label: 'decommissioned' },
               ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Site"
+            name="site_id"
+            help="The site/floor a fixed reader lives on. Enables floor-zone resolution."
+          >
+            <Select
+              allowClear
+              placeholder="Unassigned"
+              data-testid="device-site-select"
+              options={(sites ?? []).map((s) => ({
+                value: s.id,
+                label: s.coord_system ? `${s.name} (floor)` : s.name,
+              }))}
             />
           </Form.Item>
           <Form.Item
