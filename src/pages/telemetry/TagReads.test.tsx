@@ -42,6 +42,33 @@ const MID_ROWS: TagReadResponse[] = Array.from({ length: 30 }, (_, i) => ({
 
 let currentRows: TagReadResponse[] = SINGLE_ROW;
 
+// Sprint 64 — sensor/antenna rows. Real edge devices write
+// `temperature_c`/`humidity_pct`; simulators write `temperature`/`humidity`.
+const SENSOR_ROW_DEVICE: TagReadResponse[] = [
+  {
+    id: 'sd1',
+    device_id: '1',
+    tag_id: 'TAG-DEV',
+    timestamp: '2026-04-25T10:00:00Z',
+    signal_strength: -50,
+    reader_antenna: 7,
+    sensor_data: { temperature_c: 4.2, humidity_pct: 55 },
+    created_at: '2026-04-25T10:00:00Z',
+  } as unknown as TagReadResponse,
+];
+const SENSOR_ROW_SIM: TagReadResponse[] = [
+  {
+    id: 'ss1',
+    device_id: '1',
+    tag_id: 'TAG-SIM',
+    timestamp: '2026-04-25T10:00:00Z',
+    signal_strength: -50,
+    reader_antenna: 4,
+    sensor_data: { temperature: 23.5, humidity: 40 },
+    created_at: '2026-04-25T10:00:00Z',
+  } as unknown as TagReadResponse,
+];
+
 vi.mock('@/hooks/useDevices', () => ({
   useDevices: () => ({
     data: [{ id: '1', name: 'Reader-A' }],
@@ -189,5 +216,36 @@ describe('TagReads', () => {
     expect(
       screen.queryByTestId('tag-reads-advanced-columns-toggle'),
     ).not.toBeInTheDocument();
+  });
+
+  // Sprint 64 — Antenna / Temperature / Humidity columns (default-visible).
+  it('renders the Antenna, Temp and Humidity columns by default', () => {
+    render(<TagReads />, { wrapper });
+    expect(screen.getByText('Antenna')).toBeInTheDocument();
+    expect(screen.getByText('Temp (°C)')).toBeInTheDocument();
+    expect(screen.getByText('Humidity (%)')).toBeInTheDocument();
+  });
+
+  it('renders sensor values from the real-device keys (temperature_c / humidity_pct)', () => {
+    currentRows = SENSOR_ROW_DEVICE;
+    render(<TagReads />, { wrapper });
+    expect(screen.getByText('7')).toBeInTheDocument(); // antenna
+    expect(screen.getByText('4.2')).toBeInTheDocument(); // temperature_c
+    expect(screen.getByText('55.0')).toBeInTheDocument(); // humidity_pct
+  });
+
+  it('renders sensor values from the simulator keys (temperature / humidity)', () => {
+    currentRows = SENSOR_ROW_SIM;
+    render(<TagReads />, { wrapper });
+    expect(screen.getByText('4')).toBeInTheDocument(); // antenna
+    expect(screen.getByText('23.5')).toBeInTheDocument(); // temperature
+    expect(screen.getByText('40.0')).toBeInTheDocument(); // humidity
+  });
+
+  it('shows an em-dash when antenna and sensor data are absent', () => {
+    currentRows = SINGLE_ROW; // sensor_data: null, no reader_antenna
+    render(<TagReads />, { wrapper });
+    // Antenna + Temp + Humidity all fall back to '—' (plus other empty cells).
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
   });
 });
