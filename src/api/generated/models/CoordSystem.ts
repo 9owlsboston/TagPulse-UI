@@ -13,6 +13,7 @@ import type { GeoAnchor } from './GeoAnchor';
 export type CoordSystem = {
     extent_x: number;
     extent_y: number;
+    floorplan_image?: (string | null);
     geo_anchor?: (GeoAnchor | null);
     origin_anchor?: CoordSystem.origin_anchor;
     origin_device_id?: (string | null);

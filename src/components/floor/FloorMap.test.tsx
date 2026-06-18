@@ -79,4 +79,17 @@ describe('FloorMap', () => {
     // Reader markers still render.
     expect(screen.getByTestId('floormap-reader-d1')).toBeInTheDocument();
   });
+
+  it('renders the floorplan image backdrop when present', () => {
+    mockAntennas = [];
+    mockLocation = null;
+    const imgSite = {
+      ...SITE,
+      coord_system: { ...(SITE.coord_system as object), floorplan_image: 'data:image/png;base64,AAAA' },
+    } as unknown as SiteResponse;
+    const { container } = render(wrap(<FloorMap site={imgSite} devices={[]} assets={[]} />));
+    const image = container.querySelector('image');
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute('href')).toBe('data:image/png;base64,AAAA');
+  });
 });

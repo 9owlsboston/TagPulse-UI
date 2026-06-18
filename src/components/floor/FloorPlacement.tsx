@@ -125,6 +125,16 @@ export function FloorPlacement({
           background: t.colorSurface,
         }}
       >
+        {cs.floorplan_image && (
+          <image
+            href={cs.floorplan_image}
+            x={0}
+            y={0}
+            width={extentX}
+            height={extentY}
+            preserveAspectRatio="none"
+          />
+        )}
         {gridLines(extentX).map((gx) => (
           <line key={`vx-${gx}`} x1={gx} y1={0} x2={gx} y2={extentY} stroke={t.colorBorder} strokeWidth={extentX * 0.001} />
         ))}
