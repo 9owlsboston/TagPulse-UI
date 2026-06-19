@@ -47,6 +47,8 @@ export type { DeviceTokenResponse } from './models/DeviceTokenResponse';
 export type { DeviceUpdate } from './models/DeviceUpdate';
 export type { ExternalLocationCreate } from './models/ExternalLocationCreate';
 export type { ExternalLocationResponse } from './models/ExternalLocationResponse';
+export type { FloorPositionCreate } from './models/FloorPositionCreate';
+export type { FloorPositionResponse } from './models/FloorPositionResponse';
 export type { GeoAnchor } from './models/GeoAnchor';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { Identity } from './models/Identity';

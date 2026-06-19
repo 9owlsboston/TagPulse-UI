@@ -11,7 +11,7 @@
 import { useMemo } from 'react';
 import Empty from 'antd/es/empty';
 import { useAntennas } from '@/hooks/useAntennas';
-import { useAssetCurrentLocation } from '@/hooks/useAssets';
+import { useAssetCurrentLocation, useFloorPath } from '@/hooks/useAssets';
 import { CoordSystem } from '@/api/generated/models/CoordSystem';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { DeviceResponse } from '@/api/generated/models/DeviceResponse';
@@ -64,9 +64,73 @@ function AssetFloorMarker({
   color: string;
   ring: string;
 }) {
+  // Prefer a real precomputed floor (x, y) trail (Sprint 65 BYO); fall back to
+  // snapping the marker to the reader that last heard the asset when the asset
+  // has no floor fixes yet (Sprint 64 D2 behaviour).
+  const { data: floorPath } = useFloorPath(asset.id, { source: 'precomputed' });
   const { data: location } = useAssetCurrentLocation(asset.id);
   const deviceId = location?.device_id ?? undefined;
   const { data: antennas } = useAntennas(deviceId);
+
+  const trail = useMemo(
+    () =>
+      (floorPath ?? []).map((p) => ({
+        ...floorToSvg({ x: p.x, y: p.y }, extentY, originAnchor),
+        confidence: p.confidence,
+      })),
+    [floorPath, extentY, originAnchor],
+  );
+
+  if (trail.length > 0) {
+    const latest = trail[trail.length - 1]!;
+    const polyPoints = trail.map((p) => `${p.x},${p.y}`).join(' ');
+    return (
+      <g data-testid={`floormap-asset-${asset.id}`} pointerEvents="none">
+        {trail.length > 1 && (
+          <polyline
+            data-testid={`floormap-trail-${asset.id}`}
+            points={polyPoints}
+            fill="none"
+            stroke={color}
+            strokeWidth={radius * 0.35}
+            strokeOpacity={0.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+        {trail.slice(0, -1).map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r={radius * 0.45}
+            fill={color}
+            fillOpacity={Math.max(0.25, Math.min(1, p.confidence))}
+          />
+        ))}
+        <rect
+          x={latest.x - radius}
+          y={latest.y - radius}
+          width={radius * 2}
+          height={radius * 2}
+          transform={`rotate(45 ${latest.x} ${latest.y})`}
+          fill={color}
+          stroke={ring}
+          strokeWidth={radius * 0.2}
+        />
+        <text
+          x={latest.x + radius * 1.4}
+          y={latest.y + radius * 0.5}
+          fontSize={radius * 1.4}
+          fill="currentColor"
+        >
+          {asset.name}
+        </text>
+      </g>
+    );
+  }
+
+  // Fallback: snap to the triggering reader's port-0 location.
   if (!deviceId) return null;
   const port0 = antennas?.find((a) => a.port === 0);
   if (!port0 || port0.x == null || port0.y == null) return null;

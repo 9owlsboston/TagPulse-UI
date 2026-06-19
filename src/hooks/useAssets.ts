@@ -346,6 +346,31 @@ export function useAssetPath(
   });
 }
 
+/**
+ * Sprint 65 — precomputed floor-frame `(x, y)` trail for an asset.
+ *
+ * Wraps `GET /assets/{id}/floor-path` (ascending time). Defaults to the
+ * `precomputed` source (BYO ingest); the `computed` estimator source is a
+ * future phase. Points are in the site `coord_system` floor units.
+ */
+export function useFloorPath(
+  assetId: string | undefined,
+  params?: { since?: string; until?: string; source?: string; limit?: number },
+) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'floor-path', params ?? {}],
+    queryFn: () =>
+      AssetsService.listFloorPathAssetsAssetIdFloorPathGet(
+        assetId!,
+        params?.since,
+        params?.until,
+        params?.source ?? 'precomputed',
+        params?.limit ?? 500,
+      ),
+    enabled: Boolean(assetId),
+  });
+}
+
 export function useAssetsInZone(
   zoneId: string | undefined,
   params?: { limit?: number; offset?: number },
