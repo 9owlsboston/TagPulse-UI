@@ -13,6 +13,8 @@ import type { AssetUnloadRequest } from '../models/AssetUnloadRequest';
 import type { AssetUpdate } from '../models/AssetUpdate';
 import type { ExternalLocationCreate } from '../models/ExternalLocationCreate';
 import type { ExternalLocationResponse } from '../models/ExternalLocationResponse';
+import type { FloorPositionCreate } from '../models/FloorPositionCreate';
+import type { FloorPositionResponse } from '../models/FloorPositionResponse';
 import type { ManifestResponse } from '../models/ManifestResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -312,6 +314,41 @@ export class AssetsService {
         });
     }
     /**
+     * List Floor Path
+     * Return an asset's floor-frame ``(x, y)`` path (ascending time).
+     * @param assetId
+     * @param since
+     * @param until
+     * @param source
+     * @param limit
+     * @returns FloorPositionResponse Successful Response
+     * @throws ApiError
+     */
+    public static listFloorPathAssetsAssetIdFloorPathGet(
+        assetId: string,
+        since?: (string | null),
+        until?: (string | null),
+        source?: (string | null),
+        limit: number = 500,
+    ): CancelablePromise<Array<FloorPositionResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/floor-path',
+            path: {
+                'asset_id': assetId,
+            },
+            query: {
+                'since': since,
+                'until': until,
+                'source': source,
+                'limit': limit,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Load Asset
      * Attach `asset_id` to `body.parent_asset_id` (carrier). Idempotent.
      * @param assetId
@@ -384,6 +421,31 @@ export class AssetsService {
                 'until': until,
                 'limit': limit,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Record Floor Position
+     * Record a precomputed floor ``(x, y)`` fix (BYO — vendor / RTLS push).
+     * @param assetId
+     * @param requestBody
+     * @returns FloorPositionResponse Successful Response
+     * @throws ApiError
+     */
+    public static recordFloorPositionAssetsAssetIdPositionPost(
+        assetId: string,
+        requestBody: FloorPositionCreate,
+    ): CancelablePromise<FloorPositionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/assets/{asset_id}/position',
+            path: {
+                'asset_id': assetId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

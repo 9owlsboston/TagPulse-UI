@@ -11,6 +11,7 @@ const NW = CoordSystem.origin_anchor.NW_CORNER;
 
 let mockAntennas: Array<{ port: number; x: number | null; y: number | null }> = [];
 let mockLocation: { device_id: string | null } | null = null;
+let mockFloorPath: Array<{ x: number; y: number; confidence: number }> = [];
 
 vi.mock('@/hooks/useAntennas', () => ({
   useAntennas: (deviceId?: string) => ({
@@ -21,6 +22,7 @@ vi.mock('@/hooks/useAntennas', () => ({
 
 vi.mock('@/hooks/useAssets', () => ({
   useAssetCurrentLocation: () => ({ data: mockLocation, isLoading: false }),
+  useFloorPath: () => ({ data: mockFloorPath, isLoading: false }),
 }));
 
 vi.mock('@/theme/ThemeProvider', () => ({
@@ -60,6 +62,7 @@ describe('FloorMap', () => {
   it('snaps an asset marker to its last reader', () => {
     mockAntennas = [{ port: 0, x: 100, y: 200 }];
     mockLocation = { device_id: 'd1' };
+    mockFloorPath = [];
     render(wrap(<FloorMap site={SITE} devices={[READER]} assets={[ASSET]} />));
     expect(screen.getByTestId('floormap-asset-a1')).toBeInTheDocument();
   });
@@ -67,13 +70,38 @@ describe('FloorMap', () => {
   it('omits an asset with no last reader', () => {
     mockAntennas = [{ port: 0, x: 100, y: 200 }];
     mockLocation = { device_id: null };
+    mockFloorPath = [];
     render(wrap(<FloorMap site={SITE} devices={[READER]} assets={[ASSET]} />));
     expect(screen.queryByTestId('floormap-asset-a1')).not.toBeInTheDocument();
+  });
+
+  it('draws an asset trail from precomputed floor positions', () => {
+    // Real (x, y) fixes — no last reader needed; the marker should NOT snap.
+    mockAntennas = [];
+    mockLocation = { device_id: null };
+    mockFloorPath = [
+      { x: 100, y: 100, confidence: 0.6 },
+      { x: 200, y: 150, confidence: 0.8 },
+      { x: 320, y: 180, confidence: 0.9 },
+    ];
+    render(wrap(<FloorMap site={SITE} devices={[READER]} assets={[ASSET]} />));
+    expect(screen.getByTestId('floormap-asset-a1')).toBeInTheDocument();
+    expect(screen.getByTestId('floormap-trail-a1')).toBeInTheDocument();
+  });
+
+  it('renders a single floor fix without a trail polyline', () => {
+    mockAntennas = [];
+    mockLocation = { device_id: null };
+    mockFloorPath = [{ x: 120, y: 90, confidence: 0.7 }];
+    render(wrap(<FloorMap site={SITE} devices={[READER]} assets={[ASSET]} />));
+    expect(screen.getByTestId('floormap-asset-a1')).toBeInTheDocument();
+    expect(screen.queryByTestId('floormap-trail-a1')).not.toBeInTheDocument();
   });
 
   it('hides asset markers when showAssets is false', () => {
     mockAntennas = [{ port: 0, x: 100, y: 200 }];
     mockLocation = { device_id: 'd1' };
+    mockFloorPath = [];
     render(wrap(<FloorMap site={SITE} devices={[READER]} assets={[ASSET]} showAssets={false} />));
     expect(screen.queryByTestId('floormap-asset-a1')).not.toBeInTheDocument();
     // Reader markers still render.
