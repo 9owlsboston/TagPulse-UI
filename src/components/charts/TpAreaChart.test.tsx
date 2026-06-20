@@ -245,6 +245,6 @@ describe('TpAreaChart', () => {
         enableBrush
       />,
     );
-    expect(screen.getByTestId('tp-area-chart-brush')).toHaveAttribute('data-datakey', 't');
+    expect(screen.getByTestId('tp-area-chart-brush')).toHaveAttribute('data-datakey', '__tpTime');
   });
 });

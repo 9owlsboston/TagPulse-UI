@@ -81,15 +81,25 @@ export interface TpAreaChartProps<TRow extends Record<string, unknown>> {
   enableBrush?: boolean;
 }
 
+const TP_TIME_KEY = '__tpTime';
+
 function chooseTickFormatter(values: ReadonlyArray<number>): (v: unknown) => string {
   if (values.length === 0) return (v) => String(v);
-  const first = dayjs(values[0]);
-  const last = dayjs(values[values.length - 1]);
-  const sameDay = first.isSame(last, 'day');
+  let min = values[0]!;
+  let max = values[0]!;
+  for (const t of values) {
+    if (t < min) min = t;
+    if (t > max) max = t;
+  }
+  const spanMs = max - min;
+  const sameDay = dayjs(min).isSame(dayjs(max), 'day');
+  // Span-aware granularity (see TpLineChart): seconds for a tight burst,
+  // date prefix for multi-day spans.
+  const fmt = spanMs < 90_000 ? 'HH:mm:ss' : sameDay ? 'HH:mm' : 'MMM D HH:mm';
   return (v: unknown) => {
     const d = dayjs(v as string | number);
     if (!d.isValid()) return String(v);
-    return sameDay ? d.format('HH:mm') : d.format('MMM D HH:mm');
+    return d.format(fmt);
   };
 }
 
@@ -149,9 +159,14 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
 
   const filterEnabled = enableSeriesFilter ?? series.length > 8;
   const allKeys = useMemo(() => series.map((s) => s.key), [series]);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>(
-    defaultSelectedKeys ?? allKeys,
+  // `null` = "all series" — kept in sync as series load asynchronously, so a
+  // chart whose series arrive after the data query doesn't start with every
+  // series hidden (which renders an empty chart with no "No data" cue). Once
+  // the user picks a subset we store the explicit list.
+  const [selectedOverride, setSelectedOverride] = useState<string[] | null>(
+    defaultSelectedKeys ?? null,
   );
+  const selectedKeys = selectedOverride ?? allKeys;
 
   const visibleSeries = useMemo(
     () => series.filter((s) => selectedKeys.includes(s.key)),
@@ -173,6 +188,20 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
     [data, xKey],
   );
   const tickFormatter = useMemo(() => chooseTickFormatter(xValues), [xValues]);
+
+  // Numeric epoch-ms mirror so the x-axis is a true time scale (see
+  // TpLineChart) — burst data no longer renders as evenly-spaced ticks.
+  const timedData = useMemo(
+    () =>
+      data.map((row) => {
+        const raw = row[xKey];
+        return {
+          ...row,
+          [TP_TIME_KEY]: typeof raw === 'number' ? raw : dayjs(raw as string).valueOf(),
+        };
+      }),
+    [data, xKey],
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -220,7 +249,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
               <Select
                 mode="multiple"
                 value={selectedKeys}
-                onChange={setSelectedKeys}
+                onChange={setSelectedOverride}
                 options={series.map((s) => ({ label: s.label, value: s.key }))}
                 style={{ minWidth: 280, maxWidth: 480 }}
                 placeholder="Filter series"
@@ -292,7 +321,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={data}
+              data={timedData}
               margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
               syncId={syncId}
             >
@@ -326,7 +355,10 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                 strokeOpacity={0.4}
               />
               <XAxis
-                dataKey={xKey}
+                dataKey={TP_TIME_KEY}
+                type="number"
+                scale="time"
+                domain={['dataMin', 'dataMax']}
                 tickFormatter={tickFormatter}
                 axisLine={false}
                 tickLine={false}
@@ -377,7 +409,9 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                 return (
                   <ReferenceLine
                     key={`tp-ref-${i}`}
-                    {...(isVertical ? { x: ref.value } : { y: ref.value })}
+                    {...(isVertical
+                      ? { x: typeof ref.value === 'number' ? ref.value : dayjs(ref.value).valueOf() }
+                      : { y: ref.value })}
                     stroke={stroke}
                     strokeDasharray="4 4"
                     strokeWidth={1}
@@ -397,7 +431,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
               })}
               {enableBrush && (
                 <Brush
-                  dataKey={xKey}
+                  dataKey={TP_TIME_KEY}
                   height={28}
                   stroke="var(--color-accent)"
                   fill="var(--color-surface)"
@@ -415,7 +449,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
           style={{
             position: 'absolute',
             right: 8,
-            bottom: 8,
+            top: 2,
             color: 'var(--color-text-muted)',
             fontSize: 12,
             pointerEvents: 'none',
