@@ -20,6 +20,7 @@ export interface TagListParams {
   status?: string;
   epc_prefix?: string;
   bound?: boolean;
+  q?: string;
   limit?: number;
   offset?: number;
 }
@@ -32,6 +33,7 @@ export function useTags(params?: TagListParams) {
         params?.status ?? undefined,
         params?.epc_prefix ?? undefined,
         params?.bound ?? undefined,
+        params?.q ?? undefined,
         params?.limit ?? 100,
         params?.offset ?? 0,
       ),

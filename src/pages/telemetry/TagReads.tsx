@@ -26,6 +26,7 @@ import {
 import { useColumnVisibility } from '@/lib/useColumnVisibility';
 import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
 import { DeviceRef } from '@/components/DeviceRef';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -81,6 +82,7 @@ const readHumidity = (r: TagReadResponse): number | undefined =>
 export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
+  const [tagQ, setTagQ] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
   const [limit, setLimit] = useState(100);
@@ -107,7 +109,7 @@ export function TagReads() {
     [devices],
   );
   const { data: rawData, isLoading } = useTagReads(
-    { device_id: deviceId, tag_id: tagId, start, end, limit },
+    { device_id: deviceId, tag_id: tagId, tag_q: tagQ, start, end, limit },
     { refetchInterval: REFETCH_INTERVAL },
   );
 
@@ -181,7 +183,17 @@ export function TagReads() {
 
   const columns = useMemo<ColumnsType<TagReadResponse>>(
     () => [
-      { title: 'Tag ID', key: 'tag_id', dataIndex: 'tag_id' },
+      {
+        title: 'Tag ID',
+        key: 'tag_id',
+        dataIndex: 'tag_id',
+        ...columnSearchFilter<TagReadResponse>({
+          mode: 'server',
+          value: tagQ,
+          onSearch: setTagQ,
+          placeholder: 'e.g. 3034*',
+        }),
+      },
       {
         title: 'EPC',
         key: 'epc',
@@ -283,7 +295,7 @@ export function TagReads() {
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
     ],
-    [flashing, deviceLabel, deviceById],
+    [flashing, deviceLabel, deviceById, tagQ],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:

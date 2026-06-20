@@ -57,6 +57,7 @@ export class QueryService {
      * Query tag reads with filters and pagination.
      * @param deviceId
      * @param tagId
+     * @param tagQ Sprint 70 — wildcard search over ``tag_id`` (EPC). ``*`` / ``?`` glob (bare term = substring, anchored when a wildcard is present), case-insensitive. Combines with the other filters via AND. Use ``tag_id`` for an exact match.
      * @param start
      * @param end
      * @param hasLocation If true, only return reads with a location; if false, only without.
@@ -69,6 +70,7 @@ export class QueryService {
     public static queryTagReadsTagReadsGet(
         deviceId?: (string | null),
         tagId?: (string | null),
+        tagQ?: (string | null),
         start?: (string | null),
         end?: (string | null),
         hasLocation?: (boolean | null),
@@ -82,6 +84,7 @@ export class QueryService {
             query: {
                 'device_id': deviceId,
                 'tag_id': tagId,
+                'tag_q': tagQ,
                 'start': start,
                 'end': end,
                 'has_location': hasLocation,

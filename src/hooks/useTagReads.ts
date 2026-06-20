@@ -3,7 +3,7 @@ import { tagReadsApi } from '@/api/client';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 
 export function useTagReads(
-  params?: { device_id?: string; tag_id?: string; start?: string; end?: string; limit?: number; offset?: number },
+  params?: { device_id?: string; tag_id?: string; tag_q?: string; start?: string; end?: string; limit?: number; offset?: number },
   options?: { refetchInterval?: number },
 ) {
   return useQuery({

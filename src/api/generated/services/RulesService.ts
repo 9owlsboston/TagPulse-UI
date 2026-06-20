@@ -16,6 +16,7 @@ export class RulesService {
      * @param ruleId
      * @param deviceId
      * @param status
+     * @param q Sprint 70 — wildcard search over the alert ``message``. ``*`` / ``?`` glob (bare term = substring, anchored when a wildcard is present), case-insensitive. Combines with the other filters via AND.
      * @param limit
      * @param offset
      * @returns AlertResponse Successful Response
@@ -25,6 +26,7 @@ export class RulesService {
         ruleId?: (string | null),
         deviceId?: (string | null),
         status?: (string | null),
+        q?: (string | null),
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<AlertResponse>> {
@@ -35,6 +37,7 @@ export class RulesService {
                 'rule_id': ruleId,
                 'device_id': deviceId,
                 'status': status,
+                'q': q,
                 'limit': limit,
                 'offset': offset,
             },

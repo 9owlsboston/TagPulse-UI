@@ -10,6 +10,7 @@ import Typography from 'antd/es/typography';
 import { useTags, type TagListParams } from '@/hooks/useTags';
 import { useLabel } from '@/lib/uiConfig';
 import { ListPageShell } from '@/components/ListPageShell';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import { EmptyState } from '@/components/EmptyState';
 import { TagResponse } from '@/api/generated/models/TagResponse';
 
@@ -80,6 +81,7 @@ export function TagList() {
   const [status, setStatus] = useState('');
   const [epcPrefix, setEpcPrefix] = useState('');
   const [bound, setBound] = useState<'all' | 'bound' | 'unbound'>('all');
+  const [epcQ, setEpcQ] = useState<string | undefined>();
   const [page, setPage] = useState(1);
 
   const params: TagListParams = useMemo(
@@ -87,10 +89,11 @@ export function TagList() {
       status: status || undefined,
       epc_prefix: epcPrefix.trim() || undefined,
       bound: bound === 'all' ? undefined : bound === 'bound',
+      q: epcQ,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
     }),
-    [status, epcPrefix, bound, page],
+    [status, epcPrefix, bound, epcQ, page],
   );
 
   const { data, isLoading, isFetching } = useTags(params);
@@ -104,6 +107,12 @@ export function TagList() {
       title: 'EPC (hex)',
       dataIndex: 'epc_hex',
       key: 'epc_hex',
+      ...columnSearchFilter<TagResponse>({
+        mode: 'server',
+        value: epcQ,
+        onSearch: setEpcQ,
+        placeholder: 'e.g. 3034*',
+      }),
       render: (epc: string) => (
         <Text code style={{ cursor: 'pointer' }} onClick={() => navigate(`/tags/${epc}`)}>
           {epc}
