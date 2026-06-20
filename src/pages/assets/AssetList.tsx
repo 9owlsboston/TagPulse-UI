@@ -202,10 +202,11 @@ export function AssetList() {
     const to = lastSeenRange?.[1]?.valueOf();
     return rows.filter((r) => {
       const loc = locationByAssetId.get(r.id);
-      if (neverSeenOnly) return !loc;
+      const seen = loc?.last_seen_at;
+      if (neverSeenOnly) return !seen;
       if (from || to) {
-        if (!loc) return false;
-        const ts = Date.parse(loc.recorded_at);
+        if (!seen) return false;
+        const ts = Date.parse(seen);
         if (from && ts < from) return false;
         if (to && ts > to) return false;
       }
@@ -229,7 +230,7 @@ export function AssetList() {
     // "new" on initial mount.
     if (!seededRef.current) {
       for (const loc of locations) {
-        lastRecordedRef.current.set(loc.asset_id, loc.recorded_at);
+        lastRecordedRef.current.set(loc.asset_id, loc.last_seen_at ?? '');
       }
       seededRef.current = true;
       return;
@@ -237,10 +238,10 @@ export function AssetList() {
     const changed: string[] = [];
     for (const loc of locations) {
       const prev = lastRecordedRef.current.get(loc.asset_id);
-      if (prev !== undefined && prev !== loc.recorded_at) {
+      if (prev !== undefined && prev !== (loc.last_seen_at ?? '')) {
         changed.push(loc.asset_id);
       }
-      lastRecordedRef.current.set(loc.asset_id, loc.recorded_at);
+      lastRecordedRef.current.set(loc.asset_id, loc.last_seen_at ?? '');
     }
     if (changed.length === 0) return;
     const toFlash = changed.slice(0, MAX_FLASHES_PER_REFRESH);
@@ -377,18 +378,27 @@ export function AssetList() {
         filters: SOURCE_FILTERS,
         onFilter: (value, record) => {
           const loc = locationByAssetId.get(record.id);
-          if (value === '__none__') return !loc;
+          if (value === '__none__') return !loc || loc.kind === 'none' || !loc.kind;
           return loc?.latest_position_source === value;
         },
         render: (_: unknown, row: AssetResponse) => {
           const loc = locationByAssetId.get(row.id);
-          if (!loc) return <Typography.Text type="secondary">—</Typography.Text>;
-          const coords = `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
+          // Frame-aware (Sprint 69 A1): floor (x, y) or geo lat/lon; "—" when
+          // there's no resolved position (the asset may still be "seen" — see
+          // the Last seen column, which is driven by last_seen_at).
+          let coords: string | null = null;
+          if (loc?.kind === 'floor' && loc.x != null && loc.y != null) {
+            coords = `Floor @ (${loc.x.toFixed(1)}, ${loc.y.toFixed(1)})`;
+          } else if (loc?.kind === 'geo' && loc.latitude != null && loc.longitude != null) {
+            coords = `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
+          }
+          if (!coords) return <Typography.Text type="secondary">—</Typography.Text>;
+          const src = loc?.latest_position_source;
           return (
-            <Tooltip title={`${coords} · source: ${loc.latest_position_source}`}>
+            <Tooltip title={src ? `${coords} · source: ${src}` : coords}>
               <Space size={4}>
                 <span style={{ fontFamily: 'monospace' }}>{coords}</span>
-                <Tag>{loc.latest_position_source}</Tag>
+                {src && <Tag>{src}</Tag>}
               </Space>
             </Tooltip>
           );
@@ -398,21 +408,21 @@ export function AssetList() {
         title: 'Last seen',
         key: 'last_seen',
         sorter: (a, b) => {
-          const la = locationByAssetId.get(a.id)?.recorded_at;
-          const lb = locationByAssetId.get(b.id)?.recorded_at;
+          const la = locationByAssetId.get(a.id)?.last_seen_at;
+          const lb = locationByAssetId.get(b.id)?.last_seen_at;
           return (la ? Date.parse(la) : 0) - (lb ? Date.parse(lb) : 0);
         },
         render: (_: unknown, row: AssetResponse) => {
-          const loc = locationByAssetId.get(row.id);
-          if (!loc) return <Typography.Text type="secondary">never</Typography.Text>;
+          const seen = locationByAssetId.get(row.id)?.last_seen_at;
+          if (!seen) return <Typography.Text type="secondary">never</Typography.Text>;
           const isFlashing = flashing.has(row.id);
           return (
-            <Tooltip title={new Date(loc.recorded_at).toLocaleString()}>
+            <Tooltip title={new Date(seen).toLocaleString()}>
               <span
-                key={loc.recorded_at}
+                key={seen}
                 className={isFlashing ? 'tagpulse-cell-pop' : undefined}
               >
-                {formatRelative(loc.recorded_at)}
+                {formatRelative(seen)}
               </span>
             </Tooltip>
           );

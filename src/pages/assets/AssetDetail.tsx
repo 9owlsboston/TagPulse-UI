@@ -338,24 +338,31 @@ export function AssetDetail() {
           <Card size="small">
             {currentLocation ? (
               <Space direction="vertical">
-                <Text>
-                  <strong>Source:</strong>{' '}
-                  <Tag
-                    color={
-                      currentLocation.latest_position_source === 'rfid'
-                        ? 'blue'
-                        : 'purple'
-                    }
-                  >
-                    {currentLocation.latest_position_source === 'rfid'
-                      ? 'RFID'
-                      : `External · ${currentLocation.latest_position_source}`}
-                  </Tag>
-                </Text>
+                {currentLocation.latest_position_source && (
+                  <Text>
+                    <strong>Source:</strong>{' '}
+                    <Tag
+                      color={
+                        currentLocation.kind === 'floor'
+                          ? 'green'
+                          : currentLocation.latest_position_source === 'rfid'
+                            ? 'blue'
+                            : 'purple'
+                      }
+                    >
+                      {currentLocation.latest_position_source}
+                    </Tag>
+                  </Text>
+                )}
                 <Text>
                   <strong>Where:</strong>{' '}
-                  {currentLocation.latitude.toFixed(5)},{' '}
-                  {currentLocation.longitude.toFixed(5)}
+                  {currentLocation.kind === 'floor' &&
+                  currentLocation.x != null &&
+                  currentLocation.y != null
+                    ? `Floor @ (${currentLocation.x.toFixed(1)}, ${currentLocation.y.toFixed(1)})`
+                    : currentLocation.latitude != null && currentLocation.longitude != null
+                      ? `${currentLocation.latitude.toFixed(5)}, ${currentLocation.longitude.toFixed(5)}`
+                      : '—'}
                   {currentLocation.device_id
                     ? ` · via ${
                         deviceById.get(currentLocation.device_id)?.name ??
@@ -365,7 +372,11 @@ export function AssetDetail() {
                 </Text>
                 <Text type="secondary">
                   Last seen:{' '}
-                  {new Date(currentLocation.recorded_at).toLocaleString()}
+                  {currentLocation.last_seen_at
+                    ? new Date(currentLocation.last_seen_at).toLocaleString()
+                    : currentLocation.recorded_at
+                      ? new Date(currentLocation.recorded_at).toLocaleString()
+                      : '—'}
                 </Text>
               </Space>
             ) : timeline[0] ? (
