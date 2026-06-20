@@ -155,7 +155,14 @@ export function DeadLetters() {
           columns={columns}
           dataSource={rows}
           loading={isLoading}
-          pagination={{ pageSize: 25, showSizeChanger: true }}
+          pagination={{
+            // `defaultPageSize` (uncontrolled) lets AntD own the page size so
+            // the size changer actually takes effect — a literal `pageSize`
+            // is *controlled* and reverts every selection back on re-render.
+            defaultPageSize: 25,
+            showSizeChanger: true,
+            pageSizeOptions: [25, 50, 100],
+          }}
           rowSelection={{
             selectedRowKeys: selected,
             onChange: (keys) => setSelected(keys as string[]),
