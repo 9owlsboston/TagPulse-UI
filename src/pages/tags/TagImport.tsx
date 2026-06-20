@@ -211,7 +211,7 @@ export function TagImport() {
                   rowKey="row"
                   columns={errorColumns}
                   dataSource={preview.errors}
-                  pagination={{ pageSize: 25 }}
+                  pagination={{ defaultPageSize: 25, showSizeChanger: true, pageSizeOptions: [25, 50, 100] }}
                 />
                 <div style={{ textAlign: 'right' }}>
                   <Button onClick={reset}>Start over</Button>

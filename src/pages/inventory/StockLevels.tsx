@@ -196,7 +196,7 @@ export function StockLevels() {
             rowKey="key"
             loading={isLoading}
             dataSource={displayRows}
-            pagination={{ pageSize: 25 }}
+            pagination={{ defaultPageSize: 25, showSizeChanger: true, pageSizeOptions: [25, 50, 100] }}
             scroll={{ x: 'max-content' }}
             locale={{
               emptyText:
