@@ -159,9 +159,14 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
 
   const filterEnabled = enableSeriesFilter ?? series.length > 8;
   const allKeys = useMemo(() => series.map((s) => s.key), [series]);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>(
-    defaultSelectedKeys ?? allKeys,
+  // `null` = "all series" — kept in sync as series load asynchronously, so a
+  // chart whose series arrive after the data query doesn't start with every
+  // series hidden (which renders an empty chart with no "No data" cue). Once
+  // the user picks a subset we store the explicit list.
+  const [selectedOverride, setSelectedOverride] = useState<string[] | null>(
+    defaultSelectedKeys ?? null,
   );
+  const selectedKeys = selectedOverride ?? allKeys;
 
   const visibleSeries = useMemo(
     () => series.filter((s) => selectedKeys.includes(s.key)),
@@ -244,7 +249,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
               <Select
                 mode="multiple"
                 value={selectedKeys}
-                onChange={setSelectedKeys}
+                onChange={setSelectedOverride}
                 options={series.map((s) => ({ label: s.label, value: s.key }))}
                 style={{ minWidth: 280, maxWidth: 480 }}
                 placeholder="Filter series"
