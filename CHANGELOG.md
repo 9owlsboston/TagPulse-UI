@@ -6,13 +6,13 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ### Fixed
 
-### Fixed
-
 - **Charts — series filter no longer hides everything when series load asynchronously (bug).** The shared [`TpLineChart`](src/components/charts/TpLineChart.tsx) + [`TpAreaChart`](src/components/charts/TpAreaChart.tsx) initialised the "select all" series state **once** from the series list. On a chart whose series arrive **after** the data query (e.g. the Telemetry dashboard's per-device reads-per-hour, where series come from the loaded data), the initial list is empty, so `selectedKeys` stayed empty and **every series rendered hidden** — a blank chart with a `+N hidden` filter and no "No data" cue (data existed, just no visible series). Now an untouched filter means **"all series" (kept in sync as series load)** via a `null` sentinel; an explicit user selection is still respected. `npm run check` clean.
 
 - **Telemetry/Tag-Reads charts — time-scaled x-axis + non-overlapping timezone label (chore).** The shared [`TpLineChart`](src/components/charts/TpLineChart.tsx) + [`TpAreaChart`](src/components/charts/TpAreaChart.tsx) used a **category** x-axis (`dataKey={xKey}` with no `type`/`scale`), so points were spaced evenly **by index** rather than by time — a burst of reads at one instant rendered as a misleadingly "continuous" line with the **same `HH:mm` tick repeated** (e.g. `20:50` ×13). The axis is now a true **time scale** (numeric epoch-ms `dataKey` + `type="number"` `scale="time"` `domain=['dataMin','dataMax']`), so a burst correctly shows as a **spike** and ticks distribute by real time; the Brush + x-axis reference lines follow the same numeric axis (ISO ref values coerced to epoch). The tick formatter is **span-aware** — sub-~90 s windows drop to `HH:mm:ss` so a tight cluster no longer collapses to one label. The **`(UTC±HH:MM)` corner badge moved to top-right** so it no longer overlaps the bottom x-axis (time) labels. `TpSparkline` is unaffected (it renders no ticks). `npm run check` clean (515 tests).
 
 - **Telemetry Models — quarantine "Reader" column shows the name, not the UUID (chore).** The quarantine table on the Telemetry Models page ([TelemetryModels.tsx](src/pages/telemetry-models/TelemetryModels.tsx)) rendered the raw `device_id` UUID. It now uses the shared [`<DeviceRef>`](src/components/DeviceRef.tsx) cell — reader **name** as a link to `/devices/{id}` with the **UUID on hover** — consistent with the Tag Reads table (Sprint 69 R2). `—` when the entry has no device. `npm run check` clean.
+
+- **Asset Path tab — floor map no longer renders skewed (chore).** The Sprint 68 [`AssetPathMap`](src/components/floor/AssetPathMap.tsx) floor canvas used `preserveAspectRatio="none"` with a fixed `height` + 100% width, so a non-square floor (e.g. 600×400) was **stretched** to the container box and the grid + `(x, y)` trail rendered skewed. The canvas now sizes to the floor's own `aspect-ratio` (capped by `maxHeight`) with `preserveAspectRatio="xMidYMid meet"`, matching the site-wide `FloorMap` — the grid keeps true proportions and the trail is undistorted. `npm run check` clean.
 
 ### Added
 
