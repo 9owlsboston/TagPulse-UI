@@ -51,6 +51,7 @@ import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import { useLabel } from '@/lib/uiConfig';
 import type { ZoneResponse } from '@/api/generated/models/ZoneResponse';
 import type { SiteResponse } from '@/api/generated/models/SiteResponse';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import { ZoneCreate } from '@/api/generated/models/ZoneCreate';
 import { SiteCreate } from '@/api/generated/models/SiteCreate';
 import type { SiteUpdate } from '@/api/generated/models/SiteUpdate';
@@ -377,7 +378,11 @@ export function SitesZones() {
                 size="small"
                 locale={{ emptyText: 'No zones in this site yet.' }}
                 columns={[
-                  { title: 'Name', dataIndex: 'name' },
+                  {
+                    title: 'Name',
+                    dataIndex: 'name',
+                    ...columnSearchFilter<ZoneResponse>({ accessor: (r) => r.name }),
+                  },
                   {
                     title: 'Kind',
                     dataIndex: 'kind',

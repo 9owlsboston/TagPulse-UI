@@ -41,6 +41,7 @@ import {
   type PendingLabel,
 } from '@/components/PendingLabelPicker';
 import { ListPageShell } from '@/components/ListPageShell';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import { EmptyState } from '@/components/EmptyState';
 
 const { Text } = Typography;
@@ -217,7 +218,12 @@ export function CategoryList() {
             ),
           }}
           columns={[
-            { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+            {
+              title: 'Name',
+              dataIndex: 'name',
+              sorter: (a, b) => a.name.localeCompare(b.name),
+              ...columnSearchFilter<CategoryResponse>({ accessor: (r) => r.name }),
+            },
             {
               title: 'Type',
               dataIndex: 'category_type',
