@@ -166,15 +166,26 @@ export interface TpLineChartProps<TRow extends Record<string, unknown>> {
  * We pre-compute the strategy outside the formatter (which Recharts
  * calls per tick) so we don't re-walk the dataset N times per render.
  */
+const TP_TIME_KEY = '__tpTime';
+
 function chooseTickFormatter(values: ReadonlyArray<number>): (v: unknown) => string {
   if (values.length === 0) return (v) => String(v);
-  const first = dayjs(values[0]);
-  const last = dayjs(values[values.length - 1]);
-  const sameDay = first.isSame(last, 'day');
+  let min = values[0]!;
+  let max = values[0]!;
+  for (const t of values) {
+    if (t < min) min = t;
+    if (t > max) max = t;
+  }
+  const spanMs = max - min;
+  const sameDay = dayjs(min).isSame(dayjs(max), 'day');
+  // Span-aware granularity: a tight burst (sub-~90s) would collapse every
+  // `HH:mm` tick to the same label, so drop to seconds; a multi-day span
+  // prepends the date.
+  const fmt = spanMs < 90_000 ? 'HH:mm:ss' : sameDay ? 'HH:mm' : 'MMM D HH:mm';
   return (v: unknown) => {
     const d = dayjs(v as string | number);
     if (!d.isValid()) return String(v);
-    return sameDay ? d.format('HH:mm') : d.format('MMM D HH:mm');
+    return d.format(fmt);
   };
 }
 
@@ -257,6 +268,22 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
     [data, xKey],
   );
   const tickFormatter = useMemo(() => chooseTickFormatter(xValues), [xValues]);
+
+  // Numeric epoch-ms mirror of the x value so the axis is a true **time
+  // scale** (points positioned by time, not evenly by index). Without this a
+  // burst of reads at one instant renders as evenly-spaced points with
+  // repeated `HH:mm` ticks; with it the burst correctly shows as a spike.
+  const timedData = useMemo(
+    () =>
+      data.map((row) => {
+        const raw = row[xKey];
+        return {
+          ...row,
+          [TP_TIME_KEY]: typeof raw === 'number' ? raw : dayjs(raw as string).valueOf(),
+        };
+      }),
+    [data, xKey],
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -380,7 +407,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={data}
+              data={timedData}
               margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
               syncId={syncId}
             >
@@ -390,7 +417,10 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                 strokeOpacity={0.4}
               />
               <XAxis
-                dataKey={xKey}
+                dataKey={TP_TIME_KEY}
+                type="number"
+                scale="time"
+                domain={['dataMin', 'dataMax']}
                 tickFormatter={tickFormatter}
                 axisLine={false}
                 tickLine={false}
@@ -459,7 +489,9 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                 return (
                   <ReferenceLine
                     key={`tp-ref-${i}`}
-                    {...(isVertical ? { x: ref.value } : { y: ref.value })}
+                    {...(isVertical
+                      ? { x: typeof ref.value === 'number' ? ref.value : dayjs(ref.value).valueOf() }
+                      : { y: ref.value })}
                     stroke={stroke}
                     strokeDasharray="4 4"
                     strokeWidth={1}
@@ -479,7 +511,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
               })}
               {enableBrush && (
                 <Brush
-                  dataKey={xKey}
+                  dataKey={TP_TIME_KEY}
                   height={28}
                   stroke="var(--color-accent)"
                   fill="var(--color-surface)"
@@ -492,13 +524,14 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
           </ResponsiveContainer>
         )}
 
-        {/* Timezone corner badge */}
+        {/* Timezone corner badge — top-right so it never overlaps the x-axis
+            (time) tick labels along the bottom. */}
         <span
           data-testid="tp-line-chart-tz"
           style={{
             position: 'absolute',
             right: 8,
-            bottom: 8,
+            top: 2,
             color: 'var(--color-text-muted)',
             fontSize: 12,
             pointerEvents: 'none',

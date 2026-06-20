@@ -289,7 +289,8 @@ describe('TpLineChart', () => {
     );
     const ref = screen.getByTestId('tp-line-chart-ref-0');
     expect(ref).toHaveAttribute('data-axis', 'x');
-    expect(ref).toHaveAttribute('data-value', '2026-04-25T10:00:00Z');
+    // x-axis is a numeric time scale, so the ISO ref value is coerced to epoch ms.
+    expect(ref).toHaveAttribute('data-value', String(Date.parse('2026-04-25T10:00:00Z')));
     expect(ref).toHaveAttribute('data-label', 'Deploy');
   });
 
@@ -315,7 +316,7 @@ describe('TpLineChart', () => {
     );
     const brush = screen.getByTestId('tp-line-chart-brush');
     expect(brush).toBeInTheDocument();
-    expect(brush).toHaveAttribute('data-datakey', 't');
+    expect(brush).toHaveAttribute('data-datakey', '__tpTime');
   });
 
   it('omits the Brush strip by default', () => {
