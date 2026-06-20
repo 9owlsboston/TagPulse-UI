@@ -46,8 +46,8 @@ const SSE_KEYS = [['tag-reads']];
 // (temperature / humidity) on a secondary right axis (different units).
 const TAG_READ_SERIES: TpSeries[] = [
   { key: 'signal', label: 'Signal (RSSI)' },
-  { key: 'temperature', label: 'Temp (°C)', axis: 'right' },
-  { key: 'humidity', label: 'Humidity (%)', axis: 'right' },
+  { key: 'temperature', label: 'Temp (°C)', axis: 'right', connectNulls: true },
+  { key: 'humidity', label: 'Humidity (%)', axis: 'right', connectNulls: true },
 ];
 
 // Sprint 57 Phase D — virtualize the table once filtered rows exceed this

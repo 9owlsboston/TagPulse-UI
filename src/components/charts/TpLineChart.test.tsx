@@ -17,10 +17,12 @@ vi.mock('recharts', () => ({
   LineChart: ({ children, syncId }: { children: React.ReactNode; syncId?: string }) => (
     <svg data-testid="rc-svg" data-syncid={syncId ?? ''}>{children}</svg>
   ),
-  Line: ({ name }: { name?: string }) => (
-    <g data-testid={`rc-line-${name}`} />
+  Line: ({ name, connectNulls }: { name?: string; connectNulls?: boolean }) => (
+    <g data-testid={`rc-line-${name}`} data-connectnulls={String(connectNulls ?? false)} />
   ),
-  XAxis: () => <g />,
+  XAxis: ({ minTickGap, interval }: { minTickGap?: number; interval?: unknown }) => (
+    <g data-testid="rc-xaxis" data-mintickgap={String(minTickGap ?? '')} data-interval={String(interval ?? '')} />
+  ),
   YAxis: () => <g />,
   CartesianGrid: () => <g />,
   Tooltip: () => <g />,
@@ -328,5 +330,34 @@ describe('TpLineChart', () => {
       />,
     );
     expect(screen.queryByTestId('tp-line-chart-brush')).not.toBeInTheDocument();
+  });
+
+  it('passes connectNulls per series so sparse (right-axis) lines bridge null gaps', () => {
+    render(
+      <TpLineChart
+        data={makeData(2, ['a', 'b'])}
+        series={[
+          { key: 'a', label: 'Signal' },
+          { key: 'b', label: 'Temp', axis: 'right', connectNulls: true },
+        ]}
+        xKey="t"
+      />,
+    );
+    // Default series does not bridge nulls; the opt-in sensor series does.
+    expect(screen.getByTestId('rc-line-Signal')).toHaveAttribute('data-connectnulls', 'false');
+    expect(screen.getByTestId('rc-line-Temp')).toHaveAttribute('data-connectnulls', 'true');
+  });
+
+  it('spaces x-axis ticks to avoid overlapping time labels', () => {
+    render(
+      <TpLineChart
+        data={makeData(3, ['a'])}
+        series={[{ key: 'a', label: 'A' }]}
+        xKey="t"
+      />,
+    );
+    const xaxis = screen.getByTestId('rc-xaxis');
+    expect(xaxis).toHaveAttribute('data-mintickgap', '48');
+    expect(xaxis).toHaveAttribute('data-interval', 'preserveStartEnd');
   });
 });

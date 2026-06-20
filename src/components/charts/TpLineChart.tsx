@@ -64,6 +64,14 @@ export interface TpSeries {
    * are unaffected.
    */
   axis?: 'left' | 'right';
+  /**
+   * Bridge `null` gaps so the line draws a continuous segment through sparse
+   * points. Needed for series that are present on only *some* rows (e.g.
+   * temperature/humidity readings interleaved among signal-only tag reads):
+   * with `dot={false}` the isolated non-null points would otherwise render
+   * nothing. Default `false`.
+   */
+  connectNulls?: boolean;
 }
 
 /**
@@ -413,7 +421,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={timedData}
-              margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
+              margin={{ top: 8, right: 24, left: 16, bottom: enableBrush ? 20 : 8 }}
               syncId={syncId}
             >
               <CartesianGrid
@@ -427,6 +435,13 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                 scale="time"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={tickFormatter}
+                // Drop ticks that would crowd within 48px of their neighbour
+                // (the Recharts default of 5px lets the boundary ticks pile
+                // onto the adjacent "nice" tick → overlapping time labels);
+                // keep the first/last so the visible window stays anchored.
+                minTickGap={48}
+                interval="preserveStartEnd"
+                tickMargin={8}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
@@ -483,6 +498,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                     name={s.label}
                     stroke={colorFor(s, idx)}
                     dot={false}
+                    connectNulls={s.connectNulls ?? false}
                     isAnimationActive={!loading}
                     {...(s.axis === 'right' ? { yAxisId: 'right' } : {})}
                   />
