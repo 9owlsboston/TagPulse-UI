@@ -406,7 +406,7 @@ function AssetMarker({ asset, replayMinutesAgo, pathColor, onOpenManifest }: Ass
 
   const [lat, lng] = useMemo<[number | null, number | null]>(() => {
     if (replayMinutesAgo === 0) {
-      return location ? [location.latitude, location.longitude] : [null, null];
+      return location ? [location.latitude ?? null, location.longitude ?? null] : [null, null];
     }
     if (!path || path.length === 0) return [null, null];
     const targetMs = Date.now() - replayMinutesAgo * 60_000;
