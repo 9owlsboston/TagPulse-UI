@@ -142,11 +142,16 @@ function FloorTrailCanvas({
       </Text>
       <svg
         viewBox={`0 0 ${extentX} ${extentY}`}
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         data-testid="asset-path-floor-canvas"
         style={{
+          // Size the container to the floor's own aspect ratio (matching the
+          // site-wide FloorMap) so the grid + trail keep their true shape.
+          // With a fixed `height` + 100% width the 600x400 floor was stretched
+          // to the box and rendered skewed.
           width: '100%',
-          height,
+          aspectRatio: `${extentX} / ${extentY}`,
+          maxHeight: height,
           marginTop: 8,
           border: `1px solid ${t.colorBorder}`,
           background: t.colorSurface,
