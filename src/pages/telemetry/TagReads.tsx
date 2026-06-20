@@ -25,6 +25,7 @@ import {
 } from '@/lib/columnConfig';
 import { useColumnVisibility } from '@/lib/useColumnVisibility';
 import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
+import { DeviceRef } from '@/components/DeviceRef';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -41,7 +42,13 @@ const FLASH_DURATION_MS = 900;
 const SSE_EVENTS = ['tag_read.created'];
 const SSE_KEYS = [['tag-reads']];
 
-const SIGNAL_SERIES: TpSeries[] = [{ key: 'signal', label: 'Signal' }];
+// Sprint 69 R3 — plot RSSI on the primary axis and tag-borne sensors
+// (temperature / humidity) on a secondary right axis (different units).
+const TAG_READ_SERIES: TpSeries[] = [
+  { key: 'signal', label: 'Signal (RSSI)' },
+  { key: 'temperature', label: 'Temp (°C)', axis: 'right' },
+  { key: 'humidity', label: 'Humidity (%)', axis: 'right' },
+];
 
 // Sprint 57 Phase D — virtualize the table once filtered rows exceed this
 // threshold. Below the threshold we keep the paginated layout so the
@@ -92,6 +99,13 @@ export function TagReads() {
   const tagReadsLabel = useLabel('tagRead', { plural: true });
 
   const { data: devices } = useDevices();
+  // Sprint 69 R2 — device_id → name map so the Reader column shows a friendly
+  // name (via <DeviceRef>) instead of the raw UUID. Names aren't unique, so
+  // identity stays the id (carried by the link + tooltip).
+  const deviceById = useMemo(
+    () => new Map((devices ?? []).map((d) => [d.id, d.name])),
+    [devices],
+  );
   const { data: rawData, isLoading } = useTagReads(
     { device_id: deviceId, tag_id: tagId, start, end, limit },
     { refetchInterval: REFETCH_INTERVAL },
@@ -202,7 +216,12 @@ export function TagReads() {
         dataIndex: 'user_memory_hex',
         render: (v: string | null | undefined) => v ?? '—',
       },
-      { title: deviceLabel, key: 'device_id', dataIndex: 'device_id' },
+      {
+        title: deviceLabel,
+        key: 'device_id',
+        dataIndex: 'device_id',
+        render: (v: string) => <DeviceRef id={v} name={deviceById.get(v)} />,
+      },
       {
         title: 'Timestamp',
         key: 'timestamp',
@@ -255,16 +274,16 @@ export function TagReads() {
         title: 'Latitude',
         key: 'latitude',
         dataIndex: 'latitude',
-        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
       {
         title: 'Longitude',
         key: 'longitude',
         dataIndex: 'longitude',
-        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(5)),
+        render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
     ],
-    [flashing, deviceLabel],
+    [flashing, deviceLabel, deviceById],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:
@@ -327,6 +346,8 @@ export function TagReads() {
     () => (data ?? []).map((r) => ({
       time: r.timestamp,
       signal: r.signal_strength ?? 0,
+      temperature: readTemperature(r) ?? null,
+      humidity: readHumidity(r) ?? null,
     })),
     [data],
   );
@@ -497,12 +518,14 @@ export function TagReads() {
       ) : (
         <TpLineChart
           data={chartData}
-          series={SIGNAL_SERIES}
+          series={TAG_READ_SERIES}
           xKey="time"
           height={400}
-          yLabel="Signal strength (dBm)"
+          yLabel="Signal (dBm)"
+          secondaryYLabel="Temp °C / Humidity %"
+          enableSeriesFilter
           loading={isLoading}
-          ariaLabel="Signal strength over time"
+          ariaLabel="Signal, temperature and humidity over time"
           exportFileName="tag-reads"
           showExport
           syncId="tag-reads"

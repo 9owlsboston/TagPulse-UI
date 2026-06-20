@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- **Sprint 69 — Tag Reads polish: Reader names, coarser coords, sensor chart series (UI).** Three Tag Reads ([TagReads.tsx](src/pages/telemetry/TagReads.tsx)) fixes from demo feedback. **(R2)** the Reader column rendered the raw `device_id` UUID — now a new shared [`<DeviceRef>`](src/components/DeviceRef.tsx) cell renders the device **name as a link** to `/devices/{id}` with the **`device_id` in a tooltip** (names aren't unique, so identity stays the id; short-id fallback for unknown devices). **(R1)** Latitude/Longitude now render `toFixed(2)` instead of `toFixed(5)` (tidier; ~1.1 km display granularity). **(R3)** the chart plotted only Signal/RSSI — it now adds **Temperature (°C)** and **Humidity (%)** series on a **secondary right axis** (different units from dBm), with the series multi-select enabled so each can be isolated. The chart wrapper [`TpLineChart`](src/components/charts/TpLineChart.tsx) gains opt-in secondary-axis support (`TpSeries.axis: 'right'` + `secondaryYLabel`) — backward-compatible: the right axis renders only when a series requests it, so existing single-axis charts are unchanged. No backend or contract change. `npm run check` clean.
+
 ### Fixed
 
 - **Table page-size changer was stuck at 20 on Tag Reads + Alerts (bug).** Selecting **50** or **100 / page** did nothing — it snapped straight back to 20. Root cause: the tables passed `pagination={{ pageSize: 20 }}`, and a literal `pageSize` is a **controlled** prop, so AntD reverted every size-changer selection on the next render. Switched both [Tag Reads](src/pages/telemetry/TagReads.tsx) and [Alert History](src/pages/rules/AlertHistory.tsx) to the uncontrolled `defaultPageSize: 20` (plus explicit `showSizeChanger: true` and `pageSizeOptions: [20, 50, 100]`), so each table owns its page size and the changer takes effect. Regression tests in [TagReads.test.tsx](src/pages/telemetry/TagReads.test.tsx) + [AlertHistory.test.tsx](src/pages/rules/AlertHistory.test.tsx) drive the changer (20 → 100) and assert the extra rows render. `npm run check` clean.

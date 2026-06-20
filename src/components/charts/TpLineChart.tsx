@@ -56,6 +56,14 @@ export interface TpSeries {
   label: string;
   /** Override default token palette colour. */
   color?: string;
+  /**
+   * Which y-axis this series plots against. Default `'left'`. Set `'right'`
+   * for a series whose units differ from the primary axis (e.g. plotting
+   * temperature/humidity alongside RSSI) — a secondary right axis is rendered
+   * only when at least one series requests it, so existing single-axis charts
+   * are unaffected.
+   */
+  axis?: 'left' | 'right';
 }
 
 /**
@@ -95,6 +103,8 @@ export interface TpLineChartProps<TRow extends Record<string, unknown>> {
   height?: number;
   /** Y axis label rendered rotated on the left edge. */
   yLabel?: string;
+  /** Right (secondary) axis label, rendered when any series sets `axis: 'right'`. */
+  secondaryYLabel?: string;
   /** Async state — renders centered spinner over the chart area. */
   loading?: boolean;
   /** Error to surface as an inline Alert. Can be Error, string, or null. */
@@ -203,6 +213,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
   xKey,
   height = 360,
   yLabel,
+  secondaryYLabel,
   loading,
   error,
   ariaLabel,
@@ -220,6 +231,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
   const palette = tokens[mode].chartSeries;
 
   const filterEnabled = enableSeriesFilter ?? series.length > 8;
+  const hasRightAxis = useMemo(() => series.some((s) => s.axis === 'right'), [series]);
   const allKeys = useMemo(() => series.map((s) => s.key), [series]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>(
     defaultSelectedKeys ?? allKeys,
@@ -401,6 +413,27 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                     : undefined
                 }
               />
+              {hasRightAxis && (
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
+                  label={
+                    secondaryYLabel
+                      ? {
+                          value: secondaryYLabel,
+                          angle: 90,
+                          position: 'insideRight',
+                          offset: 0,
+                          style: { textAnchor: 'middle' },
+                        }
+                      : undefined
+                  }
+                />
+              )}
               <Tooltip
                 content={<TpTooltip labelFormatter={(label) => tickFormatter(label)} />}
                 cursor={{ stroke: 'var(--color-accent)', strokeWidth: 1, strokeOpacity: 0.5 }}
@@ -416,6 +449,7 @@ export function TpLineChart<TRow extends Record<string, unknown>>({
                     stroke={colorFor(s, idx)}
                     dot={false}
                     isAnimationActive={!loading}
+                    {...(s.axis === 'right' ? { yAxisId: 'right' } : {})}
                   />
                 );
               })}
