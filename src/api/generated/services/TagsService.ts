@@ -105,6 +105,7 @@ export class TagsService {
      * @param status
      * @param epcPrefix
      * @param bound
+     * @param q Sprint 70 — wildcard search over ``epc_hex``. ``*`` / ``?`` glob (bare term = substring, anchored when a wildcard is present), case-insensitive. Combines with the other filters via AND.
      * @param limit
      * @param offset
      * @returns TagResponse Successful Response
@@ -114,6 +115,7 @@ export class TagsService {
         status?: (string | null),
         epcPrefix?: (string | null),
         bound?: (boolean | null),
+        q?: (string | null),
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<TagResponse>> {
@@ -124,6 +126,7 @@ export class TagsService {
                 'status': status,
                 'epc_prefix': epcPrefix,
                 'bound': bound,
+                'q': q,
                 'limit': limit,
                 'offset': offset,
             },

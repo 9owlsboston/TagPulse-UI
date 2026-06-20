@@ -19,6 +19,7 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { useUpdateZone, useZones } from '@/hooks/useAssets';
 import { FilterPanel } from '@/components/FilterPanel';
 import { ListPageShell } from '@/components/ListPageShell';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import { EmptyState } from '@/components/EmptyState';
 import { isEmptyLabelFilter, type LabelFilter } from '@/lib/labelFilter';
 import type { DeviceResponse } from '@/types';
@@ -44,7 +45,12 @@ const CONNECTION_OPTIONS = [
 ];
 
 const baseColumns: ColumnsType<DeviceResponse> = [
-  { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+  {
+    title: 'Name',
+    dataIndex: 'name',
+    sorter: (a, b) => a.name.localeCompare(b.name),
+    ...columnSearchFilter<DeviceResponse>({ accessor: (r) => r.name }),
+  },
   { title: 'Type', dataIndex: 'device_type' },
   {
     title: 'Status',

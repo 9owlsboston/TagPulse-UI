@@ -203,6 +203,7 @@ export function useTagReadsForBinding(
       QueryService.queryTagReadsTagReadsGet(
         undefined,
         tagId!,
+        undefined,
         params?.since ?? undefined,
         undefined,
         undefined,

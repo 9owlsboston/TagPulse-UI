@@ -51,7 +51,8 @@ export function AlertHistory() {
   });
   const [selected, setSelected] = useState<string[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const { data, isLoading } = useAlerts();
+  const [appliedQ, setAppliedQ] = useState<string | undefined>();
+  const { data, isLoading } = useAlerts({ q: appliedQ });
   const acknowledge = useAcknowledgeAlert();
   const canAcknowledge = useCanPerform('editor');
 
@@ -77,12 +78,12 @@ export function AlertHistory() {
   }, [data]);
 
   const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
     const from = range?.[0]?.valueOf();
     const to = range?.[1]?.valueOf();
+    // Message search is server-side (``q`` → useAlerts) so it is correct across
+    // pages; status + time range stay client-side over the loaded page.
     return (data ?? []).filter((a) => {
       if (statusFilter && a.status !== statusFilter) return false;
-      if (needle && !a.message.toLowerCase().includes(needle)) return false;
       if (from || to) {
         const ts = new Date(a.triggered_at).getTime();
         if (from && ts < from) return false;
@@ -90,7 +91,7 @@ export function AlertHistory() {
       }
       return true;
     });
-  }, [data, search, range, statusFilter]);
+  }, [data, range, statusFilter]);
 
   const handleBulkAcknowledge = async () => {
     if (selected.length === 0) return;
@@ -216,10 +217,14 @@ export function AlertHistory() {
       toolbar={
         <Space wrap>
           <Input.Search
-            placeholder="Search message…"
+            placeholder="Search message… (e.g. temp*)"
             allowClear
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (!e.target.value) setAppliedQ(undefined);
+            }}
+            onSearch={(v) => setAppliedQ(v.trim() || undefined)}
             style={{ width: 260 }}
           />
           <RangePicker

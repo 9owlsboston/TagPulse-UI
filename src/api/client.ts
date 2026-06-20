@@ -141,7 +141,7 @@ export const devicesApi = {
 // ── Tag Reads ──
 
 export const tagReadsApi = {
-  list: (params?: { device_id?: string; tag_id?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
+  list: (params?: { device_id?: string; tag_id?: string; tag_q?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
     request<TagReadResponse[]>(`/tag-reads${qs(params ?? {})}`),
   readsPerHour: (params?: { device_id?: string; start?: string; end?: string; bucket_minutes?: number }) =>
     request<ReadsPerHour[]>(`/tag-reads/reads-per-hour${qs(params ?? {})}`),
@@ -173,7 +173,7 @@ export const rulesApi = {
 // ── Alerts ──
 
 export const alertsApi = {
-  list: (params?: { rule_id?: string; device_id?: string; status?: string; limit?: number; offset?: number }) =>
+  list: (params?: { rule_id?: string; device_id?: string; status?: string; q?: string; limit?: number; offset?: number }) =>
     request<AlertResponse[]>(`/alerts${qs(params ?? {})}`),
   acknowledge: (id: string) => request<void>(`/alerts/${id}/acknowledge`, { method: 'POST' }),
 };
