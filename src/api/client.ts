@@ -143,7 +143,7 @@ export const devicesApi = {
 export const tagReadsApi = {
   list: (params?: { device_id?: string; tag_id?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
     request<TagReadResponse[]>(`/tag-reads${qs(params ?? {})}`),
-  readsPerHour: (params?: { device_id?: string; start?: string; end?: string }) =>
+  readsPerHour: (params?: { device_id?: string; start?: string; end?: string; bucket_minutes?: number }) =>
     request<ReadsPerHour[]>(`/tag-reads/reads-per-hour${qs(params ?? {})}`),
   uniqueTags: (params?: { device_id?: string; start?: string; end?: string; window_minutes?: number }) =>
     request<UniqueTagsPerWindow[]>(`/tag-reads/unique-tags${qs(params ?? {})}`),

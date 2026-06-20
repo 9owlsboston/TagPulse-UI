@@ -96,10 +96,15 @@ export class QueryService {
     }
     /**
      * Reads Per Hour
-     * Get read counts per device per hour.
+     * Get read counts per device per time bucket.
+     *
+     * ``bucket_minutes`` sets the bucket width (default 60 = hourly). Callers
+     * showing a narrow window can request a finer bucket so the series has real
+     * resolution instead of one or two hourly points.
      * @param deviceId
      * @param start
      * @param end
+     * @param bucketMinutes
      * @returns ReadsPerHour Successful Response
      * @throws ApiError
      */
@@ -107,6 +112,7 @@ export class QueryService {
         deviceId?: (string | null),
         start?: (string | null),
         end?: (string | null),
+        bucketMinutes: number = 60,
     ): CancelablePromise<Array<ReadsPerHour>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -115,6 +121,7 @@ export class QueryService {
                 'device_id': deviceId,
                 'start': start,
                 'end': end,
+                'bucket_minutes': bucketMinutes,
             },
             errors: {
                 422: `Validation Error`,

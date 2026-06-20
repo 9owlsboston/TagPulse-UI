@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useReadsPerHour } from '@/hooks/useTagReads';
+import { bucketLabel, chooseBucketMinutes } from '@/lib/bucketing';
 import { useLabel } from '@/lib/uiConfig';
 import { useDevices } from '@/hooks/useDevices';
 import { useSSE } from '@/lib/sse';
@@ -24,7 +25,18 @@ export function TelemetryDashboard() {
   const [end, setEnd] = useState<string | undefined>();
 
   const { data: devices } = useDevices();
-  const { data: readsPerHour, isLoading } = useReadsPerHour({ device_id: deviceId, start, end });
+  // Bucket width follows the visible window so short ranges get real resolution
+  // (a 1h window → 1-min buckets) instead of one or two hourly points.
+  const bucketMinutes = useMemo(
+    () => (start && end ? chooseBucketMinutes(Date.parse(end) - Date.parse(start)) : undefined),
+    [start, end],
+  );
+  const { data: readsPerHour, isLoading } = useReadsPerHour({
+    device_id: deviceId,
+    start,
+    end,
+    bucket_minutes: bucketMinutes,
+  });
 
   useSSE(SSE_EVENTS, SSE_KEYS);
 
@@ -88,7 +100,7 @@ export function TelemetryDashboard() {
         series={series}
         xKey="bucket"
         height={400}
-        yLabel="Reads / hour"
+        yLabel={bucketLabel(bucketMinutes ?? 60)}
         loading={isLoading}
         ariaLabel="Reads per device over time"
         showExport
