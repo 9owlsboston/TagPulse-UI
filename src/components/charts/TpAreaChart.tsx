@@ -322,7 +322,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={timedData}
-              margin={{ top: 8, right: 24, left: 16, bottom: 8 }}
+              margin={{ top: 8, right: 24, left: 16, bottom: enableBrush ? 20 : 8 }}
               syncId={syncId}
             >
               {/* Per-series gradient defs (overlay mode only — stacked
@@ -360,6 +360,11 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                 scale="time"
                 domain={['dataMin', 'dataMax']}
                 tickFormatter={tickFormatter}
+                // See TpLineChart: drop crowded ticks (default 5px gap) so the
+                // boundary tick doesn't pile onto its neighbour and overlap.
+                minTickGap={48}
+                interval="preserveStartEnd"
+                tickMargin={8}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
@@ -399,6 +404,7 @@ export function TpAreaChart<TRow extends Record<string, unknown>>({
                     fill={stacked ? c : `url(#tp-area-grad-${s.key})`}
                     fillOpacity={stacked ? 0.65 : 1}
                     stackId={stacked ? '1' : undefined}
+                    connectNulls={s.connectNulls ?? false}
                     isAnimationActive={!loading}
                   />
                 );
