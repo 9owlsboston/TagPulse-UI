@@ -347,11 +347,13 @@ export function useAssetPath(
 }
 
 /**
- * Sprint 65 — precomputed floor-frame `(x, y)` trail for an asset.
+ * Sprint 65/66 — floor-frame `(x, y)` trail for an asset.
  *
- * Wraps `GET /assets/{id}/floor-path` (ascending time). Defaults to the
- * `precomputed` source (BYO ingest); the `computed` estimator source is a
- * future phase. Points are in the site `coord_system` floor units.
+ * Wraps `GET /assets/{id}/floor-path` (ascending time). With no `source`
+ * filter it returns **all** fixes — both `computed` (Sprint 66 estimator)
+ * and `precomputed` (Sprint 65 BYO ingest) — merged in ascending time. Pass
+ * `source` to narrow to one writer. Points are in the site `coord_system`
+ * floor units.
  */
 export function useFloorPath(
   assetId: string | undefined,
@@ -364,7 +366,7 @@ export function useFloorPath(
         assetId!,
         params?.since,
         params?.until,
-        params?.source ?? 'precomputed',
+        params?.source,
         params?.limit ?? 500,
       ),
     enabled: Boolean(assetId),

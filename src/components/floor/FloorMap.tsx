@@ -64,10 +64,11 @@ function AssetFloorMarker({
   color: string;
   ring: string;
 }) {
-  // Prefer a real precomputed floor (x, y) trail (Sprint 65 BYO); fall back to
-  // snapping the marker to the reader that last heard the asset when the asset
-  // has no floor fixes yet (Sprint 64 D2 behaviour).
-  const { data: floorPath } = useFloorPath(asset.id, { source: 'precomputed' });
+  // Prefer a real floor (x, y) trail — computed (Sprint 66 estimator) or
+  // precomputed (Sprint 65 BYO), whichever exists — and fall back to snapping
+  // the marker to the reader that last heard the asset when the asset has no
+  // floor fixes yet (Sprint 64 D2 behaviour).
+  const { data: floorPath } = useFloorPath(asset.id);
   const { data: location } = useAssetCurrentLocation(asset.id);
   const deviceId = location?.device_id ?? undefined;
   const { data: antennas } = useAntennas(deviceId);
