@@ -20,9 +20,11 @@ import {
   useUpdateTelemetryModel,
 } from '@/hooks/useTelemetryModels';
 import { useTelemetryQuarantine } from '@/hooks/useTelemetry';
+import { useDevices } from '@/hooks/useDevices';
 import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
+import { DeviceRef } from '@/components/DeviceRef';
 import type {
   TelemetryModelResponse,
   TelemetryModelCreate,
@@ -280,6 +282,13 @@ function QuarantinePanel() {
   }, [data]);
 
   const deviceLabel = useLabel('device');
+  // Show the reader NAME (via <DeviceRef>, UUID on hover) instead of the raw
+  // device_id, consistent with the Tag Reads table.
+  const { data: devices } = useDevices();
+  const deviceById = useMemo(
+    () => new Map((devices ?? []).map((d) => [d.id, d.name])),
+    [devices],
+  );
 
   const columns: ColumnsType<TelemetryQuarantineResponse> = [
     {
@@ -289,7 +298,12 @@ function QuarantinePanel() {
       sorter: (a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime(),
       defaultSortOrder: 'descend',
     },
-    { title: deviceLabel, dataIndex: 'device_id', ellipsis: true },
+    {
+      title: deviceLabel,
+      dataIndex: 'device_id',
+      render: (v: string | null) =>
+        v ? <DeviceRef id={v} name={deviceById.get(v)} /> : '—',
+    },
     { title: 'Metric', dataIndex: 'metric_name' },
     {
       title: 'Value',
