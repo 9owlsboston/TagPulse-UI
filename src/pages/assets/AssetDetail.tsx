@@ -34,6 +34,8 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import { AssetEventsTab } from '@/components/AssetEventsTab';
+import { AssetPathMap } from '@/components/floor/AssetPathMap';
+import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { LabelChips } from '@/components/LabelChips';
 import { CategorySelect } from '@/components/CategorySelect';
 import { useCategory } from '@/hooks/useCategories';
@@ -73,6 +75,16 @@ export function AssetDetail() {
   const { data: category } = useCategory(asset?.category_id ?? undefined);
   const [bindOpen, setBindOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  // Sprint 68 — the "Path" tab's own time window (driven by <TimeRangePicker>,
+  // which emits its 24h default on mount). Independent of the Overview/Reads
+  // 24h snapshot above.
+  const [pathRange, setPathRange] = useState<{ since: string; until: string }>(() => {
+    const now = Date.now();
+    return {
+      since: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+      until: new Date(now).toISOString(),
+    };
+  });
   const [bindForm] = Form.useForm<AssetTagBindingCreate>();
   const [editForm] = Form.useForm<AssetUpdate & { metadata_text?: string }>();
 
@@ -184,10 +196,21 @@ export function AssetDetail() {
 
   const zoneById = new Map((zones ?? []).map((z) => [z.id, z]));
   const deviceById = new Map((devices ?? []).map((d) => [d.id, d]));
-  // Build a "zone via reader" map: device id -> first zone whose fixed_reader_ids includes it.
-  const zoneForDevice = (deviceId: string): string => {
+  // Sprint 68 — frame-aware location label. A read resolves to a real zone
+  // only when its reader is assigned to one (zone via `fixed_reader_ids`);
+  // otherwise we name the reader ("near reader-06") rather than emit a useless
+  // "zone: —". Geo reads prefix the coordinates; floor reads (no lat/lon) show
+  // the zone-or-reader label alone. (Spatially-accurate floor-polygon zones are
+  // the deferred backend follow-up — see Sprint 68 roadmap entry.)
+  const zoneNameForDevice = (deviceId: string): string | null => {
     const z = (zones ?? []).find((zone) => (zone.fixed_reader_ids ?? []).includes(deviceId));
-    return z?.name ?? '—';
+    return z?.name ?? null;
+  };
+  const readerName = (deviceId: string): string =>
+    deviceById.get(deviceId)?.name ?? `device:${deviceId.slice(0, 8)}`;
+  const zoneOrReader = (deviceId: string): string => {
+    const zone = zoneNameForDevice(deviceId);
+    return zone ? `zone: ${zone}` : `near ${readerName(deviceId)}`;
   };
 
   // Merged source timeline (reader hops + external positions), badged.
@@ -210,7 +233,9 @@ export function AssetDetail() {
           : 'RFID'
         : p.source,
     location: `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}${
-      p.device_id ? ` · zone: ${zoneForDevice(p.device_id)}` : ''
+      p.device_id && zoneNameForDevice(p.device_id)
+        ? ` · zone: ${zoneNameForDevice(p.device_id)}`
+        : ''
     }`,
   }));
   const fallbackTimeline: TimelineRow[] = [
@@ -221,8 +246,8 @@ export function AssetDetail() {
       sourceLabel: deviceById.get(r.device_id)?.name ?? `device:${r.device_id.slice(0, 8)}`,
       location:
         r.latitude != null && r.longitude != null
-          ? `${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)} · zone: ${zoneForDevice(r.device_id)}`
-          : `zone: ${zoneForDevice(r.device_id)}`,
+          ? `${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)} · ${zoneOrReader(r.device_id)}`
+          : zoneOrReader(r.device_id),
     })),
     ...(externalPositions ?? []).map((p: ExternalLocationResponse) => ({
       key: `e-${p.id}`,
@@ -421,8 +446,25 @@ export function AssetDetail() {
       ),
     },
     {
+      key: 'path',
+      label: 'Path',
+      children: (
+        <>
+          <Text type="secondary">
+            Where this {assetLabel.toLowerCase()} is and where it has been over the selected
+            window. Floor sites render the `(x, y)` trail on the floor plan (plain grid when no
+            plan is uploaded); mobile/GPS sites render the geographic path.
+          </Text>
+          <Space style={{ display: 'flex', margin: '12px 0' }} wrap>
+            <TimeRangePicker onChange={(since, until) => setPathRange({ since, until })} />
+          </Space>
+          {id ? <AssetPathMap asset={asset} since={pathRange.since} until={pathRange.until} /> : null}
+        </>
+      ),
+    },
+    {
       key: 'timeline',
-      label: 'Recent Path',
+      label: 'Reads',
       children: (
         <>
           <Text type="secondary">
@@ -472,7 +514,7 @@ export function AssetDetail() {
       // Sprint 38 row 3.9c — Events Log. Synthesised lifecycle stream
       // (created / updated / retired + every bind/unbind + external
       // position fixes) from data already fetched by the page. Raw RFID
-      // reader hops stay on the Recent Path tab.
+      // reader hops stay on the Reads tab.
       key: 'events',
       label: 'Events Log',
       children: (

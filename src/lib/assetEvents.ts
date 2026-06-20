@@ -22,9 +22,9 @@
 //   * External fix   → externalPositions[].recorded_at
 //
 // Raw tag reads (which can be thousands per day) are intentionally excluded
-// — they have a dedicated "Recent Path" tab. The Events Log focuses on
+// — they have a dedicated "Reads" tab. The Events Log focuses on
 // lifecycle events the operator would otherwise need to reconstruct from
-// staring at the Bindings table + the Recent Path timeline simultaneously.
+// staring at the Bindings table + the Reads timeline simultaneously.
 
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
 import type { AssetTagBindingResponse } from '@/api/generated/models/AssetTagBindingResponse';

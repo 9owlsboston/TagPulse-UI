@@ -60,7 +60,7 @@ export function AssetEventsTab({
       <Text type="secondary">
         Lifecycle events for this asset: created / updated / retired plus
         every bind / unbind and any external position fix. Raw RFID reader
-        hops live on the Recent Path tab to keep this stream focused on
+        hops live on the Reads tab to keep this stream focused on
         events an operator would want to audit.
       </Text>
       <Table<AssetEvent>
