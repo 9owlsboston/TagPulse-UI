@@ -13,7 +13,7 @@ export function useTagReads(
   });
 }
 
-export function useReadsPerHour(params?: { device_id?: string; start?: string; end?: string }) {
+export function useReadsPerHour(params?: { device_id?: string; start?: string; end?: string; bucket_minutes?: number }) {
   return useQuery({
     queryKey: ['tag-reads', 'reads-per-hour', params],
     queryFn: () => tagReadsApi.readsPerHour(params),
