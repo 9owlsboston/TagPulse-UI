@@ -240,7 +240,7 @@ export function ProductDetail() {
           rowKey="id"
           loading={lotsLoading}
           dataSource={lots ?? []}
-          pagination={{ pageSize: 10 }}
+          pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
           columns={[
             { title: 'Lot code', dataIndex: 'lot_code', sorter: (a, b) => a.lot_code.localeCompare(b.lot_code) },
             {
@@ -295,7 +295,7 @@ export function ProductDetail() {
           rowKey="id"
           loading={unitsLoading}
           dataSource={units ?? []}
-          pagination={{ pageSize: 10 }}
+          pagination={{ defaultPageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
           locale={{ emptyText: 'No units recorded for this product yet.' }}
           onRow={(row) => ({
             onClick: () => setHistoryUnit(row),
@@ -346,7 +346,7 @@ export function ProductDetail() {
           rowKey="id"
           loading={movementsLoading}
           dataSource={unitMovements ?? []}
-          pagination={{ pageSize: 20 }}
+          pagination={{ defaultPageSize: 20, showSizeChanger: true, pageSizeOptions: [20, 50, 100] }}
           locale={{ emptyText: 'No movements recorded for this unit.' }}
           columns={[
             {

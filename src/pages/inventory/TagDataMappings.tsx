@@ -130,7 +130,7 @@ export function TagDataMappings() {
           rowKey="id"
           loading={isLoading}
           dataSource={rows}
-          pagination={{ pageSize: 25 }}
+          pagination={{ defaultPageSize: 25, showSizeChanger: true, pageSizeOptions: [25, 50, 100] }}
           locale={{
             emptyText: isAdmin ? (
               <EmptyState

@@ -261,7 +261,7 @@ export function DeviceList() {
           columns={columns}
           dataSource={filtered}
           loading={isLoading}
-          pagination={{ pageSize: 20 }}
+          pagination={{ defaultPageSize: 20, showSizeChanger: true, pageSizeOptions: [20, 50, 100] }}
           locale={{
             emptyText:
               search || status || connection || !isEmptyLabelFilter(labelFilter) ? (

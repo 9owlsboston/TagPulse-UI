@@ -74,7 +74,7 @@ export default function LotExpiryQueue() {
         loading={isLoading}
         dataSource={rows}
         size="small"
-        pagination={{ pageSize: 50 }}
+        pagination={{ defaultPageSize: 50, showSizeChanger: true, pageSizeOptions: [50, 100, 200] }}
         locale={{
           emptyText: filtersActive ? (
             <EmptyState

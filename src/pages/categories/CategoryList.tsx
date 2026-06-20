@@ -202,7 +202,7 @@ export function CategoryList() {
           rowKey="id"
           dataSource={rows}
           loading={isLoading}
-          pagination={{ pageSize: 25 }}
+          pagination={{ defaultPageSize: 25, showSizeChanger: true, pageSizeOptions: [25, 50, 100] }}
           locale={{
             emptyText: filtersActive ? (
               <EmptyState

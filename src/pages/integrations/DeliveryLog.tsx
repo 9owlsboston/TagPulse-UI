@@ -53,7 +53,7 @@ export function DeliveryLog() {
         columns={columns}
         dataSource={rows}
         loading={isLoading}
-        pagination={{ pageSize: 20 }}
+        pagination={{ defaultPageSize: 20, showSizeChanger: true, pageSizeOptions: [20, 50, 100] }}
         locale={{
           emptyText: (
             <EmptyState
