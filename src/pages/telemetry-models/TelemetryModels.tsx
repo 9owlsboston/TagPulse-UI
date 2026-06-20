@@ -347,7 +347,14 @@ function QuarantinePanel() {
             <pre style={{ margin: 0 }}>{JSON.stringify(record.raw_payload, null, 2)}</pre>
           ),
         }}
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          // `defaultPageSize` (uncontrolled) lets AntD own the page size so the
+          // size changer actually takes effect — a literal `pageSize` is
+          // *controlled* and reverts every selection back on re-render.
+          defaultPageSize: 10,
+          showSizeChanger: true,
+          pageSizeOptions: [10, 20, 50, 100],
+        }}
         locale={{ emptyText: 'No quarantined readings' }}
       />
     </Card>
