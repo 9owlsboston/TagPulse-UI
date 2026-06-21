@@ -7,6 +7,7 @@ import type { AssetCurrentLocation } from '../models/AssetCurrentLocation';
 import type { AssetLoadRequest } from '../models/AssetLoadRequest';
 import type { AssetPathPoint } from '../models/AssetPathPoint';
 import type { AssetResponse } from '../models/AssetResponse';
+import type { AssetStateResponse } from '../models/AssetStateResponse';
 import type { AssetTagBindingCreate } from '../models/AssetTagBindingCreate';
 import type { AssetTagBindingResponse } from '../models/AssetTagBindingResponse';
 import type { AssetUnloadRequest } from '../models/AssetUnloadRequest';
@@ -446,6 +447,60 @@ export class AssetsService {
             },
             body: requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Asset State
+     * Latest fused asset-state snapshot (Sprint 71, ADR-034) — the "is".
+     *
+     * The ``read_count × recency`` fusion of the asset's bound-tag reads into one
+     * zone + environment answer. ``null`` when no snapshot exists yet (consolidation
+     * not enabled, or no recent reads). 404 only when the asset does not exist.
+     * @param assetId
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static getAssetStateAssetsAssetIdStateGet(
+        assetId: string,
+    ): CancelablePromise<(AssetStateResponse | null)> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/state',
+            path: {
+                'asset_id': assetId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Asset State History
+     * Fused asset-state snapshots, newest-first (Sprint 71) — the "was" timeline.
+     * @param assetId
+     * @param since
+     * @param limit
+     * @returns AssetStateResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAssetStateHistoryAssetsAssetIdStateHistoryGet(
+        assetId: string,
+        since?: (string | null),
+        limit: number = 200,
+    ): CancelablePromise<Array<AssetStateResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/state/history',
+            path: {
+                'asset_id': assetId,
+            },
+            query: {
+                'since': since,
+                'limit': limit,
+            },
             errors: {
                 422: `Validation Error`,
             },

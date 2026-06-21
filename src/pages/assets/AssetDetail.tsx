@@ -34,6 +34,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import { AssetEventsTab } from '@/components/AssetEventsTab';
+import { AssetCurrentStateCard } from '@/components/AssetCurrentStateCard';
 import { AssetPathMap } from '@/components/floor/AssetPathMap';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { LabelChips } from '@/components/LabelChips';
@@ -333,6 +334,12 @@ export function AssetDetail() {
           <div style={{ marginTop: 16 }}>
             {id && <LabelChips entityType="asset" entityId={id} />}
           </div>
+
+          {id && (
+            <div style={{ marginTop: 24 }}>
+              <AssetCurrentStateCard assetId={id} />
+            </div>
+          )}
 
           <Title level={5} style={{ marginTop: 24 }}>Current Location</Title>
           <Card size="small">
