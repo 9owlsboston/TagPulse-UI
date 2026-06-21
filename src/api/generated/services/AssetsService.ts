@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { AssetCreate } from '../models/AssetCreate';
 import type { AssetCurrentLocation } from '../models/AssetCurrentLocation';
+import type { AssetLegResponse } from '../models/AssetLegResponse';
 import type { AssetLoadRequest } from '../models/AssetLoadRequest';
 import type { AssetPathPoint } from '../models/AssetPathPoint';
 import type { AssetResponse } from '../models/AssetResponse';
@@ -342,6 +343,38 @@ export class AssetsService {
                 'since': since,
                 'until': until,
                 'source': source,
+                'limit': limit,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Asset Legs
+     * Transit legs for an asset, newest-first (Sprint 72, ADR-034 Phase 2).
+     *
+     * Each leg is the ``geo``-frame interval between two facilities, with duration,
+     * origin/destination, and the cold-chain env envelope + SLA (computed on close).
+     * @param assetId
+     * @param status Filter by leg status: open | closed.
+     * @param limit
+     * @returns AssetLegResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAssetLegsAssetsAssetIdLegsGet(
+        assetId: string,
+        status?: (string | null),
+        limit: number = 100,
+    ): CancelablePromise<Array<AssetLegResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/assets/{asset_id}/legs',
+            path: {
+                'asset_id': assetId,
+            },
+            query: {
+                'status': status,
                 'limit': limit,
             },
             errors: {

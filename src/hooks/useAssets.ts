@@ -390,6 +390,31 @@ export function useAssetStateHistory(
 }
 
 /**
+ * Sprint 72 (ADR-034 Phase 2) — transit legs for an asset.
+ *
+ * Wraps `GET /assets/{id}/legs` (newest-first). Each leg is the `geo`-frame
+ * interval between two facilities, with duration, origin/destination, and the
+ * cold-chain env envelope + SLA (computed on close). Drives the Journey timeline.
+ */
+export function useAssetLegs(
+  assetId: string | undefined,
+  params?: { status?: string; limit?: number },
+) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'legs', params ?? {}],
+    queryFn: () =>
+      AssetsService.getAssetLegsAssetsAssetIdLegsGet(
+        assetId!,
+        params?.status,
+        params?.limit ?? 100,
+      ),
+    enabled: Boolean(assetId),
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/**
  * Sprint 65/66 — floor-frame `(x, y)` trail for an asset.
  *
  * Wraps `GET /assets/{id}/floor-path` (ascending time). With no `source`
