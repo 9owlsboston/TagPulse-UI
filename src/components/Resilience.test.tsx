@@ -167,6 +167,40 @@ describe('ErrorBoundary (B2)', () => {
     );
     expect(screen.getByTestId('ok')).toBeInTheDocument();
   });
+
+  it('shows an "updating" state and hard-reloads on a stale-chunk error', () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const reloadMock = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { ...original, reload: reloadMock },
+    });
+    sessionStorage.removeItem('tagpulse:chunk-reload-ts');
+
+    function ChunkBoom(): never {
+      throw new Error('Failed to fetch dynamically imported module: https://x/TagReads-abc.js');
+    }
+    render(
+      <ErrorBoundary>
+        <ChunkBoom />
+      </ErrorBoundary>,
+    );
+
+    // No red error card — a calm "updating" state while the reload fires.
+    expect(screen.getByTestId('error-boundary-updating')).toBeInTheDocument();
+    expect(screen.queryByTestId('error-boundary')).not.toBeInTheDocument();
+    expect(reloadMock).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+    sessionStorage.removeItem('tagpulse:chunk-reload-ts');
+    errSpy.mockRestore();
+  });
 });
 
 describe('normalizeRoutePattern (C2)', () => {

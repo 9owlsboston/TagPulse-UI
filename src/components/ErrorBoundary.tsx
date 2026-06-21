@@ -10,10 +10,12 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import Button from 'antd/es/button';
 import Result from 'antd/es/result';
+import Spin from 'antd/es/spin';
 import Typography from 'antd/es/typography';
 import message from 'antd/es/message';
 import { ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import { trackException } from '@/lib/telemetry';
+import { isChunkLoadError, reloadForChunkError } from '@/lib/lazyWithReload';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -22,16 +24,40 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   error: Error | null;
   componentStack: string | null;
+  // True when the caught error is a stale-chunk / dynamic-import failure
+  // (deploy churn), not a genuine render bug.
+  isChunk: boolean;
+  // null = undetermined (componentDidCatch not run yet), true = reload in
+  // flight, false = throttle suppressed the reload (persistent failure).
+  reloadAttempted: boolean | null;
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { error: null, componentStack: null };
+  state: ErrorBoundaryState = {
+    error: null,
+    componentStack: null,
+    isChunk: false,
+    reloadAttempted: null,
+  };
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    return { error };
+    return { error, isChunk: isChunkLoadError(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
+    if (isChunkLoadError(error)) {
+      // Stale-chunk after a deploy reached the boundary (e.g. the per-session
+      // auto-reload was already spent, or the error came via a path the lazy
+      // factory didn't wrap). Recover with a throttled hard reload rather than
+      // showing the red error card. This is expected deploy churn, not a bug,
+      // so we don't report it as an exception.
+      const reloaded = reloadForChunkError();
+      this.setState({ reloadAttempted: reloaded });
+      if (!reloaded) {
+        console.warn('[ErrorBoundary] chunk reload throttled:', error.message);
+      }
+      return;
+    }
     this.setState({ componentStack: info.componentStack ?? null });
     trackException(error, {
       componentStack: info.componentStack ?? '',
@@ -71,8 +97,31 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   render(): ReactNode {
-    const { error } = this.state;
+    const { error, isChunk, reloadAttempted } = this.state;
     if (!error) return this.props.children;
+
+    // Stale-chunk error after a deploy: a hard reload is in flight (or about to
+    // be), so show a calm "updating" state instead of the red error card. Only
+    // fall through to the card if the throttle suppressed the reload
+    // (persistent failure — the chunk is genuinely missing).
+    if (isChunk && reloadAttempted !== false) {
+      return (
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+          }}
+          data-testid="error-boundary-updating"
+        >
+          <Spin size="large" />
+          <Typography.Text type="secondary">Updating to the latest version…</Typography.Text>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -87,11 +136,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       >
         <Result
           status="error"
-          title="Something went wrong"
+          title={isChunk ? 'Could not load the latest version' : 'Something went wrong'}
           subTitle={
             <Typography.Paragraph type="secondary" style={{ maxWidth: 480, margin: '0 auto' }}>
-              The page hit an unexpected error. The TagPulse team has been notified. You can copy
-              the error details below or reload the page.
+              {isChunk
+                ? 'A new version was deployed but a fresh copy of this page could not be loaded. Reload to continue.'
+                : 'The page hit an unexpected error. The TagPulse team has been notified. You can copy the error details below or reload the page.'}
             </Typography.Paragraph>
           }
           extra={
