@@ -25,6 +25,7 @@ import { useLabel } from '@/lib/uiConfig';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { DeviceRef } from '@/components/DeviceRef';
+import { excelColumn } from '@/components/ExcelColumn';
 import type {
   TelemetryModelResponse,
   TelemetryModelCreate,
@@ -304,15 +305,17 @@ function QuarantinePanel() {
       render: (v: string | null) =>
         v ? <DeviceRef id={v} name={deviceById.get(v)} /> : '—',
     },
-    { title: 'Metric', dataIndex: 'metric_name' },
+    { title: 'Metric', dataIndex: 'metric_name', ...excelColumn<TelemetryQuarantineResponse>({ rows: data ?? [], accessor: (r) => r.metric_name, kind: 'enum' }) },
     {
       title: 'Value',
       dataIndex: 'metric_value',
+      ...excelColumn<TelemetryQuarantineResponse>({ rows: data ?? [], accessor: (r) => r.metric_value, kind: 'number' }),
       render: (v: number | null) => (v == null ? '—' : v),
     },
     {
       title: 'Reason',
       dataIndex: 'reason',
+      ...excelColumn<TelemetryQuarantineResponse>({ rows: data ?? [], accessor: (r) => r.reason, kind: 'enum' }),
       render: (v: string) => (
         <Tag color={REASON_COLOR[v as QuarantineReason] ?? 'default'}>{v}</Tag>
       ),

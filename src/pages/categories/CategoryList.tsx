@@ -230,6 +230,7 @@ export function CategoryList() {
               width: 180,
               render: (v: string) => <Tag>{TYPE_LABELS[v] ?? v}</Tag>,
               filters: TYPE_OPTIONS.map((o) => ({ text: o.label, value: o.value })),
+              filterSearch: true,
               onFilter: (value, row) => row.category_type === value,
             },
             {

@@ -12,6 +12,7 @@ import { SitesZonesService } from '@/api/generated/services/SitesZonesService';
 import { useQuery } from '@tanstack/react-query';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { StockMovementResponse } from '@/api/generated/models/StockMovementResponse';
 
 const { RangePicker } = DatePicker;
@@ -124,6 +125,7 @@ export function StockMovements() {
               title: 'Type',
               dataIndex: 'movement_type',
               width: 110,
+              ...excelColumn<StockMovementResponse>({ rows, accessor: (r) => r.movement_type, kind: 'enum' }),
               render: (t: string) => <Tag color={TYPE_COLOUR[t] ?? 'default'}>{t}</Tag>,
             },
             {
@@ -141,7 +143,7 @@ export function StockMovements() {
               dataIndex: 'to_zone_id',
               render: (v: string | null) => (v ? (zoneLabel.get(v) ?? v.slice(0, 8)) : '—'),
             },
-            { title: 'Qty', dataIndex: 'quantity', width: 80, align: 'right' },
+            { title: 'Qty', dataIndex: 'quantity', width: 80, align: 'right', ...excelColumn<StockMovementResponse>({ rows, accessor: (r) => r.quantity, kind: 'number' }) },
             {
               title: deviceLabel,
               dataIndex: 'device_id',
