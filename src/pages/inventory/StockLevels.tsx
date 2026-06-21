@@ -20,6 +20,7 @@ import { stockMovementsApi } from '@/api/client';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { StockMovementCreate } from '@/api/client';
 
 const UNASSIGNED = '__unassigned__';
@@ -208,17 +209,19 @@ export function StockLevels() {
                 ) : undefined,
             }}
             columns={[
-              { title: 'Product', dataIndex: 'product', fixed: 'left', width: 280 },
+              { title: 'Product', dataIndex: 'product', fixed: 'left', width: 280, ...excelColumn<PivotRow>({ rows: displayRows, accessor: (r) => r.product, kind: 'text' }) },
               ...zoneCols.map((z) => ({
                 title: z.label,
                 dataIndex: ['perZone', z.key],
                 align: 'right' as const,
+                sorter: (a: PivotRow, b: PivotRow) => (a.perZone[z.key] ?? 0) - (b.perZone[z.key] ?? 0),
                 render: (_: unknown, row: PivotRow) => row.perZone[z.key] ?? 0,
               })),
               {
                 title: 'Total',
                 dataIndex: 'total',
                 align: 'right' as const,
+                ...excelColumn<PivotRow>({ rows: displayRows, accessor: (r) => r.total, kind: 'number' }),
                 render: (v: number) => <b>{v}</b>,
               },
               ...(canEdit

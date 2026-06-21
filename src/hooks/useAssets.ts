@@ -25,11 +25,16 @@ import { encodeLabelFilter, isEmptyLabelFilter, type LabelFilter } from '@/lib/l
 
 export function useAssets(params?: {
   status?: string;
+  /** Sprint 77 — multi-select status from the column checkbox list. */
+  statuses?: string[];
   /** Legacy single-category filter (Sprint 37). Kept for source compat. */
   category_id?: string;
   /** Sprint 42 — multi-category OR filter; emitted as repeated `?category_ids=`. */
   category_ids?: string[];
   q?: string;
+  /** Sprint 77 — server-side sort column + direction. */
+  sort?: string;
+  order?: string;
   limit?: number;
   offset?: number;
   labels?: LabelFilter;
@@ -48,11 +53,16 @@ export function useAssets(params?: {
       if (useRawRequest) {
         const extra: string[] = [];
         if (params?.status) extra.push(`status=${encodeURIComponent(params.status)}`);
+        for (const s of params?.statuses ?? []) {
+          extra.push(`statuses=${encodeURIComponent(s)}`);
+        }
         if (params?.category_id) extra.push(`category_id=${encodeURIComponent(params.category_id)}`);
         for (const cid of categoryIds) {
           extra.push(`category_ids=${encodeURIComponent(cid)}`);
         }
         if (params?.q) extra.push(`q=${encodeURIComponent(params.q)}`);
+        if (params?.sort) extra.push(`sort=${encodeURIComponent(params.sort)}`);
+        extra.push(`order=${encodeURIComponent(params?.order ?? 'desc')}`);
         extra.push(`limit=${params?.limit ?? 100}`);
         extra.push(`offset=${params?.offset ?? 0}`);
         if (!isEmptyLabelFilter(params?.labels)) {
@@ -65,9 +75,9 @@ export function useAssets(params?: {
         params?.category_id ?? undefined,
         undefined,
         params?.q ?? undefined,
-        undefined,
-        undefined,
-        'desc',
+        params?.statuses ?? undefined,
+        params?.sort ?? undefined,
+        params?.order ?? 'desc',
         params?.limit ?? 100,
         params?.offset ?? 0,
       );

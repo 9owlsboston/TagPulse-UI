@@ -17,6 +17,10 @@ export const TRANSFERS_QUERY_KEY = 'tag-transfers' as const;
 export interface TransferListParams {
   direction?: 'inbound' | 'outbound';
   status?: TagTransferResponse.status | string;
+  statuses?: string[];
+  epc_q?: string;
+  sort?: string;
+  order?: string;
   limit?: number;
   offset?: number;
 }
@@ -36,6 +40,10 @@ export function useTransfers(params?: TransferListParams) {
       TagsService.listTagTransfersTagTransfersGet(
         params?.direction ? DIRECTION_WIRE[params.direction] : null,
         params?.status ?? null,
+        params?.statuses ?? null,
+        params?.epc_q ?? null,
+        params?.sort ?? null,
+        params?.order ?? 'desc',
         params?.limit ?? 100,
         params?.offset ?? 0,
       ),
