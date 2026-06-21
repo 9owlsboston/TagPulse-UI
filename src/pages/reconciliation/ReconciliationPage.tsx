@@ -9,7 +9,7 @@ import Table from 'antd/es/table';
 import Typography from 'antd/es/typography';
 import Tag from 'antd/es/tag';
 import message from 'antd/es/message';
-import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
+import { DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 

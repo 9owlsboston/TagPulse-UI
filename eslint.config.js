@@ -73,6 +73,22 @@ export default [
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
+      // Deep default imports like `@ant-design/icons/DownloadOutlined` resolve
+      // to a CJS interop *wrapper object* in production builds (not the icon
+      // component), crashing the page with React error #130. Always import
+      // icons by name from the package root.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@ant-design/icons/*'],
+              message:
+                "Import icons by name from '@ant-design/icons' (e.g. import { DownloadOutlined } from '@ant-design/icons'). Deep imports crash prod builds (React #130).",
+            },
+          ],
+        },
+      ],
     },
   },
   {
