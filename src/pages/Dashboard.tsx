@@ -5,6 +5,7 @@ import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
 import Col from 'antd/es/col';
 import Row from 'antd/es/row';
+import Spin from 'antd/es/spin';
 import Space from 'antd/es/space';
 import Typography from 'antd/es/typography';
 import {
@@ -196,7 +197,7 @@ export function Dashboard() {
   // skin registry is *singular* ("Reader"), so we pluralize the skinned value;
   // the static `title` is already plural ("Devices"), so the no-skin fallback
   // returns it verbatim (never pluralize it → no "Deviceses").
-  const { labels } = useUiConfigContext();
+  const { labels, ready: configReady } = useUiConfigContext();
   const tileTitle = (tile: TileDef): string => {
     if (!tile.labelKey) return tile.title;
     const skin = labels[tile.labelKey];
@@ -236,6 +237,12 @@ export function Dashboard() {
   }, [effectiveOrder]);
 
   const hidden = useMemo(() => new Set(effectiveHidden), [effectiveHidden]);
+  // Wait for the resolved UI config before rendering the grid *unless* the
+  // operator has a device-local layout override (which we can apply
+  // immediately). Otherwise a tenant/role `cards.dashboard.hidden` default
+  // would flash every card visible on first load (worst right after a cold
+  // login) before the config arrives and hides them.
+  const cardsReady = configReady || hiddenPresent || orderPresent;
   const visibleTiles = customizing
     ? orderedTiles
     : orderedTiles.filter((t) => !hidden.has(t.id));
@@ -314,7 +321,12 @@ export function Dashboard() {
       )}
 
       <Row gutter={[16, 16]} align="stretch">
-        {visibleTiles.map((tile, idx) => {
+        {!cardsReady ? (
+          <Col span={24} style={{ textAlign: 'center', padding: 48 }}>
+            <Spin data-testid="dashboard-cards-loading" />
+          </Col>
+        ) : (
+          visibleTiles.map((tile, idx) => {
           const isHidden = hidden.has(tile.id);
           const tileValue = data ? tile.value(data) : 0;
           const tileSuffix = data && tile.suffix ? tile.suffix(data) : undefined;
@@ -374,7 +386,8 @@ export function Dashboard() {
               )}
             </Col>
           );
-        })}
+          })
+        )}
       </Row>
 
       {data && (

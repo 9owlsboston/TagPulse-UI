@@ -82,6 +82,15 @@ interface UiConfigContextValue {
   tables: Record<string, ResolvedTableConfig>;
   /** Persona theme variant + card style. */
   theme: ResolvedThemeConfig;
+  /**
+   * `false` while the resolved config is still being fetched for the first
+   * time, `true` once it has settled (or when there is no provider). Lets a
+   * consumer tell "config still loading" (so a `hidden`/`order` leaf may yet
+   * arrive) apart from "loaded with nothing hidden" — e.g. the Dashboard waits
+   * on this before applying `cards.dashboard.hidden`, so configured-hidden
+   * cards never flash visible right after login.
+   */
+  ready: boolean;
 }
 
 const EMPTY_NAV: ResolvedNavConfig = { hidden: [], order: [], placement: {} };
@@ -94,12 +103,15 @@ const DEFAULT_CONTEXT: UiConfigContextValue = {
   columns: {},
   tables: {},
   theme: DEFAULT_THEME,
+  // No provider — treat as "ready" so unskinned components / tests render
+  // immediately rather than waiting on a config that will never load.
+  ready: true,
 };
 
 const UiConfigContext = createContext<UiConfigContextValue>(DEFAULT_CONTEXT);
 
 export function UiConfigProvider({ children }: { children: ReactNode }) {
-  const { data } = useUiConfig();
+  const { data, isLoading } = useUiConfig();
 
   const value = useMemo<UiConfigContextValue>(() => {
     const cards: Record<string, ResolvedCardGroup> = {};
@@ -135,8 +147,9 @@ export function UiConfigProvider({ children }: { children: ReactNode }) {
         variant: data?.theme?.variant ?? DEFAULT_THEME.variant,
         cardStyle: data?.theme?.cardStyle ?? DEFAULT_THEME.cardStyle,
       },
+      ready: !isLoading,
     };
-  }, [data]);
+  }, [data, isLoading]);
 
   // Reflect the resolved theme leaf onto <html> as data attributes — the same
   // seam ThemeProvider uses for `data-theme`. ADR-029 token rules (and any

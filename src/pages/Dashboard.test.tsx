@@ -3,7 +3,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { Dashboard } from '@/pages/Dashboard';
+import { UiConfigProvider } from '@/lib/uiConfig';
 import type { DashboardSummary } from '@/types';
+
+// For the config-gate test: a config query that never resolves keeps the
+// resolved UI config in its loading state (`ready === false`). Existing tests
+// don't render <UiConfigProvider>, so they use the default context
+// (`ready: true`) and never hit this mock.
+vi.mock('@/api/generated/services/UiConfigService', () => ({
+  UiConfigService: { getUiConfigUiConfigGet: vi.fn(() => new Promise(() => {})) },
+}));
 
 // Stub recharts — see KpiTile.test.tsx for context (ResizeObserver missing
 // in jsdom; we only assert on chip presence here, not the SVG line). Sprint
@@ -58,6 +67,23 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('Dashboard (Sprint 54.4)', () => {
   beforeEach(() => {
     window.localStorage.clear();
+  });
+
+  it('gates the cards behind the UI config so they do not flash before it loads', () => {
+    // No device-local override → the grid relies on the (still-loading) server
+    // config, so it must show a spinner rather than every card.
+    window.localStorage.clear();
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <UiConfigProvider>
+            <Dashboard />
+          </UiConfigProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByTestId('dashboard-cards-loading')).toBeInTheDocument();
   });
 
   it('renders the page title and an updated-at footer driven by generated_at', () => {
