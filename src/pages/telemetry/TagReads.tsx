@@ -10,6 +10,7 @@ import Segmented from 'antd/es/segmented';
 import Checkbox from 'antd/es/checkbox';
 import { TableOutlined, LineChartOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { Link } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
 import { useTagReads } from '@/hooks/useTagReads';
@@ -97,6 +98,7 @@ export function TagReads() {
   const tableConfig = useTableConfig(TAG_READS_PAGE);
   const colVis = useColumnVisibility(TAG_READS_PAGE);
   const deviceLabel = useLabel('device');
+  const assetLabel = useLabel('asset');
   const devicesLabel = useLabel('device', { plural: true });
   const tagReadsLabel = useLabel('tagRead', { plural: true });
 
@@ -193,6 +195,15 @@ export function TagReads() {
           onSearch: setTagQ,
           placeholder: 'e.g. 3034*',
         }),
+      },
+      {
+        // Sprint 74 — the asset currently bound to the read's tag (resolved
+        // server-side; ADR-033 dual-form match). Links to the asset detail.
+        title: assetLabel,
+        key: 'asset',
+        dataIndex: 'asset',
+        render: (a: TagReadResponse['asset']) =>
+          a ? <Link to={`/assets/${a.id}`}>{a.name}</Link> : '—',
       },
       {
         title: 'EPC',
@@ -295,7 +306,7 @@ export function TagReads() {
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
     ],
-    [flashing, deviceLabel, deviceById, tagQ],
+    [flashing, deviceLabel, assetLabel, deviceById, tagQ],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:

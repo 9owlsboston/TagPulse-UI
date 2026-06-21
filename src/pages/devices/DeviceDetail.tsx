@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Descriptions from 'antd/es/descriptions';
+import Table from 'antd/es/table';
+import type { ColumnsType } from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Tabs from 'antd/es/tabs';
 import Button from 'antd/es/button';
@@ -15,10 +17,10 @@ import Select from 'antd/es/select';
 import App from 'antd/es/app';
 import { CopyOutlined, EditOutlined, ReloadOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useDevice, useDecommissionDevice, useRotateDeviceToken, useAttachDeviceCert, useUpdateDevice } from '@/hooks/useDevices';
+import type { TagReadResponse } from '@/api/generated/models/TagReadResponse';
 import { useSites } from '@/hooks/useAssets';
 import { useLabel } from '@/lib/uiConfig';
-import { RoleGuard } from '@/components/RoleGuard';
-import { useRecentReads } from '@/hooks/useTagReads';
+import { RoleGuard } from '@/components/RoleGuard';import { useRecentReads } from '@/hooks/useTagReads';
 import { useDeviceHealth } from '@/hooks/useDeviceHealth';
 import { useZones } from '@/hooks/useAssets';
 import { DeviceTelemetryTab } from '@/pages/devices/DeviceTelemetryTab';
@@ -42,6 +44,7 @@ export function DeviceDetail() {
   const rotateToken = useRotateDeviceToken();
   const attachCert = useAttachDeviceCert();
   const updateDevice = useUpdateDevice();
+  const assetLabel = useLabel('asset');
   const { data: sites } = useSites();
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [certModalOpen, setCertModalOpen] = useState(false);
@@ -146,6 +149,37 @@ export function DeviceDetail() {
 
   const lastRead = recentReads?.[0];
 
+  // Sprint 74 — recent reads with the bound asset resolved server-side.
+  const recentReadColumns: ColumnsType<TagReadResponse> = [
+    {
+      title: 'Time',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (t: string) => new Date(t).toLocaleString(),
+    },
+    { title: 'Tag', key: 'tag', render: (_: unknown, r: TagReadResponse) => r.epc ?? r.tag_id },
+    {
+      title: assetLabel,
+      key: 'asset',
+      render: (_: unknown, r: TagReadResponse) => {
+        const a = r.asset;
+        return a ? <a onClick={() => navigate(`/assets/${a.id}`)}>{a.name}</a> : '—';
+      },
+    },
+    {
+      title: 'Antenna',
+      dataIndex: 'reader_antenna',
+      key: 'antenna',
+      render: (v: number | null | undefined) => v ?? '—',
+    },
+    {
+      title: 'Signal',
+      dataIndex: 'signal_strength',
+      key: 'signal',
+      render: (v: number | null | undefined) => v ?? '—',
+    },
+  ];
+
   const coveredZones = (zones ?? []).filter((z) =>
     (z.fixed_reader_ids ?? []).includes(device.id),
   );
@@ -211,6 +245,14 @@ export function DeviceDetail() {
           ) : (
             <Typography.Text type="secondary">No reads yet</Typography.Text>
           )}
+          <Title level={5} style={{ marginTop: 24 }}>Recent Reads</Title>
+          <Table<TagReadResponse>
+            size="small"
+            rowKey="id"
+            dataSource={recentReads ?? []}
+            pagination={{ pageSize: 10, hideOnSinglePage: true }}
+            columns={recentReadColumns}
+          />
           <Title level={5} style={{ marginTop: 24 }}>Covers Zones</Title>
           {coveredZones.length > 0 ? (
             <Space size={[4, 4]} wrap>

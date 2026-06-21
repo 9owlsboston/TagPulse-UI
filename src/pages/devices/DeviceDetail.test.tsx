@@ -27,8 +27,10 @@ vi.mock('@/hooks/useDevices', () => ({
   useUpdateDevice: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+const { mockReads } = vi.hoisted(() => ({ mockReads: { current: [] as unknown[] } }));
+
 vi.mock('@/hooks/useTagReads', () => ({
-  useRecentReads: () => ({ data: [], isLoading: false }),
+  useRecentReads: () => ({ data: mockReads.current, isLoading: false }),
 }));
 
 vi.mock('@/hooks/useDeviceHealth', () => ({
@@ -101,5 +103,26 @@ describe('DeviceDetail', () => {
     render(<DeviceDetail />, { wrapper });
     fireEvent.click(screen.getByText('Security'));
     expect(screen.getByText('Rotate token')).toBeInTheDocument();
+  });
+
+  it('renders recent reads with a bound-asset link (Sprint 74)', () => {
+    mockReads.current = [
+      {
+        id: 'r1',
+        device_id: '1',
+        tag_id: 'TAG-1',
+        timestamp: '2026-04-25T10:00:00Z',
+        signal_strength: -50,
+        sensor_data: null,
+        created_at: '2026-04-25T10:00:00Z',
+        epc: 'urn:epc:sim:0006',
+        reader_antenna: 0,
+        asset: { id: 'a1', name: 'Pallet-7' },
+      },
+    ];
+    render(<DeviceDetail />, { wrapper });
+    expect(screen.getByText('Recent Reads')).toBeInTheDocument();
+    expect(screen.getByText('Pallet-7')).toBeInTheDocument();
+    mockReads.current = [];
   });
 });

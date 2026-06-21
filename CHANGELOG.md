@@ -6,6 +6,7 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ### Added
 
+- **Sprint 74 — bound-asset link on tag reads.** Closes the reader → read → asset gap: you can now jump from a reader's reads to the asset bound to the tag. [TagReads.tsx](src/pages/telemetry/TagReads.tsx) gains an **Asset** column linking to `/assets/{id}` (or `—` when unbound). [DeviceDetail.tsx](src/pages/devices/DeviceDetail.tsx) replaces the single "Last Read" with a **Recent Reads** table (Time / Tag / Asset / Antenna / Signal), the Asset column linking to the bound asset. Backed by the new read-time `asset` ref on tag-read responses (backend #149); regenerated client picks up `AssetRef`. 1 new test; `npm run check` clean (557).
 - **Sprint 73 — Tenant Settings → "Consolidation" tab (configure fusion strategy from the App).** The per-tenant asset-state consolidation config (Sprints 71–72) was previously only settable via an ops script; it's now a first-class admin screen. New tab in [TenantSettings.tsx](src/pages/admin/TenantSettings.tsx): an **Enable consolidation** toggle (off → clears the config / opts the tenant out), the **decay half-life τ** + recompute cadence + look-back + RSSI floor + min-reads knobs, and a **Cold-chain SLA** card (enable + temp/humidity envelope + excursion tolerance) that powers the Journey chart band and leg SLA badges. Wired to `PATCH /tenant/config` (regenerated client picks up the typed `fusion_strategy`/`SlaConfig`); set vs clear uses explicit `null`. Admin-only. 2 new tests; `npm run check` clean (556).
 
 ### Fixed

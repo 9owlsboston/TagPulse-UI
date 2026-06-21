@@ -2,11 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AssetRef } from './AssetRef';
 import type { LocationDescriptor } from './LocationDescriptor';
 /**
  * Tag read event returned from the API.
  */
 export type TagReadResponse = {
+    asset?: (AssetRef | null);
     created_at: string;
     device_id: string;
     epc?: (string | null);
