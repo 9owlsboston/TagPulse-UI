@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { AssetLegResponse } from './AssetLegResponse';
+import type { SlaEnvelope } from './SlaEnvelope';
 /**
  * One fused asset-state snapshot (Sprint 71, ADR-034).
  *
@@ -23,6 +24,7 @@ export type AssetStateResponse = {
     open_leg?: (AssetLegResponse | null);
     sample_count?: number;
     site_id?: (string | null);
+    sla?: (SlaEnvelope | null);
     tag_count?: number;
     temperature_c?: (number | null);
     time: string;

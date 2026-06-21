@@ -92,6 +92,7 @@ export type { RuleUpdate } from './models/RuleUpdate';
 export { SiteCreate } from './models/SiteCreate';
 export { SiteResponse } from './models/SiteResponse';
 export type { SiteUpdate } from './models/SiteUpdate';
+export type { SlaEnvelope } from './models/SlaEnvelope';
 export { SortSpec } from './models/SortSpec';
 export type { SparklinePoint } from './models/SparklinePoint';
 export { SparklineSeries } from './models/SparklineSeries';
