@@ -10,6 +10,7 @@ import { useUsers, useUpdateUser } from '@/hooks/useUsers';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
 import { RoleGuard } from '@/components/RoleGuard';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { UserResponse } from '@/types';
 
 export function UserList() {
@@ -32,11 +33,12 @@ export function UserList() {
   };
 
   const columns: ColumnsType<UserResponse> = [
-    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Email', dataIndex: 'email' },
+    { title: 'Name', dataIndex: 'name', ...excelColumn<UserResponse>({ rows: data ?? [], accessor: (r) => r.name, kind: 'text' }) },
+    { title: 'Email', dataIndex: 'email', ...excelColumn<UserResponse>({ rows: data ?? [], accessor: (r) => r.email, kind: 'text' }) },
     {
       title: 'Role',
       dataIndex: 'role',
+      ...excelColumn<UserResponse>({ rows: data ?? [], accessor: (r) => r.role, kind: 'enum' }),
       render: (role: string) => (
         <Tag color={role === 'admin' ? 'red' : role === 'editor' ? 'blue' : 'default'}>{role}</Tag>
       ),
@@ -44,6 +46,7 @@ export function UserList() {
     {
       title: 'Status',
       dataIndex: 'status',
+      ...excelColumn<UserResponse>({ rows: data ?? [], accessor: (r) => r.status, kind: 'enum' }),
       render: (status: string) => (
         <Tag color={status === 'active' ? 'green' : 'default'}>{status}</Tag>
       ),
@@ -56,6 +59,7 @@ export function UserList() {
     {
       title: 'Created',
       dataIndex: 'created_at',
+      ...excelColumn<UserResponse>({ rows: data ?? [], accessor: (r) => r.created_at, kind: 'date' }),
       render: (v: string) => new Date(v).toLocaleDateString(),
     },
     {
