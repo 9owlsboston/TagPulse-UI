@@ -9,6 +9,7 @@ import Modal from 'antd/es/modal';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Table from 'antd/es/table';
+import type { TableProps } from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
@@ -79,6 +80,11 @@ const STATUS_FILTERS = [
   { text: 'Lost', value: 'lost' },
 ];
 
+// Sprint 77 — columns the backend can sort server-side (the whitelist in
+// `ASSET_SORT_COLUMNS`). Derived columns (Last seen, Category-by-name) are not
+// here and fall back to AntD's client comparator over the loaded window.
+const SERVER_SORT_FIELDS = new Set(['name', 'status', 'created_at']);
+
 const SOURCE_FILTERS = [
   { text: 'RFID', value: 'rfid' },
   { text: 'GPS', value: 'gps' },
@@ -123,11 +129,18 @@ export function AssetList() {
   const [labelFilter, setLabelFilter] = useState<LabelFilter>({});
   // Sprint 42 — side filter panel visibility.
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Sprint 77 — server-side sort (whole-dataset, not page-local). Only the
+  // real `assets` columns are server-sortable; derived columns (Last seen,
+  // Category-by-name) keep their client comparator.
+  const [sortKey, setSortKey] = useState<string | undefined>();
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { data, isLoading } = useAssets({
     q: search || undefined,
     status: status || undefined,
     category_ids: categoryIds.length > 0 ? categoryIds : undefined,
     labels: labelFilter,
+    sort: sortKey,
+    order: sortOrder,
   });
   const { data: locations } = useAssetsCurrentLocations();
   const { data: tenant } = useTenantConfig();
@@ -329,7 +342,7 @@ export function AssetList() {
   // device-local "Columns" chooser and the table share one server-visible set.
   const assetColumns = useMemo<AssetColumn[]>(
     () => [
-      { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name), ...columnSearchFilter<AssetResponse>({ mode: 'server', value: search || undefined, onSearch: (p) => setSearch(p ?? ''), placeholder: 'name / ref / tag' }) },
+      { title: 'Name', dataIndex: 'name', sorter: true, ...columnSearchFilter<AssetResponse>({ mode: 'server', value: search || undefined, onSearch: (p) => setSearch(p ?? ''), placeholder: 'name / ref / tag' }) },
       // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
       // the Category column below is the sole classifier surface.
       // Sprint 37 row 3.3a — Category column. Renders the category
@@ -369,6 +382,7 @@ export function AssetList() {
       {
         title: 'Status',
         dataIndex: 'status',
+        sorter: true,
         filters: STATUS_FILTERS,
         onFilter: (value, record) => record.status === value,
         render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag>,
@@ -433,6 +447,7 @@ export function AssetList() {
         title: 'Registered',
         key: 'created_at',
         dataIndex: 'created_at',
+        sorter: true,
         render: (v: string) => (
           <Tooltip title={new Date(v).toLocaleString()}>{formatRelative(v)}</Tooltip>
         ),
@@ -463,6 +478,18 @@ export function AssetList() {
   );
 
   // Server-resolved visible columns (tenant/role config + Advanced toggle).
+  const handleTableChange: TableProps<AssetResponse>['onChange'] = (_pagination, _filters, sorter) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    const field = (s?.field ?? s?.columnKey) as string | undefined;
+    if (s?.order && field && SERVER_SORT_FIELDS.has(field)) {
+      setSortKey(field);
+      setSortOrder(s.order === 'ascend' ? 'asc' : 'desc');
+    } else {
+      setSortKey(undefined);
+      setSortOrder('desc');
+    }
+  };
+
   const serverVisibleColumns = useMemo(
     () =>
       applyColumnConfig<AssetColumn>(assetColumns, columnConfig, {
@@ -629,6 +656,7 @@ export function AssetList() {
           }
           pagination={{ pageSize: 25, showSizeChanger: false }}
           style={{ cursor: 'pointer' }}
+          onChange={handleTableChange}
           locale={{
             emptyText:
               search ||
