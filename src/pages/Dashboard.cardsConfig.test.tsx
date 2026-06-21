@@ -51,8 +51,10 @@ vi.mock('@/lib/uiConfig', () => ({
   useCardGroup: () => cardGroup,
   // Sprint 60 label skin — the Dashboard resolves tile titles through the
   // label map; this suite only exercises card hide/order, so a default
-  // (empty) label map keeps titles at their static values.
-  useUiConfigContext: () => ({ labels: {} }),
+  // (empty) label map keeps titles at their static values. `ready: true`
+  // marks the resolved config as loaded so the Dashboard renders the grid
+  // (rather than gating on a still-loading config).
+  useUiConfigContext: () => ({ labels: {}, ready: true }),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {
