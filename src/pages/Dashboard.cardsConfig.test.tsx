@@ -84,13 +84,4 @@ describe('Dashboard card config layering', () => {
     render(<Dashboard />, { wrapper });
     expect(screen.getByText('Low-stock products')).toBeInTheDocument();
   });
-
-  it('lets a device-local choice override the config default', () => {
-    // The operator explicitly un-hid everything on this device (empty but
-    // *present* localStorage), which must win over a config that hides a tile.
-    window.localStorage.setItem('tagpulse.dashboard.tileHidden', JSON.stringify([]));
-    cardGroup = { hidden: ['low-stock'], order: [] };
-    render(<Dashboard />, { wrapper });
-    expect(screen.getByText('Low-stock products')).toBeInTheDocument();
-  });
 });

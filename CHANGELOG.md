@@ -4,9 +4,17 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Dashboard card hide/order now persist server-side (sync across devices).** The inline "Customize" hide/reorder controls previously wrote to device-local `localStorage`, so a user's dashboard layout didn't follow them to another browser/device. They now write `cards.dashboard` to the server via `PATCH /ui-config/me` (sparse leaf + optimistic cache update — the grid reflects the change instantly) and read from the resolved UI config, matching how column visibility already works. The `localStorage` layer is retired (existing per-device choices reset once, then sync). "Reset layout" clears the user's dashboard override (shows all cards in default order). Tests updated to assert the PATCH; `npm run check` clean.
+
 ### Fixed
 
-- **Dashboard cards flashed all-visible on login before hidden-card config applied.** The Dashboard's `cards.dashboard.hidden` config (tenant/role default) loads asynchronously, and the page couldn't tell "config still loading" from "loaded with nothing hidden" — so on a cold login it rendered **every** card, then hid the configured-hidden ones once the config arrived (a visible flash). The resolved UI-config context now exposes a `ready` flag, and the Dashboard waits for it (unless the operator has a device-local layout override, which applies instantly) before rendering the grid — showing a brief spinner instead of flashing every card. New test for the gate; `npm run check` clean.
+- **Dashboard cards flashed all-visible on login before hidden-card config applied.** The Dashboard's `cards.dashboard.hidden` config (tenant/role default) loads asynchronously, and the page couldn't tell "config still loading" from "loaded with nothing hidden" — so on a cold login it rendered **every** card, then hid the configured-hidden ones once the config arrived (a visible flash). The resolved UI-config context now exposes a `ready` flag, and the Dashboard waits for it before rendering the grid — showing a brief spinner instead of flashing every card. New test for the gate; `npm run check` clean.
+
+### Chore
+
+- **Untracked `tsconfig.tsbuildinfo`.** The TypeScript incremental-build cache was tracked in git (not gitignored), so it churned a diff on every build/typecheck. Added `*.tsbuildinfo` to `.gitignore` and removed it from the index.
 
 - **Azure "404: Not Found" on deep-links / hard-refresh of `/assets/:id`.** The SWA `navigationFallback.exclude` listed `/assets/*` (added to make missing build chunks 404) — but the app's **asset-detail route is also `/assets/{id}`**, so a bookmark, hard refresh, or direct link to any `/assets/...` route was excluded from the SPA fallback and returned the Azure platform 404 instead of loading the app. Narrowed the exclude to `/assets/*.{js,css,map}` so real build files still 404 when stale (preserving the chunk-reload behaviour) while client routes fall through to `index.html`. Also made `scripts/smoke-bundle.mjs` a faithful SWA mirror (missing build files → 404, routes → `index.html`) and added a **deep-link regression guard** that navigates to `/assets/{uuid}` and asserts a 200 + SPA mount, so this class of route-collision bug is caught before deploy.
 

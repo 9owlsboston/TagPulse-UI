@@ -25,6 +25,7 @@ import { KpiTile } from '@/components/KpiTile';
 import { useDashboardSummary } from '@/hooks/useDashboardSummary';
 import { useDashboardSparklines } from '@/hooks/useDashboardSparklines';
 import { useCardGroup, useUiConfigContext } from '@/lib/uiConfig';
+import { usePatchMyUiConfig } from '@/hooks/useUiConfig';
 import { pluralizeLabel, type LabelKey } from '@/lib/uiLabels';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import type { DashboardSummary } from '@/types';
@@ -42,11 +43,10 @@ import type { DashboardSummary } from '@/types';
  * - 9 tiles render in both themes (Devices, Open alerts, Reads/hr, Assets,
  *   Tags, Locations, Tag Transfers, Tag Reconciliation, Low-stock products).
  * - All click-throughs land on a list page pre-filtered to the tile's slice.
- * - Pin order persists across reload.
+ * - Hide / pin order persist **server-side** (`cards.dashboard` via
+ *   `PATCH /ui-config/me`), so a user's layout follows them across devices.
  */
 
-const ORDER_KEY = 'tagpulse.dashboard.tileOrder';
-const HIDDEN_KEY = 'tagpulse.dashboard.tileHidden';
 
 interface TileDef {
   id: string;
@@ -148,42 +148,6 @@ export const DASHBOARD_CARDS: { id: string; title: string }[] = TILES.map((t) =>
   title: t.title,
 }));
 
-function loadIds(key: string): string[] {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-/** True when the user has an explicit, device-local layout choice stored. */
-function hasStored(key: string): boolean {
-  try {
-    return localStorage.getItem(key) !== null;
-  } catch {
-    return false;
-  }
-}
-
-function saveIds(key: string, value: string[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* localStorage may be disabled / full — ignore, personalisation is best-effort */
-  }
-}
-
-function removeIds(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* best-effort */
-  }
-}
-
 export function Dashboard() {
   const { data, isLoading, error } = useDashboardSummary();
   // Sprint 57 Phase F — companion fetch for inline trend chips. Errors are
@@ -207,15 +171,16 @@ export function Dashboard() {
   // the *default* layer; the existing device-local localStorage personalisation
   // overrides it when the operator has made an explicit choice on this device.
   // "Reset layout" clears the local choice and reverts to the configured default.
+  // Card hide/order now persist server-side (`cards.dashboard`) so a user's
+  // layout syncs across devices; the resolved config is the single source of
+  // truth and `usePatchMyUiConfig` writes a sparse leaf with an optimistic
+  // cache update (so the grid reflects the change before the round-trip).
   const cardConfig = useCardGroup('dashboard');
-  const [orderState, setOrderState] = useState<string[]>(() => loadIds(ORDER_KEY));
-  const [hiddenState, setHiddenState] = useState<string[]>(() => loadIds(HIDDEN_KEY));
-  const [orderPresent, setOrderPresent] = useState<boolean>(() => hasStored(ORDER_KEY));
-  const [hiddenPresent, setHiddenPresent] = useState<boolean>(() => hasStored(HIDDEN_KEY));
+  const patchUiConfig = usePatchMyUiConfig();
   const [customizing, setCustomizing] = useState(false);
 
-  const effectiveOrder = orderPresent ? orderState : cardConfig.order;
-  const effectiveHidden = hiddenPresent ? hiddenState : cardConfig.hidden;
+  const effectiveOrder = cardConfig.order;
+  const effectiveHidden = cardConfig.hidden;
 
   // Merge effective order with canonical TILES so newly-shipped tiles auto-append
   // for users who already saved a layout (or whose tenant config omits one).
@@ -237,12 +202,10 @@ export function Dashboard() {
   }, [effectiveOrder]);
 
   const hidden = useMemo(() => new Set(effectiveHidden), [effectiveHidden]);
-  // Wait for the resolved UI config before rendering the grid *unless* the
-  // operator has a device-local layout override (which we can apply
-  // immediately). Otherwise a tenant/role `cards.dashboard.hidden` default
-  // would flash every card visible on first load (worst right after a cold
-  // login) before the config arrives and hides them.
-  const cardsReady = configReady || hiddenPresent || orderPresent;
+  // Wait for the resolved UI config (which carries the user's synced
+  // `cards.dashboard` layout) before rendering the grid, so configured-hidden
+  // cards never flash visible on first load (worst right after a cold login).
+  const cardsReady = configReady;
   const visibleTiles = customizing
     ? orderedTiles
     : orderedTiles.filter((t) => !hidden.has(t.id));
@@ -258,28 +221,21 @@ export function Dashboard() {
     if (a === undefined || b === undefined) return;
     next[idx] = b;
     next[swap] = a;
-    setOrderState(next);
-    setOrderPresent(true);
-    saveIds(ORDER_KEY, next);
+    patchUiConfig.mutate({ cards: { dashboard: { order: next } } });
   };
 
   const toggleHidden = (id: string): void => {
     const next = hidden.has(id)
       ? [...effectiveHidden].filter((x) => x !== id)
       : [...effectiveHidden, id];
-    setHiddenState(next);
-    setHiddenPresent(true);
-    saveIds(HIDDEN_KEY, next);
+    patchUiConfig.mutate({ cards: { dashboard: { hidden: next } } });
   };
 
   const resetLayout = (): void => {
-    // Revert to the configured (tenant/role) default, not "show everything".
-    setOrderState([]);
-    setHiddenState([]);
-    setOrderPresent(false);
-    setHiddenPresent(false);
-    removeIds(ORDER_KEY);
-    removeIds(HIDDEN_KEY);
+    // Clear this user's dashboard layout override — show every card in the
+    // default order. (No per-page cards DELETE endpoint exists, so we write an
+    // empty leaf rather than re-inheriting a tenant default.)
+    patchUiConfig.mutate({ cards: { dashboard: { hidden: [], order: [] } } });
   };
 
   return (
