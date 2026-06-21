@@ -43,6 +43,7 @@ import {
 import { FilterPanel } from '@/components/FilterPanel';
 import { EmptyState } from '@/components/EmptyState';
 import { columnSearchFilter } from '@/components/ColumnSearchFilter';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { LabelFilter } from '@/lib/labelFilter';
 import { isEmptyLabelFilter } from '@/lib/labelFilter';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
@@ -60,13 +61,6 @@ const { RangePicker } = DatePicker;
 const ASSETS_PAGE = 'assets';
 const DEFAULT_ADVANCED_COLUMNS = ['created_at'];
 type AssetColumn = ColumnsType<AssetResponse>[number];
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'retired', label: 'Retired' },
-  { value: 'lost', label: 'Lost' },
-];
 
 const STATUS_COLOR: Record<string, string> = {
   active: 'green',
@@ -109,10 +103,10 @@ export function AssetList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState(() => {
+  const [statuses, setStatuses] = useState<string[]>(() => {
     // Sprint 54.4 — dashboard "Active assets" tile deep-links with ?status=active.
     const s = searchParams.get('status') ?? '';
-    return ['active', 'retired', 'lost'].includes(s) ? s : '';
+    return ['active', 'retired', 'lost'].includes(s) ? [s] : [];
   });
   // Sprint 42 — list-page Category filter is now multi-select. The wire
   // shape is `?category_ids=A&category_ids=B` (FastAPI default for
@@ -136,7 +130,7 @@ export function AssetList() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { data, isLoading } = useAssets({
     q: search || undefined,
-    status: status || undefined,
+    statuses: statuses.length > 0 ? statuses : undefined,
     category_ids: categoryIds.length > 0 ? categoryIds : undefined,
     labels: labelFilter,
     sort: sortKey,
@@ -190,7 +184,7 @@ export function AssetList() {
   // between tiles without a full reload.
   useEffect(() => {
     const s = searchParams.get('status') ?? '';
-    if (['active', 'retired', 'lost', ''].includes(s)) setStatus(s);
+    if (['active', 'retired', 'lost', ''].includes(s)) setStatuses(s ? [s] : []);
   }, [searchParams]);
 
   const rows = useMemo(() => data ?? [], [data]);
@@ -377,14 +371,20 @@ export function AssetList() {
         title: 'External Ref',
         key: 'external_ref',
         dataIndex: 'external_ref',
+        ...excelColumn<AssetResponse>({ accessor: (r) => r.external_ref, kind: 'text' }),
         render: (v: string | null) => v ?? '—',
       },
       {
         title: 'Status',
         dataIndex: 'status',
         sorter: true,
+        // Sprint 77+ — server-side, whole-dataset status filter (drives the
+        // `statuses` query param via the table `onChange`); replaces the old
+        // page-local client `onFilter` and the now-removed toolbar status
+        // dropdown.
         filters: STATUS_FILTERS,
-        onFilter: (value, record) => record.status === value,
+        filterSearch: true,
+        filteredValue: statuses.length > 0 ? statuses : null,
         render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag>,
       },
       {
@@ -457,6 +457,12 @@ export function AssetList() {
             {
               title: 'Temperature',
               key: 'temperature',
+              ...excelColumn<AssetResponse>({
+                accessor: (row) =>
+                  (row.latest_telemetry ?? []).find((m) => m.metric_name === 'temperature_c')
+                    ?.metric_value,
+                kind: 'number',
+              }),
               render: (_: unknown, row: AssetResponse) => {
                 const t = (row.latest_telemetry ?? []).find(
                   (m) => m.metric_name === 'temperature_c',
@@ -471,14 +477,40 @@ export function AssetList() {
                 );
               },
             },
+            {
+              title: 'Humidity',
+              key: 'humidity',
+              ...excelColumn<AssetResponse>({
+                accessor: (row) =>
+                  (row.latest_telemetry ?? []).find((m) => m.metric_name === 'humidity_pct')
+                    ?.metric_value,
+                kind: 'number',
+              }),
+              render: (_: unknown, row: AssetResponse) => {
+                const h = (row.latest_telemetry ?? []).find(
+                  (m) => m.metric_name === 'humidity_pct',
+                );
+                if (!h) return <Typography.Text type="secondary">—</Typography.Text>;
+                return (
+                  <Tooltip title={`as of ${new Date(h.timestamp).toLocaleString()}`}>
+                    <span style={{ fontFamily: 'monospace' }}>
+                      {h.metric_value.toFixed(1)} {h.unit ?? '%'}
+                    </span>
+                  </Tooltip>
+                );
+              },
+            },
           ]
         : []),
     ],
-    [categoryById, locationByAssetId, flashing, showTemperature, search],
+    [categoryById, locationByAssetId, flashing, showTemperature, search, statuses],
   );
 
   // Server-resolved visible columns (tenant/role config + Advanced toggle).
-  const handleTableChange: TableProps<AssetResponse>['onChange'] = (_pagination, _filters, sorter) => {
+  const handleTableChange: TableProps<AssetResponse>['onChange'] = (_pagination, filters, sorter) => {
+    // Sprint 77+ — the Status column drives the server-side `statuses` filter.
+    const nextStatuses = (filters.status as (string | number)[] | null) ?? null;
+    setStatuses(nextStatuses && nextStatuses.length > 0 ? nextStatuses.map(String) : []);
     const s = Array.isArray(sorter) ? sorter[0] : sorter;
     const field = (s?.field ?? s?.columnKey) as string | undefined;
     if (s?.order && field && SERVER_SORT_FIELDS.has(field)) {
@@ -527,12 +559,6 @@ export function AssetList() {
         allowClear
         onSearch={setSearch}
         style={{ width: 360 }}
-      />
-      <Select
-        options={STATUS_OPTIONS}
-        value={status}
-        onChange={setStatus}
-        style={{ width: 160 }}
       />
       <Button
         icon={<FilterOutlined />}
@@ -660,7 +686,7 @@ export function AssetList() {
           locale={{
             emptyText:
               search ||
-              status ||
+              statuses.length > 0 ||
               categoryIds.length > 0 ||
               !isEmptyLabelFilter(labelFilter) ||
               lastSeenRange ||
