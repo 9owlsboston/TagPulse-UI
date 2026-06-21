@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Table from 'antd/es/table';
+import type { TableProps } from 'antd/es/table';
 import Select from 'antd/es/select';
 import Form from 'antd/es/form';
 import InputNumber from 'antd/es/input-number';
@@ -13,7 +14,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { TpLineChart, type TpSeries } from '@/components/charts/TpLineChart';
-import { useTagReads } from '@/hooks/useTagReads';
+import { useTagReads, useTagReadFacets } from '@/hooks/useTagReads';
 import { useDevices } from '@/hooks/useDevices';
 import { useColumnGroup, useLabel, useTableConfig } from '@/lib/uiConfig';
 import {
@@ -28,6 +29,7 @@ import { useColumnVisibility } from '@/lib/useColumnVisibility';
 import { ColumnChooser, type ColumnChooserItem } from '@/components/ColumnChooser';
 import { DeviceRef } from '@/components/DeviceRef';
 import { columnSearchFilter } from '@/components/ColumnSearchFilter';
+import { excelColumn } from '@/components/ExcelColumn';
 import { useSSE } from '@/lib/sse';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/chartExport';
@@ -85,6 +87,9 @@ export function TagReads() {
   const [tagId, setTagId] = useState<string | undefined>();
   const [tagQ, setTagQ] = useState<string | undefined>();
   const [epcQ, setEpcQ] = useState<string | undefined>();
+  const [assetQ, setAssetQ] = useState<string | undefined>();
+  const [epcSchemeSel, setEpcSchemeSel] = useState<string[] | undefined>();
+  const [antennaSel, setAntennaSel] = useState<string[] | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
   const [limit, setLimit] = useState(100);
@@ -112,9 +117,22 @@ export function TagReads() {
     [devices],
   );
   const { data: rawData, isLoading } = useTagReads(
-    { device_id: deviceId, tag_id: tagId, tag_q: tagQ, epc_q: epcQ, start, end, limit },
+    {
+      device_id: deviceId,
+      tag_id: tagId,
+      tag_q: tagQ,
+      epc_q: epcQ,
+      asset_q: assetQ,
+      epc_schemes: epcSchemeSel,
+      reader_antennas: antennaSel?.map(Number),
+      start,
+      end,
+      limit,
+    },
     { refetchInterval: REFETCH_INTERVAL },
   );
+  // Sprint 76 — distinct values for the Scheme/Antenna column checkbox facets.
+  const { data: facets } = useTagReadFacets();
 
   // Auto-refresh on new tag reads pushed via SSE (polling above is the
   // fallback when EventSource can't carry the JWT header).
@@ -203,6 +221,12 @@ export function TagReads() {
         title: assetLabel,
         key: 'asset',
         dataIndex: 'asset',
+        ...columnSearchFilter<TagReadResponse>({
+          mode: 'server',
+          value: assetQ,
+          onSearch: setAssetQ,
+          placeholder: 'asset name',
+        }),
         render: (a: TagReadResponse['asset']) =>
           a ? <Link to={`/assets/${a.id}`}>{a.name}</Link> : '—',
       },
@@ -222,6 +246,12 @@ export function TagReads() {
         title: 'Scheme',
         key: 'epc_scheme',
         dataIndex: 'epc_scheme',
+        ...excelColumn<TagReadResponse>({
+          mode: 'server',
+          kind: 'enum',
+          options: (facets?.epc_scheme ?? []).map((v) => ({ text: v, value: v })),
+          filteredValue: epcSchemeSel ?? null,
+        }),
         render: (v: string | null | undefined) => v ?? '—',
       },
       {
@@ -276,6 +306,12 @@ export function TagReads() {
         title: 'Antenna',
         key: 'reader_antenna',
         dataIndex: 'reader_antenna',
+        ...excelColumn<TagReadResponse>({
+          mode: 'server',
+          kind: 'enum',
+          options: (facets?.reader_antenna ?? []).map((v) => ({ text: v, value: v })),
+          filteredValue: antennaSel ?? null,
+        }),
         render: (v: number | null | undefined) => v ?? '—',
         sorter: (a, b) => (a.reader_antenna ?? -Infinity) - (b.reader_antenna ?? -Infinity),
       },
@@ -313,7 +349,7 @@ export function TagReads() {
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
     ],
-    [flashing, deviceLabel, assetLabel, deviceById, tagQ, epcQ],
+    [flashing, deviceLabel, assetLabel, deviceById, tagQ, epcQ, assetQ, epcSchemeSel, antennaSel, facets],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:
@@ -404,6 +440,19 @@ export function TagReads() {
       { header: 'location_source', accessor: (r) => r.location_source },
     ];
     downloadCsv('tag-reads.csv', toCsv(data, columns));
+  };
+
+  // Sprint 76 — server-side Scheme/Antenna checkbox facets: capture the
+  // selected filter values and push them to the query (epc_schemes /
+  // reader_antennas params). Other columns' client filters are unaffected.
+  const handleTableChange: NonNullable<TableProps<TagReadResponse>['onChange']> = (
+    _pagination,
+    tableFilters,
+  ) => {
+    const scheme = tableFilters.epc_scheme as (string | number)[] | null;
+    const antenna = tableFilters.reader_antenna as (string | number)[] | null;
+    setEpcSchemeSel(scheme && scheme.length ? scheme.map(String) : undefined);
+    setAntennaSel(antenna && antenna.length ? antenna.map(String) : undefined);
   };
 
   return (
@@ -525,6 +574,7 @@ export function TagReads() {
             virtual
             scroll={{ y: VIRTUAL_SCROLL_HEIGHT, x: 1200 }}
             pagination={false}
+            onChange={handleTableChange}
             data-testid="tag-reads-table-virtual"
           />
         ) : (
@@ -542,6 +592,7 @@ export function TagReads() {
               showSizeChanger: true,
               pageSizeOptions: [20, 50, 100],
             }}
+            onChange={handleTableChange}
             data-testid="tag-reads-table-paginated"
           />
         )

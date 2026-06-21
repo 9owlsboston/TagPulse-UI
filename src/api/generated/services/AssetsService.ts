@@ -28,6 +28,9 @@ export class AssetsService {
      * @param categoryId Sprint 37 — server-side filter on the ``assets.category_id`` FK (ADR 019). Combines with ``status``/``q``/``labels[…]`` via AND. Kept for backwards compatibility; prefer ``?category_ids=`` (Sprint 42 — multi-select). When both are supplied the union is used (OR across categories).
      * @param categoryIds Sprint 42 — server-side multi-category filter on ``assets.category_id``. Pass multiple values as repeated query params (``?category_ids=A&category_ids=B``) for OR semantics across categories. Combines with ``status``/``q``/``labels[…]`` via AND. Supersedes singular ``?category_id=``; the union of both is used when supplied together.
      * @param q
+     * @param statuses Sprint 76 — multi-select status filter (the column checkbox list emits repeated ``?statuses=``). Combines with the rest via AND.
+     * @param sort Sprint 76 — server-side sort column: ``name``, ``created_at`` (default), or ``status``. Unknown columns are rejected.
+     * @param order
      * @param limit
      * @param offset
      * @returns AssetResponse Successful Response
@@ -38,6 +41,9 @@ export class AssetsService {
         categoryId?: (string | null),
         categoryIds?: (Array<string> | null),
         q?: (string | null),
+        statuses?: (Array<string> | null),
+        sort?: (string | null),
+        order: string = 'desc',
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<AssetResponse>> {
@@ -49,6 +55,9 @@ export class AssetsService {
                 'category_id': categoryId,
                 'category_ids': categoryIds,
                 'q': q,
+                'statuses': statuses,
+                'sort': sort,
+                'order': order,
                 'limit': limit,
                 'offset': offset,
             },

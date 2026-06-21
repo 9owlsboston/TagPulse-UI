@@ -3,13 +3,21 @@ import { tagReadsApi } from '@/api/client';
 import { REFETCH_INTERVAL } from '@/lib/constants';
 
 export function useTagReads(
-  params?: { device_id?: string; tag_id?: string; tag_q?: string; epc_q?: string; start?: string; end?: string; limit?: number; offset?: number },
+  params?: { device_id?: string; tag_id?: string; tag_q?: string; epc_q?: string; asset_q?: string; epc_schemes?: string[]; reader_antennas?: number[]; sort?: string; order?: string; start?: string; end?: string; limit?: number; offset?: number },
   options?: { refetchInterval?: number },
 ) {
   return useQuery({
     queryKey: ['tag-reads', params],
     queryFn: () => tagReadsApi.list(params),
     refetchInterval: options?.refetchInterval,
+  });
+}
+
+export function useTagReadFacets() {
+  return useQuery({
+    queryKey: ['tag-reads', 'facets'],
+    queryFn: () => tagReadsApi.facets(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

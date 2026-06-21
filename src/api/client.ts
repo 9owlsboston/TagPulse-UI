@@ -85,12 +85,18 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function qs(params: Record<string, string | number | boolean | undefined>): string {
-  const entries = Object.entries(params).filter(
-    (e): e is [string, string | number | boolean] => e[1] !== undefined,
-  );
-  if (entries.length === 0) return '';
-  return '?' + new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
+function qs(params: Record<string, string | number | boolean | string[] | number[] | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined) continue;
+    if (Array.isArray(v)) {
+      for (const item of v) sp.append(k, String(item));
+    } else {
+      sp.append(k, String(v));
+    }
+  }
+  const s = sp.toString();
+  return s ? '?' + s : '';
 }
 
 // ── Devices ──
@@ -141,8 +147,9 @@ export const devicesApi = {
 // ── Tag Reads ──
 
 export const tagReadsApi = {
-  list: (params?: { device_id?: string; tag_id?: string; tag_q?: string; epc_q?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
+  list: (params?: { device_id?: string; tag_id?: string; tag_q?: string; epc_q?: string; asset_q?: string; epc_schemes?: string[]; reader_antennas?: number[]; sort?: string; order?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
     request<TagReadResponse[]>(`/tag-reads${qs(params ?? {})}`),
+  facets: () => request<{ epc_scheme: string[]; reader_antenna: string[] }>(`/tag-reads/facets`),
   readsPerHour: (params?: { device_id?: string; start?: string; end?: string; bucket_minutes?: number }) =>
     request<ReadsPerHour[]>(`/tag-reads/reads-per-hour${qs(params ?? {})}`),
   uniqueTags: (params?: { device_id?: string; start?: string; end?: string; window_minutes?: number }) =>
