@@ -279,6 +279,7 @@ export function LabelManagement() {
               dataIndex: 'entity_type',
               width: 160,
               filters: ENTITY_TYPES.map((e) => ({ text: e.label, value: e.value })),
+              filterSearch: true,
               onFilter: (value, row) => row.entity_type === value,
               render: (v: string) => ENTITY_TYPE_LABELS[v] ?? v,
             },

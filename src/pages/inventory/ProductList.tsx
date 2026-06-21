@@ -13,6 +13,7 @@ import { useProducts, useCreateProduct } from '@/hooks/useInventory';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { ProductResponse } from '@/api/generated/models/ProductResponse';
 import type { ProductCreate } from '@/api/generated/models/ProductCreate';
 
@@ -93,11 +94,11 @@ export function ProductList() {
             ),
           }}
           columns={[
-            { title: 'SKU', dataIndex: 'sku', sorter: (a, b) => a.sku.localeCompare(b.sku) },
-            { title: 'Name', dataIndex: 'name' },
-            { title: 'GTIN', dataIndex: 'gtin', render: (v: string | null) => v ?? <Tag>—</Tag> },
-            { title: 'Category', dataIndex: 'category', render: (v: string | null) => v ?? '—' },
-            { title: 'Unit', dataIndex: 'unit', width: 100 },
+            { title: 'SKU', dataIndex: 'sku', ...excelColumn<ProductResponse>({ rows, accessor: (r) => r.sku, kind: 'text' }) },
+            { title: 'Name', dataIndex: 'name', ...excelColumn<ProductResponse>({ rows, accessor: (r) => r.name, kind: 'text' }) },
+            { title: 'GTIN', dataIndex: 'gtin', ...excelColumn<ProductResponse>({ rows, accessor: (r) => r.gtin, kind: 'text' }), render: (v: string | null) => v ?? <Tag>—</Tag> },
+            { title: 'Category', dataIndex: 'category', ...excelColumn<ProductResponse>({ rows, accessor: (r) => r.category, kind: 'enum' }), render: (v: string | null) => v ?? '—' },
+            { title: 'Unit', dataIndex: 'unit', width: 100, ...excelColumn<ProductResponse>({ rows, accessor: (r) => r.unit, kind: 'enum' }) },
           ]}
         />
       </ListPageShell>

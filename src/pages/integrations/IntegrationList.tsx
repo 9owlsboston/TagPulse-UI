@@ -21,6 +21,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { IntegrationResponse, IntegrationCreate } from '@/types';
 
 const { Text } = Typography;
@@ -92,10 +93,11 @@ export function IntegrationList() {
   };
 
   const columns: ColumnsType<IntegrationResponse> = [
-    { title: 'Name', dataIndex: 'name' },
+    { title: 'Name', dataIndex: 'name', ...excelColumn<IntegrationResponse>({ rows: data ?? [], accessor: (r) => r.name, kind: 'text' }) },
     {
       title: 'Type',
       dataIndex: 'type',
+      ...excelColumn<IntegrationResponse>({ rows: data ?? [], accessor: (r) => r.type, kind: 'enum' }),
       render: (v: string) => <Tag>{v}</Tag>,
     },
     {
@@ -106,6 +108,7 @@ export function IntegrationList() {
     {
       title: 'Health',
       dataIndex: 'health_status',
+      ...excelColumn<IntegrationResponse>({ rows: data ?? [], accessor: (r) => r.health_status, kind: 'enum' }),
       render: (v: string) => (
         <Tag color={v === 'healthy' ? 'green' : v === 'degraded' ? 'orange' : 'red'}>{v}</Tag>
       ),
@@ -113,6 +116,14 @@ export function IntegrationList() {
     {
       title: 'Enabled',
       dataIndex: 'enabled',
+      ...excelColumn<IntegrationResponse>({
+        accessor: (r) => (r.enabled ? 'Enabled' : 'Disabled'),
+        kind: 'enum',
+        options: [
+          { text: 'Enabled', value: 'Enabled' },
+          { text: 'Disabled', value: 'Disabled' },
+        ],
+      }),
       render: (enabled: boolean, record) => (
         <Switch checked={enabled} onChange={(v) => handleToggle(record.id, v)} disabled={!canEdit} />
       ),
@@ -120,6 +131,7 @@ export function IntegrationList() {
     {
       title: 'Last Triggered',
       dataIndex: 'last_triggered',
+      ...excelColumn<IntegrationResponse>({ rows: data ?? [], accessor: (r) => r.last_triggered, kind: 'date' }),
       render: (v: string | null) => (v ? new Date(v).toLocaleString() : '—'),
     },
     {

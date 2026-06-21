@@ -15,6 +15,7 @@ import dayjs from 'dayjs';
 import { useAllLots, useProducts } from '@/hooks/useInventory';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { LotResponse } from '@/api/generated/models/LotResponse';
 
 const WINDOWS = [
@@ -92,7 +93,7 @@ export default function LotExpiryQueue() {
           {
             title: 'Lot code',
             dataIndex: 'lot_code',
-            sorter: (a, b) => a.lot_code.localeCompare(b.lot_code),
+            ...excelColumn<LotResponse>({ rows, accessor: (r) => r.lot_code, kind: 'text' }),
             render: (v: string, row: LotResponse) => (
               <Link to={`/inventory/lots/${row.id}`}>{v}</Link>
             ),
@@ -100,6 +101,7 @@ export default function LotExpiryQueue() {
           {
             title: 'Product',
             dataIndex: 'product_id',
+            ...excelColumn<LotResponse>({ rows, accessor: (r) => productName.get(r.product_id) ?? r.product_id, kind: 'enum' }),
             render: (pid: string) => (
               <Link to={`/inventory/products/${pid}`}>
                 {productName.get(pid) ?? pid.slice(0, 8)}

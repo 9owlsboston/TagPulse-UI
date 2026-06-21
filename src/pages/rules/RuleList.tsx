@@ -14,6 +14,7 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
 import { SignalingRuleModal } from '@/pages/rules/SignalingRuleModal';
+import { excelColumn } from '@/components/ExcelColumn';
 import type { RuleResponse } from '@/types';
 
 export function RuleList() {
@@ -39,20 +40,30 @@ export function RuleList() {
   };
 
   const columns: ColumnsType<RuleResponse> = [
-    { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Name', dataIndex: 'name', ...excelColumn<RuleResponse>({ rows: data ?? [], accessor: (r) => r.name, kind: 'text' }) },
     {
       title: 'Condition',
       dataIndex: 'condition_type',
+      ...excelColumn<RuleResponse>({ rows: data ?? [], accessor: (r) => r.condition_type, kind: 'enum' }),
       render: (v: string) => <Tag>{v}</Tag>,
     },
     {
       title: 'Action',
       dataIndex: 'action_type',
+      ...excelColumn<RuleResponse>({ rows: data ?? [], accessor: (r) => r.action_type, kind: 'enum' }),
       render: (v: string) => <Tag color="blue">{v}</Tag>,
     },
     {
       title: 'Enabled',
       dataIndex: 'enabled',
+      ...excelColumn<RuleResponse>({
+        accessor: (r) => (r.enabled ? 'Enabled' : 'Disabled'),
+        kind: 'enum',
+        options: [
+          { text: 'Enabled', value: 'Enabled' },
+          { text: 'Disabled', value: 'Disabled' },
+        ],
+      }),
       render: (enabled: boolean, record) => (
         <Switch checked={enabled} onChange={(v) => handleToggle(record.id, v)} disabled={!canEdit} />
       ),

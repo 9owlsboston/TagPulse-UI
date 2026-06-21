@@ -18,6 +18,7 @@ import { TagDataMappingCreate } from '@/api/generated/models/TagDataMappingCreat
 import type { TagDataMappingResponse } from '@/api/generated/models/TagDataMappingResponse';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { excelColumn } from '@/components/ExcelColumn';
 
 interface FormValues {
   tag_data_key: string;
@@ -145,16 +146,17 @@ export function TagDataMappings() {
             ),
           }}
           columns={[
-            { title: 'Tag-data key', dataIndex: 'tag_data_key', render: (v: string) => <code>{v}</code> },
-            { title: 'Semantic field', dataIndex: 'semantic_field' },
+            { title: 'Tag-data key', dataIndex: 'tag_data_key', ...excelColumn<TagDataMappingResponse>({ rows, accessor: (r) => r.tag_data_key, kind: 'text' }), render: (v: string) => <code>{v}</code> },
+            { title: 'Semantic field', dataIndex: 'semantic_field', ...excelColumn<TagDataMappingResponse>({ rows, accessor: (r) => r.semantic_field, kind: 'enum' }) },
             {
               title: 'Scope',
+              ...excelColumn<TagDataMappingResponse>({ rows, accessor: (r) => (r.scope_kind === 'tenant' ? 'tenant-wide' : 'product'), kind: 'enum' }),
               render: (_, row) =>
                 row.scope_kind === 'tenant'
                   ? <Tag>tenant-wide</Tag>
                   : <Tag color="blue">product · {productLabel.get(row.scope_id ?? '') ?? (row.scope_id ?? '').slice(0, 8)}</Tag>,
             },
-            { title: 'Transform', dataIndex: 'transform', render: (v: string | null) => v ?? '—' },
+            { title: 'Transform', dataIndex: 'transform', ...excelColumn<TagDataMappingResponse>({ rows, accessor: (r) => r.transform, kind: 'text' }), render: (v: string | null) => v ?? '—' },
             {
               title: '',
               width: 120,

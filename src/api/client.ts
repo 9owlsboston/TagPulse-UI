@@ -141,7 +141,7 @@ export const devicesApi = {
 // ── Tag Reads ──
 
 export const tagReadsApi = {
-  list: (params?: { device_id?: string; tag_id?: string; tag_q?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
+  list: (params?: { device_id?: string; tag_id?: string; tag_q?: string; epc_q?: string; start?: string; end?: string; limit?: number; offset?: number }) =>
     request<TagReadResponse[]>(`/tag-reads${qs(params ?? {})}`),
   readsPerHour: (params?: { device_id?: string; start?: string; end?: string; bucket_minutes?: number }) =>
     request<ReadsPerHour[]>(`/tag-reads/reads-per-hour${qs(params ?? {})}`),

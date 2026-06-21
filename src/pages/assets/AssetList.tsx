@@ -41,6 +41,7 @@ import {
 } from '@/components/PendingLabelPicker';
 import { FilterPanel } from '@/components/FilterPanel';
 import { EmptyState } from '@/components/EmptyState';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 import type { LabelFilter } from '@/lib/labelFilter';
 import { isEmptyLabelFilter } from '@/lib/labelFilter';
 import type { AssetResponse } from '@/api/generated/models/AssetResponse';
@@ -328,7 +329,7 @@ export function AssetList() {
   // device-local "Columns" chooser and the table share one server-visible set.
   const assetColumns = useMemo<AssetColumn[]>(
     () => [
-      { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+      { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name), ...columnSearchFilter<AssetResponse>({ mode: 'server', value: search || undefined, onSearch: (p) => setSearch(p ?? ''), placeholder: 'name / ref / tag' }) },
       // Sprint 41 Phase F7 — the legacy 'Type' column was removed here;
       // the Category column below is the sole classifier surface.
       // Sprint 37 row 3.3a — Category column. Renders the category
@@ -458,7 +459,7 @@ export function AssetList() {
           ]
         : []),
     ],
-    [categoryById, locationByAssetId, flashing, showTemperature],
+    [categoryById, locationByAssetId, flashing, showTemperature, search],
   );
 
   // Server-resolved visible columns (tenant/role config + Advanced toggle).
