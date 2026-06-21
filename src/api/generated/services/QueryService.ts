@@ -63,6 +63,11 @@ export class QueryService {
      * @param end
      * @param hasLocation If true, only return reads with a location; if false, only without.
      * @param epcScheme Filter by decoded EPC scheme (e.g. 'sgtin-96', 'sscc-96', 'raw').
+     * @param epcSchemes Sprint 76 — multi-select EPC scheme (column checkbox list, values from ``GET /tag-reads/facets``). Repeated ``?epc_schemes=``.
+     * @param readerAntennas Sprint 76 — multi-select reader antenna. Repeated ``?reader_antennas=``.
+     * @param assetQ Sprint 76 — wildcard search over the *bound asset name*. Matches reads whose tag is actively bound to an asset whose name matches the glob; same grammar as ``tag_q``.
+     * @param sort Sprint 76 — server-side sort column. One of ``timestamp`` (default), ``signal_strength``, ``reader_antenna``. Unknown columns are rejected.
+     * @param order
      * @param limit
      * @param offset
      * @returns TagReadResponse Successful Response
@@ -77,6 +82,11 @@ export class QueryService {
         end?: (string | null),
         hasLocation?: (boolean | null),
         epcScheme?: (string | null),
+        epcSchemes?: (Array<string> | null),
+        readerAntennas?: (Array<number> | null),
+        assetQ?: (string | null),
+        sort?: (string | null),
+        order: string = 'desc',
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<TagReadResponse>> {
@@ -92,12 +102,30 @@ export class QueryService {
                 'end': end,
                 'has_location': hasLocation,
                 'epc_scheme': epcScheme,
+                'epc_schemes': epcSchemes,
+                'reader_antennas': readerAntennas,
+                'asset_q': assetQ,
+                'sort': sort,
+                'order': order,
                 'limit': limit,
                 'offset': offset,
             },
             errors: {
                 422: `Validation Error`,
             },
+        });
+    }
+    /**
+     * Tag Read Facets
+     * Sprint 76 — distinct low-cardinality values (``epc_scheme``,
+     * ``reader_antenna``) for the Tag Reads column checkbox filters.
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static tagReadFacetsTagReadsFacetsGet(): CancelablePromise<Record<string, Array<string>>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/tag-reads/facets',
         });
     }
     /**

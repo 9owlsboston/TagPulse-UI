@@ -81,6 +81,9 @@ vi.mock('@/hooks/useTagReads', () => ({
     data: currentRows,
     isLoading: false,
   }),
+  useTagReadFacets: () => ({
+    data: { epc_scheme: ['sgtin-96', 'sscc-96'], reader_antenna: ['0', '1'] },
+  }),
 }));
 
 vi.mock('@/lib/sse', () => ({
