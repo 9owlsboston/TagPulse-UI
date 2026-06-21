@@ -67,7 +67,7 @@ describe('isChunkLoadError', () => {
 });
 
 describe('lazyWithReload', () => {
-  const RELOAD_KEY = 'tagpulse:chunk-reload-attempted';
+  const RELOAD_TS_KEY = 'tagpulse:chunk-reload-ts';
   let reloadSpy: ReturnType<typeof vi.fn>;
   let originalLocation: typeof window.location;
 
@@ -101,7 +101,7 @@ describe('lazyWithReload', () => {
     const result = await callFactory(factory);
     expect(result).toBe(fakeModule);
     expect(reloadSpy).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem(RELOAD_KEY)).toBeNull();
+    expect(sessionStorage.getItem(RELOAD_TS_KEY)).toBeNull();
   });
 
   test('reloads the page once when import fails with a chunk-load error', async () => {
@@ -118,11 +118,11 @@ describe('lazyWithReload', () => {
 
     await expect(racing).resolves.toBe('TIMED_OUT');
     expect(reloadSpy).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem(RELOAD_KEY)).not.toBeNull();
+    expect(sessionStorage.getItem(RELOAD_TS_KEY)).not.toBeNull();
   });
 
-  test('rethrows on second chunk-load failure within the same session', async () => {
-    sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  test('rethrows on a second chunk-load failure within the throttle window', async () => {
+    sessionStorage.setItem(RELOAD_TS_KEY, String(Date.now()));
     const err = new Error('Failed to fetch dynamically imported module: https://x/B.js');
     const factory = vi.fn().mockRejectedValue(err);
 
@@ -132,12 +132,28 @@ describe('lazyWithReload', () => {
     expect(reloadSpy).not.toHaveBeenCalled();
   });
 
+  test('reloads again once the throttle window has elapsed', async () => {
+    // A stale-chunk event from a *previous* deploy, well outside the window.
+    sessionStorage.setItem(RELOAD_TS_KEY, String(Date.now() - 60_000));
+    const factory = vi
+      .fn()
+      .mockRejectedValue(new Error('Failed to fetch dynamically imported module: https://x/C.js'));
+
+    const racing = Promise.race([
+      callFactory(factory),
+      new Promise((resolve) => setTimeout(() => resolve('TIMED_OUT'), 50)),
+    ]);
+
+    await expect(racing).resolves.toBe('TIMED_OUT');
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
   test('rethrows non-chunk errors without reloading', async () => {
     const err = new Error('Network request failed');
     const factory = vi.fn().mockRejectedValue(err);
 
     await expect(callFactory(factory)).rejects.toThrow('Network request failed');
     expect(reloadSpy).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem(RELOAD_KEY)).toBeNull();
+    expect(sessionStorage.getItem(RELOAD_TS_KEY)).toBeNull();
   });
 });

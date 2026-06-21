@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- **Stale-chunk "Something went wrong" red X after deploys.** Hardened the SWA stale-chunk recovery so a freshly-deployed build no longer surfaces the error card when the browser holds an old `index.html` pointing at chunk hashes the new deploy dropped (e.g. `Failed to fetch dynamically imported module: …/assets/TagReads-….js`). Three changes: (1) the auto-reload loop-guard switched from **once-per-session** to a **10s time-throttle**, so each stale event across multiple deploys in a long-open tab recovers silently while a genuinely-missing chunk still can't spin the tab; (2) a `vite:preloadError` window listener now recovers from `<link rel="modulepreload">` failures that bypass the lazy `import()` factory; (3) the `ErrorBoundary` is now **chunk-aware** — it shows a calm "Updating to the latest version…" state and hard-reloads (throttled) instead of the red card, and no longer reports deploy churn as an exception. New tests for the throttle window + the chunk-aware boundary; `npm run check` clean.
+
 ### Added
 
 - **Sprint 77 — Excel filters on the remaining list tables.** Completes the column-filter rollout. **Transfers** gains an EPC wildcard editbox + server sort on Status/Requested/Completed; **Reconciliation** gains an identifier (EPC / Tag ID) editbox on each of its three views (and the CSV export respects it); **Assets** sorting is now whole-dataset server-side (was page-local); **Stock Levels** (a client-side pivot) gets a Product wildcard editbox + numeric sort on the zone/Total columns. Backed by new `GET /tag-transfers` (`epc_q`/`statuses`/`sort`) and reconciliation `q` params. `npm run check` clean.
