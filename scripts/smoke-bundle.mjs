@@ -17,10 +17,12 @@
  * green, because dev (`npm run dev`) serves source ESM directly and
  * vitest never loads the bundled output.
  *
- * We don't use `vite preview` because the project's dev proxy
- * intercepts `/assets/*` (a backend-API path that collides with
- * Vite's default `build.assetsDir`), so preview returns 500 for the
- * built JS chunks. A bare HTTP server avoids that entirely.
+ * We don't use `vite preview` because the app's `/assets/:id` client
+ * route collides with Vite's default `build.assetsDir` (`assets/`) —
+ * the very collision that, in the SWA `navigationFallback.exclude`,
+ * caused deep-links to `/assets/:id` to 404. A bare HTTP server that
+ * mirrors the SWA fallback rules avoids that and lets us guard the
+ * deep-link routing here.
  *
  * Exit codes:
  *   0 — smoke passed
@@ -68,6 +70,13 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+// Mirror `staticwebapp.config.json` navigationFallback.exclude: a request for
+// a real build file (matched by extension) that doesn't exist is a genuine
+// 404 (e.g. a stale chunk); anything else — including client routes like
+// `/assets/:id` — falls back to index.html. This keeps the smoke server
+// behaving like Azure SWA so deep-link routing regressions surface here.
+const BUILD_FILE_RE = /\.(?:js|css|map|ico|png|jpe?g|svg|webp|woff2?|json|txt|xml)$/i;
+
 const server = createServer((req, res) => {
   // Strip query string, decode, and confine the resolved path to
   // DIST to prevent path-traversal escapes.
@@ -89,9 +98,13 @@ const server = createServer((req, res) => {
     });
     createReadStream(filePath).pipe(res);
   } catch {
-    // SWA-style fallback: serve index.html for anything that isn't
-    // a real file. Mirrors `staticwebapp.config.json`'s
-    // navigationFallback rule so client-side routes don't 404.
+    // SWA-style fallback (see `BUILD_FILE_RE`): a missing build file is a real
+    // 404; client routes fall back to index.html so they don't 404.
+    if (BUILD_FILE_RE.test(rel)) {
+      res.writeHead(404);
+      res.end('not found');
+      return;
+    }
     try {
       const fallback = join(DIST, 'index.html');
       const stat = statSync(fallback);
@@ -188,6 +201,27 @@ try {
   }
 } catch (e) {
   errors.push(`[evaluate] ${e instanceof Error ? e.message : String(e)}`);
+}
+
+// Deep-link / hard-refresh guard: a direct request to a client route such as
+// /assets/:id must fall back to index.html (200 + the SPA mounts), NOT a 404.
+// This is the regression guard for the SWA navigationFallback `/assets/*`
+// collision (the route shares a prefix with Vite's `build.assetsDir`).
+try {
+  const deepUrl = `${URL.replace(/\/$/, '')}/assets/00000000-0000-0000-0000-000000000000`;
+  const resp = await page.goto(deepUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+  const status = resp?.status() ?? 0;
+  if (status !== 200) {
+    errors.push(`[deeplink] ${deepUrl} returned ${status} (expected 200 SPA fallback)`);
+  } else {
+    await sleep(SETTLE_MS);
+    const mounted = await page.evaluate(
+      () => (document.getElementById('root')?.childElementCount ?? 0) > 0,
+    );
+    if (!mounted) errors.push(`[deeplink] ${deepUrl} did not mount the SPA`);
+  }
+} catch (e) {
+  errors.push(`[deeplink] ${e instanceof Error ? e.message : String(e)}`);
 }
 
 await browser.close();
