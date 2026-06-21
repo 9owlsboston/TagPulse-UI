@@ -101,6 +101,8 @@ export interface TagReadResponse {
   tag_data?: Record<string, unknown> | null;
   reader_antenna?: number | null;
   created_at: string;
+  // Sprint 74 — bound asset resolved server-side (the active binding match).
+  asset?: { id: string; name: string } | null;
 }
 
 export interface ReadsPerHour {
