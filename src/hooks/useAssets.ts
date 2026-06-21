@@ -204,6 +204,7 @@ export function useTagReadsForBinding(
         undefined,
         tagId!,
         undefined,
+        undefined,
         params?.since ?? undefined,
         undefined,
         undefined,

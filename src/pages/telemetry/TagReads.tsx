@@ -84,6 +84,7 @@ export function TagReads() {
   const [deviceId, setDeviceId] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
   const [tagQ, setTagQ] = useState<string | undefined>();
+  const [epcQ, setEpcQ] = useState<string | undefined>();
   const [start, setStart] = useState<string | undefined>();
   const [end, setEnd] = useState<string | undefined>();
   const [limit, setLimit] = useState(100);
@@ -111,7 +112,7 @@ export function TagReads() {
     [devices],
   );
   const { data: rawData, isLoading } = useTagReads(
-    { device_id: deviceId, tag_id: tagId, tag_q: tagQ, start, end, limit },
+    { device_id: deviceId, tag_id: tagId, tag_q: tagQ, epc_q: epcQ, start, end, limit },
     { refetchInterval: REFETCH_INTERVAL },
   );
 
@@ -209,6 +210,12 @@ export function TagReads() {
         title: 'EPC',
         key: 'epc',
         dataIndex: 'epc',
+        ...columnSearchFilter<TagReadResponse>({
+          mode: 'server',
+          value: epcQ,
+          onSearch: setEpcQ,
+          placeholder: 'epc / hex / tid',
+        }),
         render: (v: string | null | undefined) => v ?? '—',
       },
       {
@@ -306,7 +313,7 @@ export function TagReads() {
         render: (v: number | null | undefined) => (v == null ? '—' : v.toFixed(2)),
       },
     ],
-    [flashing, deviceLabel, assetLabel, deviceById, tagQ],
+    [flashing, deviceLabel, assetLabel, deviceById, tagQ, epcQ],
   );
 
   // Sprint 60 (ADR-032 §6.3) — apply the resolved `columns.tag_reads` leaf:

@@ -58,6 +58,7 @@ export class QueryService {
      * @param deviceId
      * @param tagId
      * @param tagQ Sprint 70 — wildcard search over ``tag_id`` (EPC). ``*`` / ``?`` glob (bare term = substring, anchored when a wildcard is present), case-insensitive. Combines with the other filters via AND. Use ``tag_id`` for an exact match.
+     * @param epcQ Sprint 75 — wildcard search across the EPC identifier family (``tag_id`` / ``epc`` / ``epc_hex`` / ``tid``) via OR; same glob grammar as ``tag_q``. A read matches if any identifier matches.
      * @param start
      * @param end
      * @param hasLocation If true, only return reads with a location; if false, only without.
@@ -71,6 +72,7 @@ export class QueryService {
         deviceId?: (string | null),
         tagId?: (string | null),
         tagQ?: (string | null),
+        epcQ?: (string | null),
         start?: (string | null),
         end?: (string | null),
         hasLocation?: (boolean | null),
@@ -85,6 +87,7 @@ export class QueryService {
                 'device_id': deviceId,
                 'tag_id': tagId,
                 'tag_q': tagQ,
+                'epc_q': epcQ,
                 'start': start,
                 'end': end,
                 'has_location': hasLocation,
