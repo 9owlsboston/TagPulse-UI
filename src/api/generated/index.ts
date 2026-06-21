@@ -18,6 +18,7 @@ export type { AssetInZoneSummary } from './models/AssetInZoneSummary';
 export type { AssetLoadRequest } from './models/AssetLoadRequest';
 export type { AssetPathPoint } from './models/AssetPathPoint';
 export type { AssetResponse } from './models/AssetResponse';
+export type { AssetStateResponse } from './models/AssetStateResponse';
 export { AssetTagBindingCreate } from './models/AssetTagBindingCreate';
 export type { AssetTagBindingResponse } from './models/AssetTagBindingResponse';
 export type { AssetUnloadRequest } from './models/AssetUnloadRequest';

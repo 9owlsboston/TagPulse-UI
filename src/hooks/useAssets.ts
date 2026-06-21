@@ -348,6 +348,48 @@ export function useAssetPath(
 }
 
 /**
+ * Sprint 71 (ADR-034) — fused asset-state "Current" snapshot.
+ *
+ * Wraps `GET /assets/{id}/state`: the consolidation worker's `read_count ×
+ * recency`-weighted fusion of the asset's bound-tag reads into one zone +
+ * environment answer. Returns `null` when no snapshot exists yet (consolidation
+ * gated off, or no recent reads). Polled for freshness like current-location.
+ */
+export function useAssetState(assetId: string | undefined) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'state'],
+    queryFn: () => AssetsService.getAssetStateAssetsAssetIdStateGet(assetId!),
+    enabled: Boolean(assetId),
+    retry: false,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+    staleTime: 8_000,
+  });
+}
+
+/**
+ * Sprint 71 (ADR-034) — fused asset-state history (the "was" timeline).
+ *
+ * Wraps `GET /assets/{id}/state/history` (newest-first). Drives the custody /
+ * environment mini-history on the asset "Current" card.
+ */
+export function useAssetStateHistory(
+  assetId: string | undefined,
+  params?: { since?: string; limit?: number },
+) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'state-history', params ?? {}],
+    queryFn: () =>
+      AssetsService.getAssetStateHistoryAssetsAssetIdStateHistoryGet(
+        assetId!,
+        params?.since,
+        params?.limit ?? 200,
+      ),
+    enabled: Boolean(assetId),
+  });
+}
+
+/**
  * Sprint 65/66 — floor-frame `(x, y)` trail for an asset.
  *
  * Wraps `GET /assets/{id}/floor-path` (ascending time). With no `source`
