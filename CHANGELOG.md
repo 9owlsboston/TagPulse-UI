@@ -4,6 +4,10 @@ All notable changes to TagPulse-UI will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- **Sprint 73 — Tenant Settings → "Consolidation" tab (configure fusion strategy from the App).** The per-tenant asset-state consolidation config (Sprints 71–72) was previously only settable via an ops script; it's now a first-class admin screen. New tab in [TenantSettings.tsx](src/pages/admin/TenantSettings.tsx): an **Enable consolidation** toggle (off → clears the config / opts the tenant out), the **decay half-life τ** + recompute cadence + look-back + RSSI floor + min-reads knobs, and a **Cold-chain SLA** card (enable + temp/humidity envelope + excursion tolerance) that powers the Journey chart band and leg SLA badges. Wired to `PATCH /tenant/config` (regenerated client picks up the typed `fusion_strategy`/`SlaConfig`); set vs clear uses explicit `null`. Admin-only. 2 new tests; `npm run check` clean (556).
+
 ### Fixed
 
 - **Tag Reconciliation page crashed with React error #130 (white screen).** [`/tags/reconciliation/*`](src/pages/reconciliation/ReconciliationPage.tsx) fell to the ErrorBoundary ("Something went wrong") on every load. Root cause: the page was the **only** file using a **deep default icon import** — `import DownloadOutlined from '@ant-design/icons/DownloadOutlined'`. That deep path is a CommonJS module whose interop default resolves to a **wrapper object** (`{ default: Icon }`), not the component, in the production build — so `<DownloadOutlined />` is "an element type that is invalid: …got: object" → React #130. (Dev/test resolution masked it, which is why the existing page test passed.) Switched to the named import every other file uses (`import { DownloadOutlined } from '@ant-design/icons'`), and added an ESLint `no-restricted-imports` guard banning `@ant-design/icons/*` deep imports so it can't recur. `npm run check` clean (541 tests).

@@ -15,6 +15,7 @@ import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Form from 'antd/es/form';
 import Input from 'antd/es/input';
+import InputNumber from 'antd/es/input-number';
 import Select from 'antd/es/select';
 import Switch from 'antd/es/switch';
 import Tabs from 'antd/es/tabs';
@@ -180,12 +181,194 @@ function GeneralTab() {
   );
 }
 
+function ConsolidationTab() {
+  const { data, isLoading } = useTenantConfig();
+  const update = useUpdateTenantConfig();
+  const [enabled, setEnabled] = useState(false);
+  const [halfLife, setHalfLife] = useState<number>(5);
+  const [recompute, setRecompute] = useState<number>(10);
+  const [lookback, setLookback] = useState<number>(60);
+  const [rssiFloor, setRssiFloor] = useState<number | null>(null);
+  const [minReads, setMinReads] = useState<number>(1);
+  const [slaEnabled, setSlaEnabled] = useState(false);
+  const [tempMin, setTempMin] = useState<number | null>(null);
+  const [tempMax, setTempMax] = useState<number | null>(null);
+  const [humidityMax, setHumidityMax] = useState<number | null>(null);
+  const [excursionTol, setExcursionTol] = useState<number>(0);
+
+  useEffect(() => {
+    if (!data) return;
+    const f = data.fusion_strategy;
+    setEnabled(!!f);
+    if (f) {
+      setHalfLife(f.half_life_s ?? 5);
+      setRecompute(f.recompute_interval_s ?? 10);
+      setLookback(f.lookback_s ?? 60);
+      setRssiFloor(f.rssi_floor_dbm ?? null);
+      setMinReads(f.min_reads ?? 1);
+      setSlaEnabled(!!f.sla);
+      if (f.sla) {
+        setTempMin(f.sla.temp_min_c ?? null);
+        setTempMax(f.sla.temp_max_c ?? null);
+        setHumidityMax(f.sla.humidity_max ?? null);
+        setExcursionTol(f.sla.excursion_tolerance_s ?? 0);
+      }
+    }
+  }, [data]);
+
+  const onSave = async () => {
+    const fusion_strategy = enabled
+      ? {
+          half_life_s: halfLife,
+          recompute_interval_s: recompute,
+          lookback_s: lookback,
+          rssi_floor_dbm: rssiFloor,
+          min_reads: minReads,
+          sla: slaEnabled
+            ? {
+                temp_min_c: tempMin,
+                temp_max_c: tempMax,
+                humidity_max: humidityMax,
+                excursion_tolerance_s: excursionTol,
+              }
+            : null,
+        }
+      : null;
+    try {
+      // `null` opts the tenant out (explicit clear); the backend keys off presence.
+      await update.mutateAsync({ fusion_strategy });
+      message.success('Consolidation settings updated');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Update failed');
+    }
+  };
+
+  return (
+    <>
+      <Card title="Asset state consolidation" loading={isLoading} style={{ marginBottom: 16 }}>
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Fuses an asset's bound-tag reads into one zone + environment answer (and transit legs). Off = the tenant is not consolidated. The decay half-life is the recency dial shared by the location vote and the sensor mean (0 = last-wins)."
+        />
+        <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 10 }}>
+          <Form.Item label="Enable consolidation">
+            <Switch checked={enabled} onChange={setEnabled} />
+          </Form.Item>
+          {enabled && (
+            <>
+              <Form.Item label="Decay half-life τ (s)" help="0 = last-writer-wins">
+                <InputNumber
+                  min={0}
+                  value={halfLife}
+                  onChange={(v) => setHalfLife(v ?? 0)}
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+              <Form.Item label="Recompute interval (s)">
+                <InputNumber
+                  min={1}
+                  value={recompute}
+                  onChange={(v) => setRecompute(v ?? 10)}
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+              <Form.Item label="Look-back window (s)">
+                <InputNumber
+                  min={1}
+                  value={lookback}
+                  onChange={(v) => setLookback(v ?? 60)}
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+              <Form.Item label="RSSI floor (dBm)" help="Blank = no floor on the location vote">
+                <InputNumber
+                  value={rssiFloor ?? undefined}
+                  onChange={(v) => setRssiFloor(v ?? null)}
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+              <Form.Item label="Min reads">
+                <InputNumber
+                  min={1}
+                  value={minReads}
+                  onChange={(v) => setMinReads(v ?? 1)}
+                  style={{ width: 160 }}
+                />
+              </Form.Item>
+            </>
+          )}
+        </Form>
+      </Card>
+
+      {enabled && (
+        <Card title="Cold-chain SLA" loading={isLoading} style={{ marginBottom: 16 }}>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Per-tenant temperature/humidity envelope used to score transit legs. A leg is flagged when the longest contiguous out-of-range run exceeds the excursion tolerance. Leave a bound blank to leave it unbounded."
+          />
+          <Form layout="horizontal" labelCol={{ span: 8 }} wrapperCol={{ span: 10 }}>
+            <Form.Item label="Enable SLA scoring">
+              <Switch checked={slaEnabled} onChange={setSlaEnabled} />
+            </Form.Item>
+            {slaEnabled && (
+              <>
+                <Form.Item label="Temp min (°C)">
+                  <InputNumber
+                    value={tempMin ?? undefined}
+                    onChange={(v) => setTempMin(v ?? null)}
+                    style={{ width: 160 }}
+                  />
+                </Form.Item>
+                <Form.Item label="Temp max (°C)">
+                  <InputNumber
+                    value={tempMax ?? undefined}
+                    onChange={(v) => setTempMax(v ?? null)}
+                    style={{ width: 160 }}
+                  />
+                </Form.Item>
+                <Form.Item label="Humidity max (%)">
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    value={humidityMax ?? undefined}
+                    onChange={(v) => setHumidityMax(v ?? null)}
+                    style={{ width: 160 }}
+                  />
+                </Form.Item>
+                <Form.Item label="Excursion tolerance (s)">
+                  <InputNumber
+                    min={0}
+                    value={excursionTol}
+                    onChange={(v) => setExcursionTol(v ?? 0)}
+                    style={{ width: 160 }}
+                  />
+                </Form.Item>
+              </>
+            )}
+          </Form>
+        </Card>
+      )}
+
+      <Form.Item wrapperCol={{ offset: 8 }}>
+        <Button type="primary" onClick={onSave} loading={update.isPending}>
+          Save
+        </Button>
+      </Form.Item>
+    </>
+  );
+}
+
 export function TenantSettings() {
   const { data } = useTenantConfig();
   const isAdmin = useCanPerform('admin');
   const inventoryEnabled = data?.tracking_modes.includes('inventory') ?? false;
   const items = [
     { key: 'general', label: 'General', children: <GeneralTab /> },
+    { key: 'consolidation', label: 'Consolidation', children: <ConsolidationTab /> },
     { key: 'telemetry', label: 'Sensor metrics', children: <TelemetryModels /> },
     ...(inventoryEnabled
       ? [{ key: 'tag-data', label: 'Tag-data fields', children: <TagDataMappings /> }]
