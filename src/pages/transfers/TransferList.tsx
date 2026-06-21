@@ -5,6 +5,7 @@ import Segmented from 'antd/es/segmented';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
 import Table from 'antd/es/table';
+import type { TableProps } from 'antd/es/table';
 import Tag from 'antd/es/tag';
 import Typography from 'antd/es/typography';
 import { PlusOutlined } from '@ant-design/icons';
@@ -15,6 +16,7 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { NewTransferModal } from '@/pages/transfers/NewTransferModal';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 
 const { Text } = Typography;
 
@@ -68,6 +70,9 @@ export function TransferList() {
     return ['requested', 'completed', 'failed'].includes(s) ? s : '';
   });
   const [page, setPage] = useState(1);
+  const [epcQ, setEpcQ] = useState<string | undefined>();
+  const [sortKey, setSortKey] = useState<string | undefined>();
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -79,20 +84,45 @@ export function TransferList() {
     () => ({
       direction,
       status: status || undefined,
+      epc_q: epcQ,
+      sort: sortKey,
+      order: sortOrder,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
     }),
-    [direction, status, page],
+    [direction, status, epcQ, sortKey, sortOrder, page],
   );
 
   const { data, isLoading, error, refetch } = useTransfers(params);
   const rows = data ?? [];
+
+  // Sprint 77 — server-side sort over the whitelisted transfer columns.
+  const handleTableChange: TableProps<TagTransferResponse>['onChange'] = (_pagination, _filters, sorter) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    const field = (s?.field ?? s?.columnKey) as string | undefined;
+    if (s?.order && field) {
+      setSortKey(field);
+      setSortOrder(s.order === 'ascend' ? 'asc' : 'desc');
+    } else {
+      setSortKey(undefined);
+      setSortOrder('desc');
+    }
+  };
 
   const columns = [
     {
       title: 'EPC',
       dataIndex: 'epc_hex',
       key: 'epc_hex',
+      ...columnSearchFilter<TagTransferResponse>({
+        mode: 'server',
+        value: epcQ,
+        onSearch: (p) => {
+          setEpcQ(p);
+          setPage(1);
+        },
+        placeholder: 'e.g. 3034*',
+      }),
       render: (epc: string) => (
         <Text code style={{ cursor: 'pointer' }} onClick={() => navigate(`/tags/${epc}`)}>
           {epc}
@@ -104,6 +134,7 @@ export function TransferList() {
       dataIndex: 'status',
       key: 'status',
       width: 130,
+      sorter: true,
       render: (s: string) => <Tag color={STATUS_COLOR[s] ?? 'default'}>{s}</Tag>,
     },
     {
@@ -126,12 +157,14 @@ export function TransferList() {
       title: 'Requested',
       dataIndex: 'requested_at',
       key: 'requested_at',
+      sorter: true,
       render: formatTimestamp,
     },
     {
       title: 'Completed',
       dataIndex: 'completed_at',
       key: 'completed_at',
+      sorter: true,
       render: formatTimestamp,
     },
     {
@@ -194,6 +227,7 @@ export function TransferList() {
             loading={isLoading}
             columns={columns}
             dataSource={rows}
+            onChange={handleTableChange}
             pagination={{
               current: page,
               pageSize: PAGE_SIZE,

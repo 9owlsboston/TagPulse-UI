@@ -24,20 +24,22 @@ export const RECONCILIATION_QUERY_KEY = 'tag-reconciliation' as const;
 export interface ReconciliationParams {
   view: ReconciliationView;
   days?: number;
+  q?: string;
   limit?: number;
   offset?: number;
 }
 
 export function useReconciliation<TRow>(params: ReconciliationParams) {
-  const { view, days, limit, offset } = params;
+  const { view, days, q, limit, offset } = params;
   return useQuery<TRow[]>({
-    queryKey: [RECONCILIATION_QUERY_KEY, view, days ?? 30, limit ?? 100, offset ?? 0],
+    queryKey: [RECONCILIATION_QUERY_KEY, view, days ?? 30, q ?? '', limit ?? 100, offset ?? 0],
     queryFn: () =>
       TagsService.getReconciliationViewTagsReconciliationViewGet(
         view,
         days ?? 30,
         limit ?? 100,
         offset ?? 0,
+        q ?? null,
       ) as unknown as Promise<TRow[]>,
     refetchInterval: 60_000,
     staleTime: 45_000,

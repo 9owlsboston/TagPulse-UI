@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
 import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
@@ -20,6 +20,7 @@ import {
 } from '@/hooks/useReconciliation';
 import { ListPageShell } from '@/components/ListPageShell';
 import { EmptyState } from '@/components/EmptyState';
+import { columnSearchFilter } from '@/components/ColumnSearchFilter';
 
 dayjs.extend(relativeTime);
 
@@ -125,14 +126,22 @@ export function ReconciliationPage() {
 
   const [days, setDays] = useState(30);
   const [page, setPage] = useState(1);
+  const [q, setQ] = useState<string | undefined>();
   const [csvBusy, setCsvBusy] = useState(false);
+
+  // Sprint 77 — clear the identifier filter + reset paging when the view
+  // changes (each view filters a different identifier column).
+  useEffect(() => {
+    setQ(undefined);
+    setPage(1);
+  }, [v]);
 
   const offset = (page - 1) * PAGE_SIZE;
   const queryDays = meta.supportsDays ? days : 30;
 
   const query = useReconciliation<
     RegisteredUnreadRow | UnregisteredReadingRow | BindingOnRetiredRow
-  >({ view: v, days: queryDays, limit: PAGE_SIZE, offset });
+  >({ view: v, days: queryDays, q, limit: PAGE_SIZE, offset });
 
   const rows = query.data ?? [];
   const fudgedTotal = rows.length === PAGE_SIZE ? page * PAGE_SIZE + 1 : offset + rows.length;
@@ -144,6 +153,15 @@ export function ReconciliationPage() {
           title: 'EPC',
           dataIndex: 'epc_hex',
           key: 'epc_hex',
+          ...columnSearchFilter({
+            mode: 'server',
+            value: q,
+            onSearch: (p) => {
+              setQ(p);
+              setPage(1);
+            },
+            placeholder: 'e.g. 3034*',
+          }),
           render: (epc: string) => (
             <Link to={`/tags/${epc}`} style={{ fontFamily: 'monospace' }}>
               {epc}
@@ -183,6 +201,15 @@ export function ReconciliationPage() {
           title: 'Tag ID',
           dataIndex: 'tag_id',
           key: 'tag_id',
+          ...columnSearchFilter({
+            mode: 'server',
+            value: q,
+            onSearch: (p) => {
+              setQ(p);
+              setPage(1);
+            },
+            placeholder: 'e.g. 3034*',
+          }),
           render: (tid: string) => <span style={{ fontFamily: 'monospace' }}>{tid}</span>,
         },
         {
@@ -209,6 +236,15 @@ export function ReconciliationPage() {
         title: 'EPC',
         dataIndex: 'epc_hex',
         key: 'epc_hex',
+        ...columnSearchFilter({
+          mode: 'server',
+          value: q,
+          onSearch: (p) => {
+            setQ(p);
+            setPage(1);
+          },
+          placeholder: 'e.g. 3034*',
+        }),
         render: (epc: string) => (
           <Link to={`/tags/${epc}`} style={{ fontFamily: 'monospace' }}>
             {epc}
@@ -229,7 +265,7 @@ export function ReconciliationPage() {
         render: (ts: string) => tsCell(ts),
       },
     ];
-  }, [v]);
+  }, [v, q]);
 
   async function handleCsvDownload() {
     setCsvBusy(true);
@@ -239,6 +275,7 @@ export function ReconciliationPage() {
         queryDays,
         100_000,
         0,
+        q ?? null,
         'csv',
       )) as unknown as string;
       downloadBlob(`reconciliation-${v}-${dayjs().format('YYYYMMDD-HHmm')}.csv`, body);

@@ -20,6 +20,10 @@ export class TagsService {
      * List Tag Transfers
      * @param direction
      * @param status
+     * @param statuses
+     * @param epcQ
+     * @param sort
+     * @param order
      * @param limit
      * @param offset
      * @returns TagTransferResponse Successful Response
@@ -28,6 +32,10 @@ export class TagsService {
     public static listTagTransfersTagTransfersGet(
         direction?: (string | null),
         status?: (string | null),
+        statuses?: (Array<string> | null),
+        epcQ?: (string | null),
+        sort?: (string | null),
+        order: string = 'desc',
         limit: number = 100,
         offset?: number,
     ): CancelablePromise<Array<TagTransferResponse>> {
@@ -37,6 +45,10 @@ export class TagsService {
             query: {
                 'direction': direction,
                 'status': status,
+                'statuses': statuses,
+                'epc_q': epcQ,
+                'sort': sort,
+                'order': order,
                 'limit': limit,
                 'offset': offset,
             },
@@ -329,6 +341,7 @@ export class TagsService {
      * @param days Lookback window in days. Applies to ``registered-unread`` (staleness cutoff) and ``unregistered-reading`` (read scan window). Ignored by ``bindings-on-retired``.
      * @param limit
      * @param offset
+     * @param q
      * @param format
      * @returns any Reconciliation rows. JSON by default; text/csv when ``?format=csv`` is supplied.
      * @throws ApiError
@@ -338,6 +351,7 @@ export class TagsService {
         days: number = 30,
         limit: number = 100,
         offset?: number,
+        q?: (string | null),
         format?: (string | null),
     ): CancelablePromise<any> {
         return __request(OpenAPI, {
@@ -350,6 +364,7 @@ export class TagsService {
                 'days': days,
                 'limit': limit,
                 'offset': offset,
+                'q': q,
                 'format': format,
             },
             errors: {
