@@ -18,6 +18,7 @@ import Timeline from 'antd/es/timeline';
 import Tooltip from 'antd/es/tooltip';
 import Typography from 'antd/es/typography';
 import { useAssetState, useAssetStateHistory, useZones } from '@/hooks/useAssets';
+import { fmtElapsed } from '@/lib/duration';
 import type { AssetStateResponse } from '@/api/generated/models/AssetStateResponse';
 
 const { Text } = Typography;
@@ -51,9 +52,13 @@ export function AssetCurrentStateCard({ assetId }: { assetId: string }) {
       id ? (byId.get(id) ?? null) : null;
   }, [zones]);
 
-  // "Where" label: a named zone when resolved; "In transit" for a geo fix with
-  // no zone; otherwise the frame label.
+  // "Where" label: in transit shows the open leg (origin + elapsed); else a
+  // named zone when resolved; else "In transit" for a bare geo fix; else frame.
   const whereLabel = (s: AssetStateResponse): string => {
+    if (s.open_leg) {
+      const origin = zoneName(s.open_leg.origin_zone_id) ?? 'origin';
+      return `In transit: ${origin} → … · ${fmtElapsed(s.open_leg.departed_at)}`;
+    }
     const zn = zoneName(s.zone_id);
     if (zn) return zn;
     if (s.frame === 'geo') return 'In transit';

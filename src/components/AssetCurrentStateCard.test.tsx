@@ -102,4 +102,29 @@ describe('AssetCurrentStateCard', () => {
     renderCard();
     expect(screen.getByText('Custody')).toBeInTheDocument();
   });
+
+  it('labels an open transit leg with origin + elapsed', () => {
+    mockState = {
+      asset_id: 'a1',
+      time: '2026-06-20T12:05:00Z',
+      frame: 'geo',
+      zone_id: null,
+      site_id: null,
+      temperature_c: 4.0,
+      humidity_pct: 60,
+      sample_count: 2,
+      tag_count: 2,
+      confidence: 0.5,
+      open_leg: {
+        id: 'leg-open',
+        asset_id: 'a1',
+        status: 'open',
+        origin_zone_id: 'z1',
+        departed_at: '2026-06-20T10:00:00Z',
+      },
+    };
+    mockHistory = [];
+    renderCard();
+    expect(screen.getByText(/In transit: Cold Room A/)).toBeInTheDocument();
+  });
 });

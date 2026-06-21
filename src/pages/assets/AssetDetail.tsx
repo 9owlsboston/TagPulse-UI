@@ -35,6 +35,8 @@ import { useCanPerform } from '@/components/useCanPerform';
 import { SubjectTelemetryTab } from '@/components/SubjectTelemetryTab';
 import { AssetEventsTab } from '@/components/AssetEventsTab';
 import { AssetCurrentStateCard } from '@/components/AssetCurrentStateCard';
+import { JourneyTimeline } from '@/components/JourneyTimeline';
+import { AssetEnvironmentChart } from '@/components/AssetEnvironmentChart';
 import { AssetPathMap } from '@/components/floor/AssetPathMap';
 import { TimeRangePicker } from '@/components/TimeRangePicker';
 import { LabelChips } from '@/components/LabelChips';
@@ -88,6 +90,9 @@ export function AssetDetail() {
   });
   const [bindForm] = Form.useForm<AssetTagBindingCreate>();
   const [editForm] = Form.useForm<AssetUpdate & { metadata_text?: string }>();
+  // Sprint 72 — selected transit leg for the Journey tab's cross-filter
+  // (timeline row <-> environment chart highlight).
+  const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
 
   const activeBinding = useMemo(
     () => (allBindings ?? []).find((b) => b.unbound_at === null) ?? null,
@@ -465,14 +470,32 @@ export function AssetDetail() {
     },
     {
       key: 'path',
-      label: 'Path',
+      label: 'Journey',
       children: (
         <>
           <Text type="secondary">
-            Where this {assetLabel.toLowerCase()} is and where it has been over the selected
-            window. Floor sites render the `(x, y)` trail on the floor plan (plain grid when no
-            plan is uploaded); mobile/GPS sites render the geographic path.
+            Where this {assetLabel.toLowerCase()} is and where it has been — transit legs
+            (origin → destination, duration, cold-chain SLA), the fused environment over the
+            journey, and the movement trail. Select a leg to highlight it across the panels.
           </Text>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', margin: '12px 0' }}>
+            <div style={{ flex: '1 1 280px', minWidth: 260 }}>
+              <Title level={5}>Legs</Title>
+              {id ? (
+                <JourneyTimeline
+                  assetId={id}
+                  selectedLegId={selectedLegId}
+                  onSelectLeg={setSelectedLegId}
+                />
+              ) : null}
+            </div>
+            <div style={{ flex: '2 1 420px', minWidth: 320 }}>
+              <Title level={5}>Environment</Title>
+              {id ? (
+                <AssetEnvironmentChart assetId={id} selectedLegId={selectedLegId} />
+              ) : null}
+            </div>
+          </div>
           <Space style={{ display: 'flex', margin: '12px 0' }} wrap>
             <TimeRangePicker onChange={(since, until) => setPathRange({ since, until })} />
           </Space>

@@ -15,6 +15,7 @@ export type { ApiKeyResponse } from './models/ApiKeyResponse';
 export { AssetCreate } from './models/AssetCreate';
 export type { AssetCurrentLocation } from './models/AssetCurrentLocation';
 export type { AssetInZoneSummary } from './models/AssetInZoneSummary';
+export type { AssetLegResponse } from './models/AssetLegResponse';
 export type { AssetLoadRequest } from './models/AssetLoadRequest';
 export type { AssetPathPoint } from './models/AssetPathPoint';
 export type { AssetResponse } from './models/AssetResponse';
