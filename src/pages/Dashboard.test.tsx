@@ -14,6 +14,15 @@ vi.mock('@/api/generated/services/UiConfigService', () => ({
   UiConfigService: { getUiConfigUiConfigGet: vi.fn(() => new Promise(() => {})) },
 }));
 
+// Card hide/order now persist server-side via `usePatchMyUiConfig`. Mock just
+// that hook (keep the rest of the module real so <UiConfigProvider>'s
+// `useUiConfig` still works for the gate test) and capture the PATCH bodies.
+const { patchMock } = vi.hoisted(() => ({ patchMock: vi.fn() }));
+vi.mock('@/hooks/useUiConfig', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/hooks/useUiConfig')>();
+  return { ...actual, usePatchMyUiConfig: () => ({ mutate: patchMock }) };
+});
+
 // Stub recharts — see KpiTile.test.tsx for context (ResizeObserver missing
 // in jsdom; we only assert on chip presence here, not the SVG line). Sprint
 // 58 round 1 switched <TpSparkline> from LineChart → AreaChart for the
@@ -142,8 +151,9 @@ describe('Dashboard (Sprint 54.4)', () => {
     );
   });
 
-  it('persists hide + reorder across remount via LocalStorage', () => {
-    const { unmount } = render(<Dashboard />, { wrapper });
+  it('writes hide + reorder to the server (cards.dashboard via PATCH /ui-config/me)', () => {
+    patchMock.mockClear();
+    render(<Dashboard />, { wrapper });
 
     // Enter edit mode.
     fireEvent.click(screen.getByRole('button', { name: /customize/i }));
@@ -157,22 +167,15 @@ describe('Dashboard (Sprint 54.4)', () => {
     // Exit edit mode.
     fireEvent.click(screen.getByRole('button', { name: /done/i }));
 
-    // Verify LocalStorage state.
-    const order = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileOrder') ?? '[]');
-    const hidden = JSON.parse(window.localStorage.getItem('tagpulse.dashboard.tileHidden') ?? '[]');
-    expect(hidden).toContain('low-stock');
+    const bodies = patchMock.mock.calls.map((c) => c[0] as { cards?: { dashboard?: { hidden?: string[]; order?: string[] } } });
+    const hideCall = bodies.find((b) => b?.cards?.dashboard?.hidden);
+    expect(hideCall?.cards?.dashboard?.hidden).toContain('low-stock');
+
+    const orderCall = bodies.find((b) => b?.cards?.dashboard?.order);
+    const order = orderCall?.cards?.dashboard?.order ?? [];
     expect(order).toHaveLength(9);
     // alerts-open should now sit after reads-per-hour rather than before it.
-    const idxAlerts = order.indexOf('alerts-open');
-    const idxReads = order.indexOf('reads-per-hour');
-    expect(idxAlerts).toBeGreaterThan(idxReads);
-
-    unmount();
-
-    // Remount: hidden tile is gone (outside edit mode) and order is preserved.
-    render(<Dashboard />, { wrapper });
-    expect(screen.queryByTestId('tile-low-stock')).not.toBeInTheDocument();
-    expect(screen.getByTestId('tile-alerts-open')).toBeInTheDocument();
+    expect(order.indexOf('alerts-open')).toBeGreaterThan(order.indexOf('reads-per-hour'));
   });
 
   it('renders inline sparkline chips on tiles that have sparkline data (Phase F)', () => {
