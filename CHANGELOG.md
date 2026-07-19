@@ -2,6 +2,23 @@
 
 All notable changes to TagPulse-UI will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+<!--
+HOW TO USE THIS FILE
+====================
+Every PR (except `noncodefix/*`, `spike/*`, `release/*` branches) must add at
+least one row under `## Unreleased` — see AGENTS.md and the project instructions.
+
+Pick the right section: Added / Changed / Deprecated / Removed / Fixed / Security.
+
+Format:  `- <one-line summary> (#<pr-number>)`
+
+Merge conflicts on this file are handled by `.gitattributes`
+(`CHANGELOG.md merge=union`) — parallel PRs' entries concatenate automatically.
+-->
+
 ## Unreleased
 
 ### Changed
@@ -13,6 +30,8 @@ All notable changes to TagPulse-UI will be documented in this file.
 - **Dashboard cards flashed all-visible on login before hidden-card config applied.** The Dashboard's `cards.dashboard.hidden` config (tenant/role default) loads asynchronously, and the page couldn't tell "config still loading" from "loaded with nothing hidden" — so on a cold login it rendered **every** card, then hid the configured-hidden ones once the config arrived (a visible flash). The resolved UI-config context now exposes a `ready` flag, and the Dashboard waits for it before rendering the grid — showing a brief spinner instead of flashing every card. New test for the gate; `npm run check` clean.
 
 ### Chore
+
+- **Adopted the dev-env-setup guardrail toolkit (xs profile).** Seeded the cross-tool agent contract (`AGENTS.md`, `docs/current-state.md`, `docs/history/execution-log.md`, `.gitattributes`, `.repo-profile`) and folded the template floors into `README.md`, `.github/copilot-instructions.md`, `CHANGELOG.md`, and `.editorconfig` without disturbing existing content. Declared `ledger-project: tagpulse` so the agent ledger unions with the sibling backend repo.
 
 - **Untracked `tsconfig.tsbuildinfo`.** The TypeScript incremental-build cache was tracked in git (not gitignored), so it churned a diff on every build/typecheck. Added `*.tsbuildinfo` to `.gitignore` and removed it from the index.
 

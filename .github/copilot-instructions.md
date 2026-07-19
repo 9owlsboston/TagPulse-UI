@@ -1,5 +1,25 @@
 # Project: TagPulse-UI
 
+> The cross-tool source of truth is **`AGENTS.md`** at the repo root (repo-specific
+> hard rules, where-to-write map, drift-rules, doc-lifecycle). This file is
+> Copilot-specific. The SDLC itself is **not** repeated here: the 5-stage flow
+> (Plan → Implement → Verify → Ship → **close-out**), carve-outs (`noncodefix`,
+> `spike`, `release`), commit-message format, and change-logging convention live in
+> the **global** `~/.copilot/copilot-instructions.md` (SoT: `ai-tooling-config`),
+> with the full model in
+> [`dev-env-setup` `docs/guides/sdlc.md`](https://github.com/9owlsboston/dev-env-setup/blob/main/docs/guides/sdlc.md).
+
+### When in doubt, switch personas
+
+- Researching → `explorer`
+- Planning a change → `planner`
+- Writing code → `implementer`
+- Auditing a PR → `verifier`
+- A typo / doc-only fix → `noncodefix`
+- Cutting a release → `release`
+
+Personas live in `~/.copilot/agents/` (personal) or `.github/agents/` (repo).
+
 ## Overview
 React SPA admin dashboard for the TagPulse IoT platform. Provides device management, telemetry dashboards, rule/alert configuration, integration management, and usage analytics. Consumes the TagPulse REST API.
 
