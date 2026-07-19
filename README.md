@@ -2,6 +2,10 @@
 
 React SPA admin dashboard for the [TagPulse](https://github.com/9owlsboston/TagPulse) IoT platform.
 
+> **Current state:** see [`docs/current-state.md`](docs/current-state.md) for the
+> dated "where we are now" snapshot (current → future → open gaps). This README
+> holds the durable orientation; the snapshot holds the moving picture.
+
 ## Quick Start
 
 ```bash
@@ -36,3 +40,10 @@ Requires the TagPulse API running on `http://localhost:8000`.
 ## Architecture
 
 See [TagPulse design doc](https://github.com/9owlsboston/TagPulse/blob/main/docs/design/admin-ui.md).
+
+## Layout
+
+- `src/` — application source (pages, hooks, generated API client under `src/api/generated/`).
+- `AGENTS.md` — operating contract for AI agents (rules, run/test, docs map).
+- `docs/current-state.md` — dated "where we are now" snapshot (README supplement).
+- `docs/history/execution-log.md` — what was executed, when, and how verified.
