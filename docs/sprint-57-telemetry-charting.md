@@ -103,18 +103,19 @@ _Recorded 2026-05-25 during PR #68 rebase + kickoff. Phase B is unblocked._
 
 ### A.1 — Chart library decision: **stay on Recharts**
 
-Surveyed callers (`grep "from 'recharts'"`):
+Surveyed callers (`grep "from 'recharts'"`). Paths below are the **current** ones —
+`DataExplorer.tsx` was surveyed under that name and renamed to `TagReads.tsx` by Phase B.
 
 | File | Charts used |
 |---|---|
-| [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx) | LineChart |
-| [src/pages/telemetry/TelemetryDashboard.tsx](src/pages/telemetry/TelemetryDashboard.tsx) | LineChart |
-| [src/pages/devices/DeviceTelemetryTab.tsx](src/pages/devices/DeviceTelemetryTab.tsx) | LineChart |
-| [src/components/SubjectTelemetryTab.tsx](src/components/SubjectTelemetryTab.tsx) | LineChart |
-| [src/pages/inventory/ProductDetail.tsx](src/pages/inventory/ProductDetail.tsx) | BarChart |
-| [src/pages/admin/UsageDashboard.tsx](src/pages/admin/UsageDashboard.tsx) | BarChart |
+| [src/pages/telemetry/TagReads.tsx](../src/pages/telemetry/TagReads.tsx) | LineChart |
+| [src/pages/telemetry/TelemetryDashboard.tsx](../src/pages/telemetry/TelemetryDashboard.tsx) | LineChart |
+| [src/pages/devices/DeviceTelemetryTab.tsx](../src/pages/devices/DeviceTelemetryTab.tsx) | LineChart |
+| [src/components/SubjectTelemetryTab.tsx](../src/components/SubjectTelemetryTab.tsx) | LineChart |
+| [src/pages/inventory/ProductDetail.tsx](../src/pages/inventory/ProductDetail.tsx) | BarChart |
+| [src/pages/admin/UsageDashboard.tsx](../src/pages/admin/UsageDashboard.tsx) | BarChart |
 
-Recharts is already isolated in [vite.config.ts](vite.config.ts) `manualChunks` (Sprint 36 / #24); pinned at `^2.14` in [package.json](package.json).
+Recharts is already isolated in [vite.config.ts](../vite.config.ts) `manualChunks` (Sprint 36 / #24); pinned at `^2.14` in [package.json](../package.json).
 
 **Rationale for staying:**
 
@@ -142,16 +143,16 @@ User compared the current Telemetry page (cluttered date axis, every-device-as-l
 
 **Performance budget added to Phase C.** Before merging wrappers, run a Phase C spike with synthetic data at **50 visible series × 720 points (15-min buckets × 7 days)** and require sustained 60fps on hover/pan in Chrome on the dev laptop. If Recharts (SVG) fails this budget, swap to **uPlot** (canvas, ~50× faster on multi-series) behind the same wrapper contract before Phase D starts. This makes the library decision _measurable_ instead of speculative — and we still pay the swap cost only if real data demands it.
 
-**Out of scope for this sprint** (parked for a future sprint, not a library issue either): drag-to-zoom brush selection (`dataZoom`-style) and shared-crosshair "hover-anywhere-see-all-values" tooltips. Both are doable on Recharts but expand Phase C beyond what the sprint window absorbs. Filed in [docs/backlog.md](docs/backlog.md) when Phase C lands.
+**Out of scope for this sprint** (parked for a future sprint, not a library issue either): drag-to-zoom brush selection (`dataZoom`-style) and shared-crosshair "hover-anywhere-see-all-values" tooltips. Both are doable on Recharts but expand Phase C beyond what the sprint window absorbs. Filed in [docs/backlog.md](backlog.md) when Phase C lands.
 
 ### A.2 — Time-range picker spec
 
-Current [src/components/TimeRangePicker.tsx](src/components/TimeRangePicker.tsx) has 4 callers, all using the same `(start: string, end: string) => void` ISO callback:
+Current [src/components/TimeRangePicker.tsx](../src/components/TimeRangePicker.tsx) has 4 callers, all using the same `(start: string, end: string) => void` ISO callback:
 
-- [src/pages/telemetry/DataExplorer.tsx](src/pages/telemetry/DataExplorer.tsx)
-- [src/pages/telemetry/TelemetryDashboard.tsx](src/pages/telemetry/TelemetryDashboard.tsx)
-- [src/pages/devices/DeviceTelemetryTab.tsx](src/pages/devices/DeviceTelemetryTab.tsx)
-- [src/components/SubjectTelemetryTab.tsx](src/components/SubjectTelemetryTab.tsx)
+- [src/pages/telemetry/TagReads.tsx](../src/pages/telemetry/TagReads.tsx)
+- [src/pages/telemetry/TelemetryDashboard.tsx](../src/pages/telemetry/TelemetryDashboard.tsx)
+- [src/pages/devices/DeviceTelemetryTab.tsx](../src/pages/devices/DeviceTelemetryTab.tsx)
+- [src/components/SubjectTelemetryTab.tsx](../src/components/SubjectTelemetryTab.tsx)
 
 Current presets: `1h, 6h, 24h, 7d, Custom`. New unified presets per planning doc:
 
@@ -179,10 +180,10 @@ Changes in Phase C:
 
 | File | Line | Change |
 |---|---|---|
-| [src/lib/nav.tsx](src/lib/nav.tsx) | 114 | `label: 'Devices & Connections'` → `'Devices & Telemetry'` |
-| [src/components/Layout.test.tsx](src/components/Layout.test.tsx) | 115 | `getByText('Devices & Connections')` → `'Devices & Telemetry'` |
-| [src/components/Layout.tsx](src/components/Layout.tsx) | 35 | doc comment — update for consistency |
-| [src/components/Layout.test.tsx](src/components/Layout.test.tsx) | 8 | doc comment — update for consistency |
+| [src/lib/nav.tsx](../src/lib/nav.tsx) | 114 | `label: 'Devices & Connections'` → `'Devices & Telemetry'` |
+| [src/components/Layout.test.tsx](../src/components/Layout.test.tsx) | 115 | `getByText('Devices & Connections')` → `'Devices & Telemetry'` |
+| [src/components/Layout.tsx](../src/components/Layout.tsx) | 35 | doc comment — update for consistency |
+| [src/components/Layout.test.tsx](../src/components/Layout.test.tsx) | 8 | doc comment — update for consistency |
 
 Section key `sec-devices-connections` is internal (URL-invisible) — left as-is to avoid touching `defaultOpenKeys` localStorage lookups in `<Layout>`. No deep-link redirect needed (label-only change).
 
@@ -190,10 +191,10 @@ Section key `sec-devices-connections` is internal (URL-invisible) — left as-is
 
 | File | Line | Change |
 |---|---|---|
-| [src/pages/rules/AlertHistory.tsx](src/pages/rules/AlertHistory.tsx) | 202 | `title="Alert History"` → `title="Alerts"` |
-| [src/pages/rules/AlertHistory.test.tsx](src/pages/rules/AlertHistory.test.tsx) | 29 | `getByText('Alert History')` → `'Alerts'` |
+| [src/pages/rules/AlertHistory.tsx](../src/pages/rules/AlertHistory.tsx) | 202 | `title="Alert History"` → `title="Alerts"` |
+| [src/pages/rules/AlertHistory.test.tsx](../src/pages/rules/AlertHistory.test.tsx) | 29 | `getByText('Alert History')` → `'Alerts'` |
 
-The nav already shows "Alerts" ([src/lib/nav.tsx](src/lib/nav.tsx) L71); the page title was the only mismatch. `countTestId="alert-history-title-count"` and the component/file name `AlertHistory` stay (internal identifiers; renaming the file would inflate the diff with no operator-visible benefit). Route `/alerts` is unchanged.
+The nav already shows "Alerts" ([src/lib/nav.tsx](../src/lib/nav.tsx) L71); the page title was the only mismatch. `countTestId="alert-history-title-count"` and the component/file name `AlertHistory` stay (internal identifiers; renaming the file would inflate the diff with no operator-visible benefit). Route `/alerts` is unchanged.
 
 ### A.4 — Backend scope lock
 
@@ -222,7 +223,7 @@ GET /dashboard/sparklines?days=7
   }
 ```
 
-Each series is downsampled to ~24 points (4-hour buckets × 7 days). One round-trip per Dashboard load, cacheable backend-side for ~5 min. Tile keys exactly match the existing [src/pages/Dashboard.tsx](src/pages/Dashboard.tsx) `TILES` ids so the client wire-up is trivial.
+Each series is downsampled to ~24 points (4-hour buckets × 7 days). One round-trip per Dashboard load, cacheable backend-side for ~5 min. Tile keys exactly match the existing [src/pages/Dashboard.tsx](../src/pages/Dashboard.tsx) `TILES` ids so the client wire-up is trivial.
 
 **Why not fan-out client-side from existing endpoints:** would mean 8 concurrent queries on Dashboard mount (`/tag-reads/reads-per-hour` for 7-day windows × 8 tiles, with different aggregation shapes per tile). Heavier on the network, harder to cache, and `low_stock_count` / `integrations_active` have no time-series endpoint at all — they'd require new backend work either way.
 
